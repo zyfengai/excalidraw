@@ -3,7 +3,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { STORAGE_KEYS } from "../app_constants";
 import { getDefaultVideoRecorderSettings } from "../components/video-recorder/videoRecorder.config";
-import { useVideoRecorder } from "../components/video-recorder/useVideoRecorder";
+import {
+  mapVideoRecorderErrorMessage,
+  useVideoRecorder,
+} from "../components/video-recorder/useVideoRecorder";
 
 const OriginalMediaRecorder = globalThis.MediaRecorder;
 const OriginalMediaDevices = navigator.mediaDevices;
@@ -22,6 +25,19 @@ const setMediaDevicesMock = (value: Partial<MediaDevices>) => {
     value,
   });
 };
+
+const createMockMediaDevice = (
+  kind: MediaDeviceKind,
+  deviceId: string,
+  label: string,
+) =>
+  ({
+    deviceId,
+    groupId: "",
+    kind,
+    label,
+    toJSON: () => ({}),
+  } as MediaDeviceInfo);
 
 const renderUseVideoRecorder = () => {
   let latest: ReturnType<typeof useVideoRecorder> | null = null;
@@ -120,6 +136,83 @@ describe("useVideoRecorder", () => {
         shape: "rounded",
       });
     });
+  });
+
+  it("requests media permissions with settings constraints and refreshes devices", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const trackStop = vi.fn();
+    const permissionStream = {
+      getTracks: () => [{ stop: trackStop }],
+    } as unknown as MediaStream;
+    const getUserMedia = vi.fn(async () => permissionStream);
+    const enumerateDevices = vi
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        createMockMediaDevice("videoinput", "camera-1", "Camera One"),
+        createMockMediaDevice("audioinput", "mic-1", "Microphone One"),
+      ]);
+
+    setMediaDevicesMock({
+      getUserMedia,
+      enumerateDevices,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: true,
+        selectedVideoDeviceId: "camera-1",
+        selectedAudioDeviceId: "mic-1",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    expect(getUserMedia).toHaveBeenCalledWith({
+      video: { deviceId: { exact: "camera-1" } },
+      audio: { deviceId: { exact: "mic-1" } },
+    });
+    expect(trackStop).toHaveBeenCalledTimes(1);
+    expect(enumerateDevices).toHaveBeenCalledTimes(2);
+
+    await waitFor(() => {
+      expect(recorder.latest.devices).toEqual({
+        videoInputs: [{ deviceId: "camera-1", label: "Camera One" }],
+        audioInputs: [{ deviceId: "mic-1", label: "Microphone One" }],
+      });
+    });
+
+    expect(recorder.latest.error).toBeNull();
+    expect(recorder.latest.isRequestingPermissions).toBe(false);
+  });
+
+  it("maps permission denials when requesting media permissions", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const denied = new DOMException("", "NotAllowedError");
+    const getUserMedia = vi.fn(async () => {
+      throw denied;
+    });
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.error).toBe(mapVideoRecorderErrorMessage(denied));
+      expect(recorder.latest.isRequestingPermissions).toBe(false);
+    });
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
   });
 
   it("sets error when requesting permissions without getUserMedia", async () => {
