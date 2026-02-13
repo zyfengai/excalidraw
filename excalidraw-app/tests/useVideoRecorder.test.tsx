@@ -499,6 +499,84 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.error).toBeNull();
   });
 
+  it("cleans up and reports error when MediaRecorder initialization throws", async () => {
+    const videoTrackStop = vi.fn();
+    const cancelAnimationFrameSpy = vi
+      .spyOn(window, "cancelAnimationFrame")
+      .mockImplementation(() => {});
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia: vi.fn(),
+    });
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 1);
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(() =>
+      createMockCanvasContext(),
+    );
+    Object.defineProperty(HTMLCanvasElement.prototype, "captureStream", {
+      configurable: true,
+      value: vi.fn(() => ({
+        getVideoTracks: () =>
+          [
+            {
+              kind: "video",
+              stop: videoTrackStop,
+            },
+          ] as unknown as MediaStreamTrack[],
+      })),
+    });
+
+    class MockMediaStream {
+      private tracks: MediaStreamTrack[] = [];
+      addTrack(track: MediaStreamTrack) {
+        this.tracks.push(track);
+      }
+      getTracks() {
+        return this.tracks;
+      }
+      getAudioTracks() {
+        return this.tracks.filter((track) => track.kind === "audio");
+      }
+    }
+    globalThis.MediaStream = MockMediaStream as any;
+
+    class ThrowingMediaRecorder {
+      static isTypeSupported = (mimeType: string) => mimeType.includes("webm");
+      constructor() {
+        throw new Error("recorder init failed");
+      }
+    }
+    globalThis.MediaRecorder = ThrowingMediaRecorder as any;
+
+    const { cleanup } = createExcalidrawCanvases();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe("recorder init failed");
+    });
+
+    expect(videoTrackStop).toHaveBeenCalledTimes(1);
+    expect(cancelAnimationFrameSpy).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(recorder.latest.isRecordingActive).toBe(false);
+
+    cleanup();
+  });
+
   it("clears previous permission errors after a later successful request", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const denied = new DOMException("", "NotAllowedError");
