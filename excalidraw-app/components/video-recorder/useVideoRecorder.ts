@@ -152,7 +152,8 @@ const isDeviceSelectionError = (error: unknown) => {
     (message.includes("not satisfied") ||
       message.includes("cannot be satisfied") ||
       message.includes("unsatisfied") ||
-      message.includes("constraint failed"));
+      message.includes("constraint failed") ||
+      message.includes("failed to satisfy"));
 
   return hasNotFoundSignal || hasConstraintSignal;
 };
