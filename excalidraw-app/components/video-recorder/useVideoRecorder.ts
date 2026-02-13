@@ -73,6 +73,9 @@ const getNormalizedErrorName = (error: unknown) =>
   getErrorName(error).trim().toLowerCase();
 
 const getErrorMessage = (error: unknown) => {
+  if (typeof error === "string") {
+    return error;
+  }
   if (!error || typeof error !== "object" || !("message" in error)) {
     return "";
   }
@@ -657,7 +660,8 @@ export const mapVideoRecorderErrorMessage = (error: unknown) => {
     return t("videoRecorder.errors.deviceBusy");
   }
 
-  const errorMessage = getErrorMessage(error).trim();
+  const errorMessage =
+    error && typeof error === "object" ? getErrorMessage(error).trim() : "";
   if (errorMessage.length > 0) {
     return errorMessage;
   }

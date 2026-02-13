@@ -123,6 +123,16 @@ describe("video recorder error mapping", () => {
         new Error("Could not start source because it is in use."),
       ),
     ).toBe("Camera or microphone is currently busy.");
+    expect(
+      mapVideoRecorderErrorMessage(
+        "Could not start audio source due to another process.",
+      ),
+    ).toBe("Camera or microphone is currently busy.");
+    expect(
+      mapVideoRecorderErrorMessage(
+        "Failed to construct 'MediaRecorder': The type provided is not supported.",
+      ),
+    ).toBe("This browser does not support video recording.");
   });
 
   it("maps busy-device DOMException names", () => {
