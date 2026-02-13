@@ -111,8 +111,15 @@ const isPermissionDeniedError = (error: unknown) => {
   const hasPermissionDeniedSignal =
     message.includes("permission denied") ||
     (message.includes("permission") && message.includes("denied"));
+  const hasPermissionBlockedSignal =
+    message.includes("blocked") &&
+    (message.includes("permission") ||
+      message.includes("access") ||
+      message.includes("camera") ||
+      message.includes("microphone"));
   return (
     hasPermissionDeniedSignal ||
+    hasPermissionBlockedSignal ||
     message.includes("access denied") ||
     message.includes("permissiondismissederror") ||
     message.includes("notallowederror")
