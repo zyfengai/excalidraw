@@ -342,6 +342,23 @@ describe("useVideoRecorder", () => {
     });
   });
 
+  it("keeps supported mimeType when candidate casing differs", async () => {
+    setMediaRecorderSupport(["video/webm", "video/mp4"]);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({ mimeType: " VIDEO/MP4 " });
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.settings.mimeType).toBe("video/mp4");
+    });
+  });
+
   it("skips settings state updates when normalized values are unchanged", async () => {
     setMediaRecorderSupport(["video/webm"]);
     setMediaDevicesMock({

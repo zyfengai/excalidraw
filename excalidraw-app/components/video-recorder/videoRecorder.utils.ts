@@ -152,8 +152,24 @@ export const normalizeRecorderMimeType = (
   candidateMimeType: string,
   supportedMimeTypes: string[],
 ) => {
-  if (supportedMimeTypes.includes(candidateMimeType)) {
-    return candidateMimeType;
+  const normalizedCandidateMimeType = candidateMimeType.trim();
+  if (!normalizedCandidateMimeType) {
+    return supportedMimeTypes[0] || "";
+  }
+
+  const exactMatch = supportedMimeTypes.find(
+    (mimeType) => mimeType === normalizedCandidateMimeType,
+  );
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  const caseInsensitiveMatch = supportedMimeTypes.find(
+    (mimeType) =>
+      mimeType.toLowerCase() === normalizedCandidateMimeType.toLowerCase(),
+  );
+  if (caseInsensitiveMatch) {
+    return caseInsensitiveMatch;
   }
   return supportedMimeTypes[0] || "";
 };
