@@ -141,7 +141,8 @@ export const normalizedRectToPixels = (
 };
 
 export const getFileExtensionFromMimeType = (mimeType: string) => {
-  if (mimeType.includes("mp4")) {
+  const normalizedMimeType = mimeType.toLowerCase();
+  if (normalizedMimeType.includes("mp4")) {
     return "mp4";
   }
   return "webm";
