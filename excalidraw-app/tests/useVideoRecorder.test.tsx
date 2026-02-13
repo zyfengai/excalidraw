@@ -475,6 +475,94 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
   });
 
+  it("keeps non-requested selected audio device on camera-only permission fallback", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const trackStop = vi.fn();
+    const permissionStream = {
+      getTracks: () => [{ stop: trackStop }],
+    } as unknown as MediaStream;
+    const getUserMedia = vi
+      .fn()
+      .mockRejectedValueOnce(new DOMException("", "NotFoundError"))
+      .mockResolvedValueOnce(permissionStream);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "missing-camera",
+        selectedAudioDeviceId: "keep-mic",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    expect(getUserMedia).toHaveBeenNthCalledWith(1, {
+      video: { deviceId: { exact: "missing-camera" } },
+      audio: false,
+    });
+    expect(getUserMedia).toHaveBeenNthCalledWith(2, {
+      video: true,
+      audio: false,
+    });
+    expect(trackStop).toHaveBeenCalledTimes(1);
+    expect(recorder.latest.error).toBeNull();
+    expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
+    expect(recorder.latest.settings.selectedAudioDeviceId).toBe("keep-mic");
+  });
+
+  it("keeps non-requested selected video device on microphone-only permission fallback", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const trackStop = vi.fn();
+    const permissionStream = {
+      getTracks: () => [{ stop: trackStop }],
+    } as unknown as MediaStream;
+    const getUserMedia = vi
+      .fn()
+      .mockRejectedValueOnce(new DOMException("", "NotFoundError"))
+      .mockResolvedValueOnce(permissionStream);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: true,
+        selectedVideoDeviceId: "keep-camera",
+        selectedAudioDeviceId: "missing-mic",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    expect(getUserMedia).toHaveBeenNthCalledWith(1, {
+      video: false,
+      audio: { deviceId: { exact: "missing-mic" } },
+    });
+    expect(getUserMedia).toHaveBeenNthCalledWith(2, {
+      video: false,
+      audio: true,
+    });
+    expect(trackStop).toHaveBeenCalledTimes(1);
+    expect(recorder.latest.error).toBeNull();
+    expect(recorder.latest.settings.selectedAudioDeviceId).toBeNull();
+    expect(recorder.latest.settings.selectedVideoDeviceId).toBe("keep-camera");
+  });
+
   it("does not retry permission request on non-selection errors", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const denied = new DOMException("", "NotAllowedError");
