@@ -39,6 +39,24 @@ const WINDOWS_RESERVED_FILE_NAME =
 
 class StartRecordingCancelledError extends Error {}
 
+const isDeviceSelectionError = (error: unknown) =>
+  error instanceof DOMException &&
+  (error.name === "NotFoundError" || error.name === "OverconstrainedError");
+
+const getUserMediaWithDeviceFallback = async (
+  primaryConstraints: MediaStreamConstraints,
+  fallbackConstraints?: MediaStreamConstraints,
+) => {
+  try {
+    return await navigator.mediaDevices.getUserMedia(primaryConstraints);
+  } catch (error) {
+    if (!fallbackConstraints || !isDeviceSelectionError(error)) {
+      throw error;
+    }
+    return navigator.mediaDevices.getUserMedia(fallbackConstraints);
+  }
+};
+
 const getExcalidrawCanvases = () => {
   const staticCanvas = document.querySelector<HTMLCanvasElement>(
     ".excalidraw canvas.static",
@@ -407,8 +425,17 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
     permissionRequestInFlightRef.current = true;
     setIsRequestingPermissions(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia(
-        getPermissionRequestConstraints(settings),
+      const primaryConstraints = getPermissionRequestConstraints(settings);
+      const shouldFallbackToDefaultDevices =
+        !!settings.selectedVideoDeviceId || !!settings.selectedAudioDeviceId;
+      const stream = await getUserMediaWithDeviceFallback(
+        primaryConstraints,
+        shouldFallbackToDefaultDevices
+          ? {
+              video: !!primaryConstraints.video,
+              audio: !!primaryConstraints.audio,
+            }
+          : undefined,
       );
       if (!isMountedRef.current) {
         stream.getTracks().forEach((track) => track.stop());
@@ -583,12 +610,17 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       }
 
       if (settings.cameraEnabled) {
-        const cameraStream = await navigator.mediaDevices.getUserMedia({
-          video: settings.selectedVideoDeviceId
-            ? { deviceId: { exact: settings.selectedVideoDeviceId } }
-            : true,
-          audio: false,
-        });
+        const cameraStream = await getUserMediaWithDeviceFallback(
+          {
+            video: settings.selectedVideoDeviceId
+              ? { deviceId: { exact: settings.selectedVideoDeviceId } }
+              : true,
+            audio: false,
+          },
+          settings.selectedVideoDeviceId
+            ? { video: true, audio: false }
+            : undefined,
+        );
         cameraStreamRef.current = cameraStream;
         assertStartRequestActive();
 
@@ -603,12 +635,17 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       }
 
       if (settings.microphoneEnabled) {
-        const micStream = await navigator.mediaDevices.getUserMedia({
-          audio: settings.selectedAudioDeviceId
-            ? { deviceId: { exact: settings.selectedAudioDeviceId } }
-            : true,
-          video: false,
-        });
+        const micStream = await getUserMediaWithDeviceFallback(
+          {
+            audio: settings.selectedAudioDeviceId
+              ? { deviceId: { exact: settings.selectedAudioDeviceId } }
+              : true,
+            video: false,
+          },
+          settings.selectedAudioDeviceId
+            ? { audio: true, video: false }
+            : undefined,
+        );
         microphoneStreamRef.current = micStream;
         assertStartRequestActive();
       }
