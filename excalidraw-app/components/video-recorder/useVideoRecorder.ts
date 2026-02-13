@@ -1145,8 +1145,9 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           recorderCreationError = error;
           if (
             !(
-              error instanceof DOMException &&
-              error.name === "NotSupportedError"
+              error instanceof TypeError ||
+              (error instanceof DOMException &&
+                error.name === "NotSupportedError")
             )
           ) {
             throw error;

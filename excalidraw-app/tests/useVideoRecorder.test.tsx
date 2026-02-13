@@ -97,6 +97,7 @@ const setupRecordingFlowMocks = (opts?: {
   trackStopThrows?: boolean;
   supportedMimeTypes?: string[];
   unsupportedConstructorMimeTypes?: string[];
+  typeErrorConstructorMimeTypes?: string[];
   defaultConstructorMimeType?: string;
 }) => {
   const cleanupSpy = vi.fn();
@@ -163,6 +164,12 @@ const setupRecordingFlowMocks = (opts?: {
     constructor(_stream: MediaStream, options?: MediaRecorderOptions) {
       const requestedMimeType =
         options?.mimeType || opts?.defaultConstructorMimeType || "video/webm";
+      if (
+        options?.mimeType &&
+        opts?.typeErrorConstructorMimeTypes?.includes(requestedMimeType)
+      ) {
+        throw new TypeError("invalid mime type option");
+      }
       if (
         options?.mimeType &&
         opts?.unsupportedConstructorMimeTypes?.includes(requestedMimeType)
@@ -2722,6 +2729,45 @@ describe("useVideoRecorder", () => {
     await waitFor(() => {
       expect(recorder.latest.status).toBe("completed");
       expect(recorder.latest.result?.mimeType).toBe("video/webm");
+    });
+
+    setup.cleanupCanvases();
+  });
+
+  it("falls back to normalized supported mimeType when raw mime option throws TypeError", async () => {
+    const setup = setupRecordingFlowMocks({
+      supportedMimeTypes: ["video/webm;codecs=vp9,opus", "video/webm"],
+      typeErrorConstructorMimeTypes: ["video / webm; codecs = opus, vp9"],
+    });
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+        mimeType: "video / webm; codecs = opus, vp9",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+      expect(recorder.latest.error).toBeNull();
+      expect(recorder.latest.settings.mimeType).toBe(
+        "video/webm;codecs=vp9,opus",
+      );
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result?.mimeType).toBe(
+        "video/webm;codecs=vp9,opus",
+      );
     });
 
     setup.cleanupCanvases();
