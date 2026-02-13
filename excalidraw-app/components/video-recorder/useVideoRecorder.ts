@@ -155,6 +155,51 @@ const areVideoRecorderSettingsEqual = (
   a.teleprompter.speed === b.teleprompter.speed &&
   areOverlayLayoutsEqual(a.camera, b.camera);
 
+const isFiniteNumber = (value: unknown): value is number =>
+  typeof value === "number" && Number.isFinite(value);
+
+const normalizeSelectedDeviceId = (value: unknown) =>
+  typeof value === "string" && value.trim().length > 0 ? value : null;
+
+const normalizeCameraShape = (
+  value: unknown,
+  fallback: VideoRecorderOverlayLayout["shape"],
+) =>
+  value === "rectangle" || value === "rounded" || value === "circle"
+    ? value
+    : fallback;
+
+const normalizeOverlayLayoutInput = (
+  value: VideoRecorderOverlayLayout,
+  fallback: VideoRecorderOverlayLayout,
+) =>
+  clampOverlayLayout({
+    x: isFiniteNumber(value.x) ? value.x : fallback.x,
+    y: isFiniteNumber(value.y) ? value.y : fallback.y,
+    width: isFiniteNumber(value.width) ? value.width : fallback.width,
+    height: isFiniteNumber(value.height) ? value.height : fallback.height,
+    shape: normalizeCameraShape(value.shape, fallback.shape),
+  });
+
+const normalizeTeleprompterInput = (
+  value: VideoRecorderSettings["teleprompter"],
+  fallback: VideoRecorderSettings["teleprompter"],
+) => ({
+  enabled:
+    typeof value.enabled === "boolean" ? value.enabled : fallback.enabled,
+  text: typeof value.text === "string" ? value.text : fallback.text,
+  opacity: clamp(
+    isFiniteNumber(value.opacity) ? value.opacity : fallback.opacity,
+    0.05,
+    1,
+  ),
+  speed: clamp(
+    isFiniteNumber(value.speed) ? value.speed : fallback.speed,
+    5,
+    250,
+  ),
+});
+
 const areDeviceOptionListsEqual = (
   a: VideoRecorderDeviceOption[],
   b: VideoRecorderDeviceOption[],
@@ -732,12 +777,14 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           prev.resolution,
         );
         const fps = normalizeRecorderFps(nextValue.fps, prev.fps);
-        const camera = clampOverlayLayout(nextValue.camera);
-        const teleprompter = {
-          ...nextValue.teleprompter,
-          opacity: clamp(nextValue.teleprompter.opacity, 0.05, 1),
-          speed: clamp(nextValue.teleprompter.speed, 5, 250),
-        };
+        const camera = normalizeOverlayLayoutInput(
+          nextValue.camera,
+          prev.camera,
+        );
+        const teleprompter = normalizeTeleprompterInput(
+          nextValue.teleprompter,
+          prev.teleprompter,
+        );
 
         const normalizedSettings = {
           ...nextValue,
@@ -745,8 +792,12 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           aspectRatio,
           resolution,
           fps,
-          selectedVideoDeviceId: nextValue.selectedVideoDeviceId || null,
-          selectedAudioDeviceId: nextValue.selectedAudioDeviceId || null,
+          selectedVideoDeviceId: normalizeSelectedDeviceId(
+            nextValue.selectedVideoDeviceId,
+          ),
+          selectedAudioDeviceId: normalizeSelectedDeviceId(
+            nextValue.selectedAudioDeviceId,
+          ),
           camera,
           teleprompter,
         };

@@ -367,7 +367,7 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.settings).toBe(previousSettings);
   });
 
-  it("normalizes empty selected device ids to null in setSettings", async () => {
+  it("normalizes blank selected device ids to null in setSettings", async () => {
     setMediaRecorderSupport(["video/webm"]);
     setMediaDevicesMock({
       enumerateDevices: vi.fn(async () => []),
@@ -385,8 +385,8 @@ describe("useVideoRecorder", () => {
 
     act(() => {
       recorder.latest.setSettings({
-        selectedVideoDeviceId: "",
-        selectedAudioDeviceId: "",
+        selectedVideoDeviceId: "   ",
+        selectedAudioDeviceId: " ",
       });
     });
 
@@ -437,6 +437,45 @@ describe("useVideoRecorder", () => {
       expect(recorder.latest.settings.fps).toBe(60);
       expect(recorder.latest.settings.teleprompter.opacity).toBe(1);
       expect(recorder.latest.settings.teleprompter.speed).toBe(5);
+    });
+  });
+
+  it("coerces malformed camera and teleprompter values in setSettings", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+    });
+
+    const recorder = renderUseVideoRecorder();
+    const previousSettings = recorder.latest.settings;
+
+    act(() => {
+      recorder.latest.setSettings((settings) => ({
+        ...settings,
+        camera: {
+          x: "left",
+          y: settings.camera.y,
+          width: settings.camera.width,
+          height: Number.POSITIVE_INFINITY,
+          shape: "triangle",
+        } as unknown as VideoRecorderSettings["camera"],
+        teleprompter: {
+          ...settings.teleprompter,
+          enabled: "yes",
+          text: 123,
+          opacity: Number.NaN,
+          speed: Number.POSITIVE_INFINITY,
+        } as unknown as VideoRecorderSettings["teleprompter"],
+      }));
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.settings.camera).toEqual({
+        ...previousSettings.camera,
+      });
+      expect(recorder.latest.settings.teleprompter).toEqual({
+        ...previousSettings.teleprompter,
+      });
     });
   });
 
