@@ -434,6 +434,7 @@ const collectMediaDevices = async () => {
 
   const videoInputs = devices
     .filter((device) => device.kind === "videoinput")
+    .filter((device) => !!device.deviceId?.trim())
     .map((device, idx) => ({
       deviceId: device.deviceId,
       label: formatLabel(device.label, "Camera", idx),
@@ -441,6 +442,7 @@ const collectMediaDevices = async () => {
 
   const audioInputs = devices
     .filter((device) => device.kind === "audioinput")
+    .filter((device) => !!device.deviceId?.trim())
     .map((device, idx) => ({
       deviceId: device.deviceId,
       label: formatLabel(device.label, "Microphone", idx),

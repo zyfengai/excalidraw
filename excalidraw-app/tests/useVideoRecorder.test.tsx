@@ -795,6 +795,31 @@ describe("useVideoRecorder", () => {
     expect(enumerateDevices).toHaveBeenCalledTimes(2);
   });
 
+  it("filters out media devices with empty ids", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const enumerateDevices = vi
+      .fn()
+      .mockResolvedValue([
+        createMockMediaDevice("videoinput", "", "Hidden Camera"),
+        createMockMediaDevice("videoinput", "   ", "Whitespace Camera"),
+        createMockMediaDevice("videoinput", "camera-1", "Camera One"),
+        createMockMediaDevice("audioinput", "", "Hidden Microphone"),
+        createMockMediaDevice("audioinput", "mic-1", "Microphone One"),
+      ]);
+    setMediaDevicesMock({
+      enumerateDevices,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    await waitFor(() => {
+      expect(recorder.latest.devices).toEqual({
+        videoInputs: [{ deviceId: "camera-1", label: "Camera One" }],
+        audioInputs: [{ deviceId: "mic-1", label: "Microphone One" }],
+      });
+    });
+  });
+
   it("requests media permissions with settings constraints and refreshes devices", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const trackStop = vi.fn();
