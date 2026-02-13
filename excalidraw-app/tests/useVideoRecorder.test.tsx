@@ -81,6 +81,116 @@ const createExcalidrawCanvases = () => {
   };
 };
 
+const setupRecordingFlowMocks = () => {
+  const cleanupSpy = vi.fn();
+  const pauseSpy = vi.fn();
+  const resumeSpy = vi.fn();
+  const videoTrackStop = vi.fn();
+
+  setMediaDevicesMock({
+    enumerateDevices: vi.fn(async () => []),
+    getUserMedia: vi.fn(),
+  });
+  vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 1);
+  vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(() =>
+    createMockCanvasContext(),
+  );
+  Object.defineProperty(HTMLCanvasElement.prototype, "captureStream", {
+    configurable: true,
+    value: vi.fn(() => ({
+      getVideoTracks: () =>
+        [
+          {
+            kind: "video",
+            stop: videoTrackStop,
+          },
+        ] as unknown as MediaStreamTrack[],
+    })),
+  });
+
+  class MockMediaStream {
+    private tracks: MediaStreamTrack[] = [];
+    addTrack(track: MediaStreamTrack) {
+      this.tracks.push(track);
+    }
+    getTracks() {
+      return this.tracks;
+    }
+    getAudioTracks() {
+      return this.tracks.filter((track) => track.kind === "audio");
+    }
+  }
+  globalThis.MediaStream = MockMediaStream as any;
+
+  class FunctionalMediaRecorder {
+    static isTypeSupported = (mimeType: string) => mimeType.includes("webm");
+    state: RecordingState = "inactive";
+    mimeType: string;
+    ondataavailable: ((event: BlobEvent) => void) | null = null;
+    onstop: (() => void) | null = null;
+    onerror: ((event: any) => void) | null = null;
+    private stopListeners = new Set<() => void>();
+
+    constructor(_stream: MediaStream, options?: MediaRecorderOptions) {
+      this.mimeType = options?.mimeType || "video/webm";
+    }
+    start() {
+      this.state = "recording";
+      this.ondataavailable?.({
+        data: new Blob(["chunk"], { type: this.mimeType }),
+      } as BlobEvent);
+    }
+    pause() {
+      this.state = "paused";
+      pauseSpy();
+    }
+    resume() {
+      this.state = "recording";
+      resumeSpy();
+    }
+    stop() {
+      this.state = "inactive";
+      this.stopListeners.forEach((listener) => listener());
+      this.onstop?.();
+      cleanupSpy();
+    }
+    addEventListener(event: "stop", listener: () => void) {
+      if (event === "stop") {
+        this.stopListeners.add(listener);
+      }
+    }
+    removeEventListener(event: "stop", listener: () => void) {
+      if (event === "stop") {
+        this.stopListeners.delete(listener);
+      }
+    }
+  }
+  globalThis.MediaRecorder = FunctionalMediaRecorder as any;
+
+  const { cleanup } = createExcalidrawCanvases();
+  const createObjectURLSpy = vi
+    .spyOn(URL, "createObjectURL")
+    .mockReturnValue("blob:mock-url");
+  const revokeObjectURLSpy = vi
+    .spyOn(URL, "revokeObjectURL")
+    .mockImplementation(() => {});
+  const clickSpy = vi
+    .spyOn(HTMLAnchorElement.prototype, "click")
+    .mockImplementation(() => {});
+
+  return {
+    cleanupSpy,
+    pauseSpy,
+    resumeSpy,
+    videoTrackStop,
+    createObjectURLSpy,
+    revokeObjectURLSpy,
+    clickSpy,
+    cleanupCanvases: cleanup,
+  };
+};
+
 const renderUseVideoRecorder = () => {
   let latest: ReturnType<typeof useVideoRecorder> | null = null;
 
@@ -327,98 +437,56 @@ describe("useVideoRecorder", () => {
     expect(getUserMedia).not.toHaveBeenCalled();
   });
 
+  it("pauses and resumes recording state transitions", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+      expect(recorder.latest.isRecordingActive).toBe(true);
+    });
+
+    act(() => {
+      recorder.latest.pauseRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("paused");
+      expect(recorder.latest.isRecordingActive).toBe(true);
+    });
+    expect(setup.pauseSpy).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      recorder.latest.resumeRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+      expect(recorder.latest.isRecordingActive).toBe(true);
+    });
+    expect(setup.resumeSpy).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("stops recording, downloads result and resets state", async () => {
-    const cleanupSpy = vi.fn();
-    const videoTrackStop = vi.fn();
-    setMediaDevicesMock({
-      enumerateDevices: vi.fn(async () => []),
-      getUserMedia: vi.fn(),
-    });
-    vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 1);
-    vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
-    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(() =>
-      createMockCanvasContext(),
-    );
-    Object.defineProperty(HTMLCanvasElement.prototype, "captureStream", {
-      configurable: true,
-      value: vi.fn(() => ({
-        getVideoTracks: () =>
-          [
-            {
-              kind: "video",
-              stop: videoTrackStop,
-            },
-          ] as unknown as MediaStreamTrack[],
-      })),
-    });
-
-    class MockMediaStream {
-      private tracks: MediaStreamTrack[] = [];
-      addTrack(track: MediaStreamTrack) {
-        this.tracks.push(track);
-      }
-      getTracks() {
-        return this.tracks;
-      }
-      getAudioTracks() {
-        return this.tracks.filter((track) => track.kind === "audio");
-      }
-    }
-    globalThis.MediaStream = MockMediaStream as any;
-
-    class FunctionalMediaRecorder {
-      static isTypeSupported = (mimeType: string) => mimeType.includes("webm");
-      state: RecordingState = "inactive";
-      mimeType: string;
-      ondataavailable: ((event: BlobEvent) => void) | null = null;
-      onstop: (() => void) | null = null;
-      onerror: ((event: any) => void) | null = null;
-      private stopListeners = new Set<() => void>();
-
-      constructor(_stream: MediaStream, options?: MediaRecorderOptions) {
-        this.mimeType = options?.mimeType || "video/webm";
-      }
-      start() {
-        this.state = "recording";
-        this.ondataavailable?.({
-          data: new Blob(["chunk"], { type: this.mimeType }),
-        } as BlobEvent);
-      }
-      pause() {
-        this.state = "paused";
-      }
-      resume() {
-        this.state = "recording";
-      }
-      stop() {
-        this.state = "inactive";
-        this.stopListeners.forEach((listener) => listener());
-        this.onstop?.();
-        cleanupSpy();
-      }
-      addEventListener(event: "stop", listener: () => void) {
-        if (event === "stop") {
-          this.stopListeners.add(listener);
-        }
-      }
-      removeEventListener(event: "stop", listener: () => void) {
-        if (event === "stop") {
-          this.stopListeners.delete(listener);
-        }
-      }
-    }
-    globalThis.MediaRecorder = FunctionalMediaRecorder as any;
-
-    const { cleanup } = createExcalidrawCanvases();
-    const createObjectURLSpy = vi
-      .spyOn(URL, "createObjectURL")
-      .mockReturnValue("blob:mock-url");
-    const revokeObjectURLSpy = vi
-      .spyOn(URL, "revokeObjectURL")
-      .mockImplementation(() => {});
-    const clickSpy = vi
-      .spyOn(HTMLAnchorElement.prototype, "click")
-      .mockImplementation(() => {});
+    const setup = setupRecordingFlowMocks();
 
     const recorder = renderUseVideoRecorder();
 
@@ -443,15 +511,15 @@ describe("useVideoRecorder", () => {
       expect(recorder.latest.status).toBe("completed");
       expect(recorder.latest.result).toBeTruthy();
     });
-    expect(cleanupSpy).toHaveBeenCalledTimes(1);
-    expect(videoTrackStop).toHaveBeenCalledTimes(1);
+    expect(setup.cleanupSpy).toHaveBeenCalledTimes(1);
+    expect(setup.videoTrackStop).toHaveBeenCalledTimes(1);
 
     act(() => {
       recorder.latest.downloadRecording("demo");
     });
-    expect(createObjectURLSpy).toHaveBeenCalledTimes(1);
-    expect(clickSpy).toHaveBeenCalledTimes(1);
-    expect(revokeObjectURLSpy).toHaveBeenCalledWith("blob:mock-url");
+    expect(setup.createObjectURLSpy).toHaveBeenCalledTimes(1);
+    expect(setup.clickSpy).toHaveBeenCalledTimes(1);
+    expect(setup.revokeObjectURLSpy).toHaveBeenCalledWith("blob:mock-url");
 
     act(() => {
       recorder.latest.resetResult();
@@ -463,7 +531,7 @@ describe("useVideoRecorder", () => {
       expect(recorder.latest.elapsedMs).toBe(0);
     });
 
-    cleanup();
+    setup.cleanupCanvases();
   });
 
   it("sets error when requesting permissions without getUserMedia", async () => {
