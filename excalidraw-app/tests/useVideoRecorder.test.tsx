@@ -820,6 +820,30 @@ describe("useVideoRecorder", () => {
     });
   });
 
+  it("deduplicates devices by id and prefers non-empty labels", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const enumerateDevices = vi
+      .fn()
+      .mockResolvedValue([
+        createMockMediaDevice("videoinput", " camera-1 ", ""),
+        createMockMediaDevice("videoinput", "camera-1", "Front Camera"),
+        createMockMediaDevice("audioinput", "mic-1 ", ""),
+        createMockMediaDevice("audioinput", " mic-1", "Desk Microphone"),
+      ]);
+    setMediaDevicesMock({
+      enumerateDevices,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    await waitFor(() => {
+      expect(recorder.latest.devices).toEqual({
+        videoInputs: [{ deviceId: "camera-1", label: "Front Camera" }],
+        audioInputs: [{ deviceId: "mic-1", label: "Desk Microphone" }],
+      });
+    });
+  });
+
   it("requests media permissions with settings constraints and refreshes devices", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const trackStop = vi.fn();

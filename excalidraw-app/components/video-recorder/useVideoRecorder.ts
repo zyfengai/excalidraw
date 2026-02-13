@@ -415,6 +415,38 @@ const drawCameraOverlay = ({
   context.restore();
 };
 
+const collectUniqueDeviceOptions = (
+  devices: MediaDeviceInfo[],
+  kind: MediaDeviceKind,
+  fallbackLabel: string,
+) => {
+  const labelsByDeviceId = new Map<string, string>();
+
+  devices.forEach((device) => {
+    if (device.kind !== kind) {
+      return;
+    }
+
+    const deviceId = device.deviceId?.trim();
+    if (!deviceId) {
+      return;
+    }
+
+    const normalizedLabel = device.label?.trim() || "";
+    const existingLabel = labelsByDeviceId.get(deviceId);
+    if (existingLabel === undefined || (!existingLabel && normalizedLabel)) {
+      labelsByDeviceId.set(deviceId, normalizedLabel);
+    }
+  });
+
+  return Array.from(labelsByDeviceId.entries()).map(
+    ([deviceId, label], idx) => ({
+      deviceId,
+      label: label || `${fallbackLabel} ${idx + 1}`,
+    }),
+  );
+};
+
 const collectMediaDevices = async () => {
   if (!navigator.mediaDevices?.enumerateDevices) {
     return {
@@ -424,29 +456,16 @@ const collectMediaDevices = async () => {
   }
 
   const devices = await navigator.mediaDevices.enumerateDevices();
-
-  const formatLabel = (label: string, fallback: string, idx: number) => {
-    if (label?.trim()) {
-      return label;
-    }
-    return `${fallback} ${idx + 1}`;
-  };
-
-  const videoInputs = devices
-    .filter((device) => device.kind === "videoinput")
-    .filter((device) => !!device.deviceId?.trim())
-    .map((device, idx) => ({
-      deviceId: device.deviceId,
-      label: formatLabel(device.label, "Camera", idx),
-    }));
-
-  const audioInputs = devices
-    .filter((device) => device.kind === "audioinput")
-    .filter((device) => !!device.deviceId?.trim())
-    .map((device, idx) => ({
-      deviceId: device.deviceId,
-      label: formatLabel(device.label, "Microphone", idx),
-    }));
+  const videoInputs = collectUniqueDeviceOptions(
+    devices,
+    "videoinput",
+    "Camera",
+  );
+  const audioInputs = collectUniqueDeviceOptions(
+    devices,
+    "audioinput",
+    "Microphone",
+  );
 
   return {
     videoInputs,
