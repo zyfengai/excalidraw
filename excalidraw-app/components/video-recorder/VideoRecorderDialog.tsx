@@ -6,6 +6,7 @@ import { Switch } from "@excalidraw/excalidraw/components/Switch";
 import { useI18n } from "@excalidraw/excalidraw/i18n";
 
 import { VideoRecorderTeleprompter } from "./VideoRecorderTeleprompter";
+import { DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT } from "./videoRecorder.config";
 import {
   clampOverlayLayout,
   VIDEO_RECORDER_RATIO_MAP,
@@ -34,6 +35,8 @@ type VideoRecorderDialogProps = {
   onClose: () => void;
   onRefreshDevices: () => Promise<void>;
   onStart: () => Promise<void>;
+  onRequestPermissions: () => Promise<void>;
+  isRequestingPermissions: boolean;
   onSettingsChange: (
     next:
       | Partial<VideoRecorderSettings>
@@ -65,6 +68,8 @@ export const VideoRecorderDialog = ({
   onClose,
   onRefreshDevices,
   onStart,
+  onRequestPermissions,
+  isRequestingPermissions,
   onSettingsChange,
   onCameraLayoutChange,
 }: VideoRecorderDialogProps) => {
@@ -180,6 +185,19 @@ export const VideoRecorderDialog = ({
           <div className="video-recorder-dialog__settings">
             <h3>{t("videoRecorder.sections.devices")}</h3>
             <div className="video-recorder-dialog__setting">
+              <label>{t("videoRecorder.devicePermissions.label")}</label>
+              <FilledButton
+                variant="outlined"
+                label={t("videoRecorder.actions.requestPermissions")}
+                onClick={() => {
+                  void onRequestPermissions();
+                }}
+                disabled={isRequestingPermissions}
+              >
+                {t("videoRecorder.actions.requestPermissions")}
+              </FilledButton>
+            </div>
+            <div className="video-recorder-dialog__setting">
               <label htmlFor="video-recorder-camera-enabled">
                 {t("videoRecorder.camera.enabled")}
               </label>
@@ -293,12 +311,7 @@ export const VideoRecorderDialog = ({
                 variant="outlined"
                 label={t("videoRecorder.camera.resetLayout")}
                 onClick={() =>
-                  onCameraLayoutChange({
-                    x: 0.72,
-                    y: 0.67,
-                    width: 0.24,
-                    height: 0.24,
-                  })
+                  onCameraLayoutChange(DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT)
                 }
                 disabled={!settings.cameraEnabled}
               >

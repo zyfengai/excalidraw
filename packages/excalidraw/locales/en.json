@@ -719,7 +719,11 @@
       "resumeRecording": "Resume",
       "stopRecording": "Finish",
       "download": "Download",
-      "recordAgain": "Record again"
+      "recordAgain": "Record again",
+      "requestPermissions": "Enable camera & microphone access"
+    },
+    "devicePermissions": {
+      "label": "Device permissions"
     },
     "camera": {
       "enabled": "Enable camera",

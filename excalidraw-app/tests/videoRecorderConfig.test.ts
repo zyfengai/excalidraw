@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 
 import {
+  DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT,
   getDefaultVideoRecorderSettings,
   getVideoRecorderCapabilities,
 } from "../components/video-recorder/videoRecorder.config";
@@ -45,5 +46,15 @@ describe("video recorder capabilities", () => {
 
     const defaults = getDefaultVideoRecorderSettings();
     expect(defaults.mimeType).toBe("video/webm");
+  });
+
+  it("uses expected default camera layout", () => {
+    class MockMediaRecorder {}
+    (MockMediaRecorder as any).isTypeSupported = () => true;
+    globalThis.MediaRecorder = MockMediaRecorder as any;
+
+    const defaults = getDefaultVideoRecorderSettings();
+    expect(defaults.camera).toEqual(DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT);
+    expect(defaults.camera).not.toBe(DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT);
   });
 });

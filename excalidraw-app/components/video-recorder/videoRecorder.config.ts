@@ -1,5 +1,6 @@
 import type {
   VideoRecorderCapabilities,
+  VideoRecorderOverlayLayout,
   VideoRecorderSettings,
 } from "./videoRecorder.types";
 
@@ -13,6 +14,15 @@ const PREFERRED_MIME_TYPES = [
 ];
 
 const FALLBACK_MIME_TYPE = "video/webm";
+
+export const DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT: VideoRecorderOverlayLayout =
+  {
+    x: 0.72,
+    y: 0.67,
+    width: 0.24,
+    height: 0.24,
+    shape: "rounded",
+  };
 
 export const getVideoRecorderCapabilities = (): VideoRecorderCapabilities => {
   if (typeof window === "undefined") {
@@ -62,13 +72,7 @@ export const getDefaultVideoRecorderSettings = (): VideoRecorderSettings => {
     mimeType:
       capabilities.supportedMimeTypes[0] ||
       (capabilities.isSupported ? FALLBACK_MIME_TYPE : ""),
-    camera: {
-      x: 0.72,
-      y: 0.67,
-      width: 0.24,
-      height: 0.24,
-      shape: "rounded",
-    },
+    camera: { ...DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT },
     teleprompter: {
       enabled: false,
       text: "",

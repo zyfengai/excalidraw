@@ -1004,6 +1004,8 @@ const ExcalidrawWrapper = () => {
           onClose={() => videoRecorder.setDialogOpen(false)}
           onRefreshDevices={videoRecorder.refreshDevices}
           onStart={videoRecorder.startRecording}
+          onRequestPermissions={videoRecorder.requestMediaPermissions}
+          isRequestingPermissions={videoRecorder.isRequestingPermissions}
           onSettingsChange={videoRecorder.setSettings}
           onCameraLayoutChange={videoRecorder.updateCameraLayout}
         />

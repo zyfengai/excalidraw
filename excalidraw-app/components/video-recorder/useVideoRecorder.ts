@@ -213,6 +213,7 @@ type UseVideoRecorderReturn = {
     audioInputs: VideoRecorderDeviceOption[];
   };
   isRecordingActive: boolean;
+  isRequestingPermissions: boolean;
   setDialogOpen: (open: boolean) => void;
   setSettings: (
     next:
@@ -225,6 +226,7 @@ type UseVideoRecorderReturn = {
       | ((prev: VideoRecorderOverlayLayout) => VideoRecorderOverlayLayout),
   ) => void;
   refreshDevices: () => Promise<void>;
+  requestMediaPermissions: () => Promise<void>;
   startRecording: () => Promise<void>;
   pauseRecording: () => void;
   resumeRecording: () => void;
@@ -255,6 +257,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   const [isDialogOpen, setDialogOpen] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [result, setResult] = useState<VideoRecorderResult | null>(null);
+  const [isRequestingPermissions, setIsRequestingPermissions] = useState(false);
   const [devices, setDevices] = useState<{
     videoInputs: VideoRecorderDeviceOption[];
     audioInputs: VideoRecorderDeviceOption[];
@@ -318,6 +321,28 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       console.error(deviceError);
     }
   }, []);
+
+  const requestMediaPermissions = useCallback(async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError(t("videoRecorder.errors.notSupported"));
+      return;
+    }
+
+    setError(null);
+    setIsRequestingPermissions(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
+      stream.getTracks().forEach((track) => track.stop());
+      await refreshDevices();
+    } catch (permissionError) {
+      setError(getErrorMessage(permissionError));
+    } finally {
+      setIsRequestingPermissions(false);
+    }
+  }, [refreshDevices]);
 
   useEffect(() => {
     refreshDevices();
@@ -667,10 +692,12 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
     result,
     devices,
     isRecordingActive,
+    isRequestingPermissions,
     setDialogOpen,
     setSettings,
     updateCameraLayout,
     refreshDevices,
+    requestMediaPermissions,
     startRecording,
     pauseRecording,
     resumeRecording,
