@@ -240,12 +240,24 @@ export const VideoRecorderDialog = ({
                 id="video-recorder-camera-shape"
                 className="TextInput"
                 value={settings.camera.shape}
-                onChange={(event) =>
-                  onCameraLayoutChange({
-                    shape: event.target
-                      .value as VideoRecorderOverlayLayout["shape"],
-                  })
-                }
+                onChange={(event) => {
+                  const shape = event.target
+                    .value as VideoRecorderOverlayLayout["shape"];
+                  if (shape === "circle") {
+                    const size = Math.max(
+                      settings.camera.width,
+                      settings.camera.height,
+                    );
+                    onCameraLayoutChange({
+                      shape,
+                      width: size,
+                      height: size,
+                    });
+                    return;
+                  }
+
+                  onCameraLayoutChange({ shape });
+                }}
                 disabled={!settings.cameraEnabled}
               >
                 <option value="rectangle">
@@ -310,9 +322,11 @@ export const VideoRecorderDialog = ({
               <FilledButton
                 variant="outlined"
                 label={t("videoRecorder.camera.resetLayout")}
-                onClick={() =>
-                  onCameraLayoutChange(DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT)
-                }
+                onClick={() => {
+                  const { x, y, width, height } =
+                    DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT;
+                  onCameraLayoutChange({ x, y, width, height });
+                }}
                 disabled={!settings.cameraEnabled}
               >
                 {t("videoRecorder.camera.resetLayout")}

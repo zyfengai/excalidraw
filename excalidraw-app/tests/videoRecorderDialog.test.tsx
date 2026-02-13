@@ -16,6 +16,7 @@ vi.mock("@excalidraw/excalidraw/i18n", () => {
     "videoRecorder.title": "Video recorder",
     "videoRecorder.actions.requestPermissions":
       "Enable camera & microphone access",
+    "videoRecorder.camera.shape": "Camera shape",
     "videoRecorder.camera.sizeWidth": "Camera width",
     "videoRecorder.camera.sizeHeight": "Camera height",
     "videoRecorder.camera.resetLayout": "Reset camera position & size",
@@ -140,6 +141,31 @@ describe("VideoRecorderDialog", () => {
     });
   });
 
+  it("normalizes dimensions when switching shape to circle", () => {
+    const { onCameraLayoutChange } = renderDialog({
+      settings: {
+        ...getDefaultVideoRecorderSettings(),
+        cameraEnabled: true,
+        camera: {
+          ...getDefaultVideoRecorderSettings().camera,
+          shape: "rounded",
+          width: 0.2,
+          height: 0.35,
+        },
+      },
+    });
+
+    fireEvent.change(screen.getByLabelText(/Camera shape/i), {
+      target: { value: "circle" },
+    });
+
+    expect(onCameraLayoutChange).toHaveBeenCalledWith({
+      shape: "circle",
+      width: 0.35,
+      height: 0.35,
+    });
+  });
+
   it("resets camera layout to defaults", () => {
     const { onCameraLayoutChange } = renderDialog();
 
@@ -147,8 +173,11 @@ describe("VideoRecorderDialog", () => {
       screen.getByRole("button", { name: /Reset camera position & size/i }),
     );
 
-    expect(onCameraLayoutChange).toHaveBeenCalledWith(
-      DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT,
-    );
+    expect(onCameraLayoutChange).toHaveBeenCalledWith({
+      x: DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT.x,
+      y: DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT.y,
+      width: DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT.width,
+      height: DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT.height,
+    });
   });
 });
