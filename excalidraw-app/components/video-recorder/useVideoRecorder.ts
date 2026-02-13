@@ -31,6 +31,7 @@ import type {
 
 const MEDIA_RECORDER_TIMESLICE_MS = 1000;
 const STOP_RECORDING_TIMEOUT_MS = 3000;
+const INVALID_FILE_NAME_CHARS = /[\\/:*?"<>|]/g;
 
 class StartRecordingCancelledError extends Error {}
 
@@ -813,7 +814,9 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         return;
       }
       const extension = getFileExtensionFromMimeType(result.mimeType);
-      const sanitizedName = name.trim() || "excalidraw-recording";
+      const sanitizedName =
+        name.trim().replace(INVALID_FILE_NAME_CHARS, "-") ||
+        "excalidraw-recording";
       const url = URL.createObjectURL(result.blob);
       const anchor = document.createElement("a");
       anchor.href = url;
