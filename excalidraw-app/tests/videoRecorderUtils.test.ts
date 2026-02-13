@@ -369,6 +369,35 @@ describe("video recorder settings storage", () => {
     expect(loaded.selectedAudioDeviceId).toBe("mic-1");
   });
 
+  it("trims persisted mime type and falls back when blank", () => {
+    const defaults = getDefaultVideoRecorderSettings();
+    localStorage.setItem(
+      STORAGE_KEYS.LOCAL_STORAGE_VIDEO_RECORDER,
+      JSON.stringify({
+        version: 1,
+        settings: {
+          ...defaults,
+          mimeType: " video/mp4 ",
+        },
+      }),
+    );
+
+    expect(loadVideoRecorderSettings().mimeType).toBe("video/mp4");
+
+    localStorage.setItem(
+      STORAGE_KEYS.LOCAL_STORAGE_VIDEO_RECORDER,
+      JSON.stringify({
+        version: 1,
+        settings: {
+          ...defaults,
+          mimeType: "   ",
+        },
+      }),
+    );
+
+    expect(loadVideoRecorderSettings().mimeType).toBe(defaults.mimeType);
+  });
+
   it("returns defaults and logs when persisted json is malformed", () => {
     const defaults = getDefaultVideoRecorderSettings();
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});

@@ -27,6 +27,14 @@ const asBoolean = (value: unknown, fallback: boolean) =>
 const asString = (value: unknown, fallback: string) =>
   typeof value === "string" ? value : fallback;
 
+const asMimeType = (value: unknown, fallback: string) => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const trimmedValue = value.trim();
+  return trimmedValue.length > 0 ? trimmedValue : fallback;
+};
+
 const asNumber = (value: unknown, fallback: number) =>
   typeof value === "number" ? value : fallback;
 
@@ -74,7 +82,7 @@ const coerceSettings = (value: unknown): VideoRecorderSettings | null => {
       asString(next.resolution, defaults.resolution),
       defaults.resolution,
     ),
-    mimeType: asString(next.mimeType, defaults.mimeType),
+    mimeType: asMimeType(next.mimeType, defaults.mimeType),
     fps: normalizeRecorderFps(asNumber(next.fps, defaults.fps), defaults.fps),
     camera: clampOverlayLayout({
       ...defaults.camera,
