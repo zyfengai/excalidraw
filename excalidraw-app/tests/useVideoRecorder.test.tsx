@@ -706,6 +706,39 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("does not trigger download side effects when result is missing", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+    });
+    const createObjectURLSpy = vi
+      .spyOn(URL, "createObjectURL")
+      .mockReturnValue("blob:unused");
+    const revokeObjectURLSpy = vi
+      .spyOn(URL, "revokeObjectURL")
+      .mockImplementation(() => {});
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+
+    const recorder = renderUseVideoRecorder();
+    await waitFor(() => {
+      expect(recorder.latest.devices).toEqual({
+        videoInputs: [],
+        audioInputs: [],
+      });
+    });
+
+    act(() => {
+      recorder.latest.downloadRecording("demo");
+    });
+
+    expect(recorder.latest.result).toBeNull();
+    expect(createObjectURLSpy).not.toHaveBeenCalled();
+    expect(clickSpy).not.toHaveBeenCalled();
+    expect(revokeObjectURLSpy).not.toHaveBeenCalled();
+  });
+
   it("stops recording, downloads result and resets state", async () => {
     const setup = setupRecordingFlowMocks();
 
