@@ -2233,6 +2233,74 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("cleans up acquired camera stream before pending refresh on start fallback failure", async () => {
+    const setup = setupRecordingFlowMocks();
+    let resolveRefreshDevices: ((value: MediaDeviceInfo[]) => void) | null =
+      null;
+    const enumerateDevices = vi
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockImplementationOnce(
+        () =>
+          new Promise<MediaDeviceInfo[]>((resolve) => {
+            resolveRefreshDevices = resolve;
+          }),
+      );
+    const notFound = new DOMException("", "NotFoundError");
+    const cameraTrackStop = vi.fn();
+    const cameraStream = {
+      getTracks: () => [{ kind: "video", stop: cameraTrackStop }],
+    } as unknown as MediaStream;
+    const getUserMedia = vi
+      .fn()
+      .mockResolvedValueOnce(cameraStream)
+      .mockRejectedValueOnce(notFound)
+      .mockRejectedValueOnce(notFound);
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+    vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: true,
+        selectedAudioDeviceId: "stale-mic",
+      });
+    });
+
+    let startPromise: Promise<void> | null = null;
+    act(() => {
+      startPromise = recorder.latest.startRecording();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        mapVideoRecorderErrorMessage(notFound),
+      );
+    });
+    expect(cameraTrackStop).toHaveBeenCalledTimes(1);
+    expect(enumerateDevices).toHaveBeenCalledTimes(2);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolveRefreshDevices?.([
+        createMockMediaDevice("videoinput", "camera-1", "Camera One"),
+      ]);
+      await startPromise;
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("does not clear a newly selected camera if start fallback resolves later", async () => {
     const setup = setupRecordingFlowMocks();
     const enumerateDevices = vi.fn(async () => []);

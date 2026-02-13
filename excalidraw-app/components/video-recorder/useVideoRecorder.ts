@@ -937,10 +937,10 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       console.error(startError);
       setError(mapVideoRecorderErrorMessage(startError));
       setStatus("error");
+      cleanupStreams();
       if (isDeviceSelectionError(startError)) {
         await refreshDevices();
       }
-      cleanupStreams();
     } finally {
       startRecordingInFlightRef.current = false;
     }
