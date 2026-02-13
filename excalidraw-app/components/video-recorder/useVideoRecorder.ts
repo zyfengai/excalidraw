@@ -44,22 +44,22 @@ const WINDOWS_RESERVED_FILE_NAME =
 class StartRecordingCancelledError extends Error {}
 
 const DEVICE_SELECTION_ERROR_NAMES = new Set([
-  "NotFoundError",
-  "OverconstrainedError",
-  "ConstraintNotSatisfiedError",
-  "DevicesNotFoundError",
+  "notfounderror",
+  "overconstrainederror",
+  "constraintnotsatisfiederror",
+  "devicesnotfounderror",
 ]);
 const PERMISSION_DENIED_ERROR_NAMES = new Set([
-  "NotAllowedError",
-  "SecurityError",
-  "PermissionDeniedError",
-  "PermissionDismissedError",
+  "notallowederror",
+  "securityerror",
+  "permissiondeniederror",
+  "permissiondismissederror",
 ]);
 const DEVICE_BUSY_ERROR_NAMES = new Set([
-  "NotReadableError",
-  "AbortError",
-  "TrackStartError",
-  "SourceUnavailableError",
+  "notreadableerror",
+  "aborterror",
+  "trackstarterror",
+  "sourceunavailableerror",
 ]);
 
 const getErrorName = (error: unknown) => {
@@ -69,6 +69,9 @@ const getErrorName = (error: unknown) => {
   return typeof error.name === "string" ? error.name : "";
 };
 
+const getNormalizedErrorName = (error: unknown) =>
+  getErrorName(error).trim().toLowerCase();
+
 const getErrorMessage = (error: unknown) => {
   if (!error || typeof error !== "object" || !("message" in error)) {
     return "";
@@ -77,7 +80,7 @@ const getErrorMessage = (error: unknown) => {
 };
 
 const isDeviceSelectionError = (error: unknown) => {
-  if (DEVICE_SELECTION_ERROR_NAMES.has(getErrorName(error))) {
+  if (DEVICE_SELECTION_ERROR_NAMES.has(getNormalizedErrorName(error))) {
     return true;
   }
 
@@ -122,7 +125,7 @@ const isMimeNotSupportedMessage = (error: unknown) => {
 
 const isRecoverableMediaRecorderMimeError = (error: unknown) =>
   error instanceof TypeError ||
-  getErrorName(error) === "NotSupportedError" ||
+  getNormalizedErrorName(error) === "notsupportederror" ||
   isMimeNotSupportedMessage(error);
 
 const getUserMediaWithDeviceFallback = async (
@@ -558,12 +561,12 @@ const collectMediaDevices = async () => {
 };
 
 export const mapVideoRecorderErrorMessage = (error: unknown) => {
-  const errorName = getErrorName(error);
+  const errorName = getNormalizedErrorName(error);
 
   if (PERMISSION_DENIED_ERROR_NAMES.has(errorName)) {
     return t("videoRecorder.errors.permissionDenied");
   }
-  if (errorName === "NotSupportedError") {
+  if (errorName === "notsupportederror") {
     return t("videoRecorder.errors.notSupported");
   }
   if (DEVICE_SELECTION_ERROR_NAMES.has(errorName)) {

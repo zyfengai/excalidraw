@@ -38,6 +38,12 @@ describe("video recorder error mapping", () => {
     expect(mapVideoRecorderErrorMessage(deviceNotFoundError)).toBe(
       "Selected camera or microphone is not available.",
     );
+
+    const lowercaseNotSupportedError = new Error("");
+    lowercaseNotSupportedError.name = "notsupportederror";
+    expect(mapVideoRecorderErrorMessage(lowercaseNotSupportedError)).toBe(
+      "This browser does not support video recording.",
+    );
   });
 
   it("maps legacy browser alias error names", () => {

@@ -1184,6 +1184,50 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
   });
 
+  it("falls back on lowercase selection error names during permission request", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const notFoundLikeError = new Error("device missing");
+    notFoundLikeError.name = "notfounderror";
+    const trackStop = vi.fn();
+    const permissionStream = {
+      getTracks: () => [{ stop: trackStop }],
+    } as unknown as MediaStream;
+    const getUserMedia = vi
+      .fn()
+      .mockRejectedValueOnce(notFoundLikeError)
+      .mockResolvedValueOnce(permissionStream);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "missing-camera-lowercase",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    expect(getUserMedia).toHaveBeenNthCalledWith(1, {
+      video: { deviceId: { exact: "missing-camera-lowercase" } },
+      audio: false,
+    });
+    expect(getUserMedia).toHaveBeenNthCalledWith(2, {
+      video: true,
+      audio: false,
+    });
+    expect(trackStop).toHaveBeenCalledTimes(1);
+    expect(recorder.latest.error).toBeNull();
+    expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
+  });
+
   it("falls back on legacy constraint error aliases during permission request", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const constraintError = new Error("constraint mismatch");
