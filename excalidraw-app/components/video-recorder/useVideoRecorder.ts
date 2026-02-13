@@ -43,9 +43,26 @@ const WINDOWS_RESERVED_FILE_NAME =
 
 class StartRecordingCancelledError extends Error {}
 
+const getErrorName = (error: unknown) => {
+  if (!error || typeof error !== "object" || !("name" in error)) {
+    return "";
+  }
+  return typeof error.name === "string" ? error.name : "";
+};
+
+const getErrorMessage = (error: unknown) => {
+  if (!error || typeof error !== "object" || !("message" in error)) {
+    return "";
+  }
+  return typeof error.message === "string" ? error.message : "";
+};
+
 const isDeviceSelectionError = (error: unknown) =>
-  error instanceof DOMException &&
-  (error.name === "NotFoundError" || error.name === "OverconstrainedError");
+  getErrorName(error) === "NotFoundError" ||
+  getErrorName(error) === "OverconstrainedError";
+
+const isRecoverableMediaRecorderMimeError = (error: unknown) =>
+  error instanceof TypeError || getErrorName(error) === "NotSupportedError";
 
 const getUserMediaWithDeviceFallback = async (
   primaryConstraints: MediaStreamConstraints,
@@ -480,26 +497,28 @@ const collectMediaDevices = async () => {
 };
 
 export const mapVideoRecorderErrorMessage = (error: unknown) => {
-  if (error instanceof DOMException) {
-    switch (error.name) {
-      case "NotAllowedError":
-      case "SecurityError":
-        return t("videoRecorder.errors.permissionDenied");
-      case "NotSupportedError":
-        return t("videoRecorder.errors.notSupported");
-      case "NotFoundError":
-      case "OverconstrainedError":
-        return t("videoRecorder.errors.deviceNotFound");
-      case "NotReadableError":
-      case "AbortError":
-        return t("videoRecorder.errors.deviceBusy");
-      default:
-        return error.message || t("videoRecorder.errors.recordingFailed");
-    }
+  switch (getErrorName(error)) {
+    case "NotAllowedError":
+    case "SecurityError":
+      return t("videoRecorder.errors.permissionDenied");
+    case "NotSupportedError":
+      return t("videoRecorder.errors.notSupported");
+    case "NotFoundError":
+    case "OverconstrainedError":
+      return t("videoRecorder.errors.deviceNotFound");
+    case "NotReadableError":
+    case "AbortError":
+      return t("videoRecorder.errors.deviceBusy");
+    default:
+      break;
   }
 
   if (error instanceof Error) {
     return error.message || t("videoRecorder.errors.recordingFailed");
+  }
+  const errorMessage = getErrorMessage(error);
+  if (errorMessage) {
+    return errorMessage;
   }
   return t("videoRecorder.errors.recordingFailed");
 };
@@ -1143,13 +1162,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           break;
         } catch (error) {
           recorderCreationError = error;
-          if (
-            !(
-              error instanceof TypeError ||
-              (error instanceof DOMException &&
-                error.name === "NotSupportedError")
-            )
-          ) {
+          if (!isRecoverableMediaRecorderMimeError(error)) {
             throw error;
           }
         }

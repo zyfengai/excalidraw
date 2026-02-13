@@ -26,6 +26,20 @@ describe("video recorder error mapping", () => {
     ).toBe("Selected camera or microphone is not available.");
   });
 
+  it("maps known error names even when not DOMException", () => {
+    const notSupportedError = new Error("");
+    notSupportedError.name = "NotSupportedError";
+    expect(mapVideoRecorderErrorMessage(notSupportedError)).toBe(
+      "This browser does not support video recording.",
+    );
+
+    const deviceNotFoundError = new Error("");
+    deviceNotFoundError.name = "NotFoundError";
+    expect(mapVideoRecorderErrorMessage(deviceNotFoundError)).toBe(
+      "Selected camera or microphone is not available.",
+    );
+  });
+
   it("maps busy-device DOMException names", () => {
     expect(
       mapVideoRecorderErrorMessage(new DOMException("", "NotReadableError")),
