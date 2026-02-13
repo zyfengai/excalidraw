@@ -683,9 +683,17 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         resolve();
       };
       recorder.addEventListener("stop", handleStop);
-      recorder.stop();
+      try {
+        recorder.stop();
+      } catch (stopError) {
+        recorder.removeEventListener("stop", handleStop);
+        setError(mapVideoRecorderErrorMessage(stopError));
+        setStatus("error");
+        cleanupStreams();
+        resolve();
+      }
     });
-  }, [clearElapsedTimer, status]);
+  }, [cleanupStreams, clearElapsedTimer, status]);
 
   const resetResult = useCallback(() => {
     setResult(null);

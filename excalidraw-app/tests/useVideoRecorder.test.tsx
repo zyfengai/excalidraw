@@ -87,7 +87,10 @@ const createExcalidrawCanvases = () => {
   };
 };
 
-const setupRecordingFlowMocks = (opts?: { deferStop?: boolean }) => {
+const setupRecordingFlowMocks = (opts?: {
+  deferStop?: boolean;
+  stopThrows?: boolean;
+}) => {
   const cleanupSpy = vi.fn();
   const pauseSpy = vi.fn();
   const resumeSpy = vi.fn();
@@ -162,6 +165,9 @@ const setupRecordingFlowMocks = (opts?: { deferStop?: boolean }) => {
     }
     stop() {
       stopCallCount += 1;
+      if (opts?.stopThrows) {
+        throw new Error("stop failed");
+      }
       const finalizeStop = () => {
         this.state = "inactive";
         this.stopListeners.forEach((listener) => listener());
@@ -1118,6 +1124,38 @@ describe("useVideoRecorder", () => {
     await waitFor(() => {
       expect(recorder.latest.status).toBe("completed");
     });
+
+    setup.cleanupCanvases();
+  });
+
+  it("switches to error state when recorder stop throws", async () => {
+    const setup = setupRecordingFlowMocks({ stopThrows: true });
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe("stop failed");
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+    expect(setup.getStopCallCount()).toBe(1);
+    expect(setup.videoTrackStop).toHaveBeenCalledTimes(1);
 
     setup.cleanupCanvases();
   });
