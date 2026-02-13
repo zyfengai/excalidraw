@@ -8,9 +8,11 @@ import {
 import {
   clampOverlayLayout,
   getFileExtensionFromMimeType,
+  getPermissionRequestConstraints,
   normalizeRecorderMimeType,
   getVideoDimensions,
 } from "../components/video-recorder/videoRecorder.utils";
+import { getDefaultVideoRecorderSettings } from "../components/video-recorder/videoRecorder.config";
 
 describe("video recorder utils", () => {
   it("computes landscape dimensions", () => {
@@ -60,6 +62,49 @@ describe("video recorder utils", () => {
       "video/webm",
     );
     expect(normalizeRecorderMimeType("video/unknown", [])).toBe("");
+  });
+
+  it("builds permission constraints from settings", () => {
+    const defaults = getDefaultVideoRecorderSettings();
+    expect(getPermissionRequestConstraints(defaults)).toEqual({
+      audio: true,
+      video: false,
+    });
+
+    expect(
+      getPermissionRequestConstraints({
+        ...defaults,
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      }),
+    ).toEqual({
+      audio: true,
+      video: true,
+    });
+
+    expect(
+      getPermissionRequestConstraints({
+        ...defaults,
+        cameraEnabled: true,
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "camera-1",
+      }),
+    ).toEqual({
+      video: { deviceId: { exact: "camera-1" } },
+      audio: false,
+    });
+
+    expect(
+      getPermissionRequestConstraints({
+        ...defaults,
+        cameraEnabled: false,
+        microphoneEnabled: true,
+        selectedAudioDeviceId: "mic-1",
+      }),
+    ).toEqual({
+      video: false,
+      audio: { deviceId: { exact: "mic-1" } },
+    });
   });
 });
 

@@ -2,6 +2,7 @@ import type {
   VideoRecorderAspectRatio,
   VideoRecorderOverlayLayout,
   VideoRecorderResolution,
+  VideoRecorderSettings,
 } from "./videoRecorder.types";
 
 export const VIDEO_RECORDER_RATIO_MAP: Record<
@@ -85,4 +86,28 @@ export const normalizeRecorderMimeType = (
     return candidateMimeType;
   }
   return supportedMimeTypes[0] || "";
+};
+
+export const getPermissionRequestConstraints = (
+  settings: VideoRecorderSettings,
+): MediaStreamConstraints => {
+  const shouldRequestVideo =
+    settings.cameraEnabled ||
+    (!settings.cameraEnabled && !settings.microphoneEnabled);
+  const shouldRequestAudio =
+    settings.microphoneEnabled ||
+    (!settings.cameraEnabled && !settings.microphoneEnabled);
+
+  return {
+    video: shouldRequestVideo
+      ? settings.selectedVideoDeviceId
+        ? { deviceId: { exact: settings.selectedVideoDeviceId } }
+        : true
+      : false,
+    audio: shouldRequestAudio
+      ? settings.selectedAudioDeviceId
+        ? { deviceId: { exact: settings.selectedAudioDeviceId } }
+        : true
+      : false,
+  };
 };

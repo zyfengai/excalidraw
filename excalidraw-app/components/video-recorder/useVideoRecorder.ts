@@ -14,6 +14,7 @@ import {
 import {
   clampOverlayLayout,
   getFileExtensionFromMimeType,
+  getPermissionRequestConstraints,
   getVideoDimensions,
   normalizeRecorderMimeType,
   normalizedRectToPixels,
@@ -332,10 +333,9 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
     setError(null);
     setIsRequestingPermissions(true);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
+      const stream = await navigator.mediaDevices.getUserMedia(
+        getPermissionRequestConstraints(settings),
+      );
       stream.getTracks().forEach((track) => track.stop());
       await refreshDevices();
     } catch (permissionError) {
@@ -343,7 +343,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
     } finally {
       setIsRequestingPermissions(false);
     }
-  }, [refreshDevices]);
+  }, [refreshDevices, settings]);
 
   useEffect(() => {
     refreshDevices();
