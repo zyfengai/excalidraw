@@ -291,6 +291,9 @@ const setupRecordingFlowMocks = (opts?: {
         error: normalizedError,
       });
     },
+    emitRecorderErrorEvent: (event?: unknown) => {
+      latestRecorder?.onerror?.(event);
+    },
     emitRecorderStop: () => {
       latestRecorder?.onstop?.();
     },
@@ -3506,6 +3509,38 @@ describe("useVideoRecorder", () => {
 
     act(() => {
       setup.emitRecorderError(new DOMException("", "NotSupportedError"));
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        "This browser does not support video recording.",
+      );
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
+  it("falls back to MediaRecorder error event payload when event.error is missing", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      setup.emitRecorderErrorEvent({ name: "NotSupportedError" });
     });
     await waitFor(() => {
       expect(recorder.latest.status).toBe("error");
