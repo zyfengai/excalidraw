@@ -92,12 +92,15 @@ const isDeviceSelectionError = (error: unknown) => {
   const hasNotFoundSignal =
     message.includes("notfounderror") ||
     ((message.includes("device") || message.includes("input")) &&
-      (message.includes("not found") || message.includes("unavailable")));
+      (message.includes("not found") ||
+        message.includes("cannot find") ||
+        message.includes("unavailable")));
   const hasConstraintSignal =
     (message.includes("overconstrained") || message.includes("constraint")) &&
     (message.includes("not satisfied") ||
       message.includes("cannot be satisfied") ||
-      message.includes("unsatisfied"));
+      message.includes("unsatisfied") ||
+      message.includes("constraint failed"));
 
   return hasNotFoundSignal || hasConstraintSignal;
 };
