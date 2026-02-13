@@ -33,6 +33,7 @@ const MEDIA_RECORDER_TIMESLICE_MS = 1000;
 const STOP_RECORDING_TIMEOUT_MS = 3000;
 const INVALID_FILE_NAME_CHARS = /[\\/:*?"<>|]/g;
 const MAX_RECORDING_FILE_NAME_LENGTH = 120;
+const TRAILING_RECORDING_FILE_EXTENSION = /\.(webm|mp4)$/i;
 const WINDOWS_RESERVED_FILE_NAME =
   /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
 
@@ -211,10 +212,10 @@ export const mapVideoRecorderErrorMessage = (error: unknown) => {
   return t("videoRecorder.errors.recordingFailed");
 };
 
-const sanitizeRecordingFileName = (name: string, extension: string) => {
+const sanitizeRecordingFileName = (name: string) => {
   const normalizedName = name
     .trim()
-    .replace(new RegExp(`\\.${extension}$`, "i"), "");
+    .replace(TRAILING_RECORDING_FILE_EXTENSION, "");
 
   const sanitized = normalizedName
     .trim()
@@ -838,7 +839,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         return;
       }
       const extension = getFileExtensionFromMimeType(result.mimeType);
-      const sanitizedName = sanitizeRecordingFileName(name, extension);
+      const sanitizedName = sanitizeRecordingFileName(name);
       const url = URL.createObjectURL(result.blob);
       const anchor = document.createElement("a");
       anchor.href = url;

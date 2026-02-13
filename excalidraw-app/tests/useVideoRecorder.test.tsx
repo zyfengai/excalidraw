@@ -2221,6 +2221,38 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("normalizes mismatched trailing video extension to output format", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result).toBeTruthy();
+    });
+
+    act(() => {
+      recorder.latest.downloadRecording("demo.mp4");
+    });
+
+    expect(setup.createObjectURLSpy).toHaveBeenCalledTimes(1);
+    expect(setup.clickSpy).toHaveBeenCalledTimes(1);
+    expect(setup.getDownloadedFileNames()).toEqual(["demo.webm"]);
+    expect(setup.revokeObjectURLSpy).toHaveBeenCalledWith("blob:mock-url");
+
+    setup.cleanupCanvases();
+  });
+
   it("sanitizes invalid filename characters when downloading recording", async () => {
     const setup = setupRecordingFlowMocks();
     const recorder = renderUseVideoRecorder();
