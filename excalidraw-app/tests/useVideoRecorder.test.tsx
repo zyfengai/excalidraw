@@ -1233,6 +1233,40 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("keeps completed state after successful stop even past timeout window", async () => {
+    vi.useFakeTimers();
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    expect(recorder.latest.status).toBe("recording");
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    expect(recorder.latest.status).toBe("completed");
+    expect(recorder.latest.error).toBeNull();
+
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+      await Promise.resolve();
+    });
+    expect(recorder.latest.status).toBe("completed");
+    expect(recorder.latest.error).toBeNull();
+    expect(setup.videoTrackStop).toHaveBeenCalledTimes(1);
+
+    setup.cleanupCanvases();
+  });
+
   it("ignores start requests while stopping", async () => {
     const setup = setupRecordingFlowMocks({ deferStop: true });
     const recorder = renderUseVideoRecorder();
