@@ -642,10 +642,10 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         },
       );
       if (!isMountedRef.current) {
-        stream.getTracks().forEach((track) => track.stop());
+        stopMediaStreamsTracksOnce(stream);
         return;
       }
-      stream.getTracks().forEach((track) => track.stop());
+      stopMediaStreamsTracksOnce(stream);
       void refreshDevices();
     } catch (permissionError) {
       if (!isMountedRef.current) {

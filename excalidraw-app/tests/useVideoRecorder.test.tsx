@@ -607,6 +607,43 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.isRequestingPermissions).toBe(false);
   });
 
+  it("keeps permission request successful when temporary stream stop throws", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const permissionStream = {
+      getTracks: () => [
+        {
+          stop: () => {
+            throw new Error("permission stream stop failed");
+          },
+        },
+      ],
+    } as unknown as MediaStream;
+    const getUserMedia = vi.fn(async () => permissionStream);
+    const enumerateDevices = vi
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    setMediaDevicesMock({
+      getUserMedia,
+      enumerateDevices,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+    expect(recorder.latest.error).toBeNull();
+    expect(recorder.latest.isRequestingPermissions).toBe(false);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+  });
+
   it("maps permission denials when requesting media permissions", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const denied = new DOMException("", "NotAllowedError");
