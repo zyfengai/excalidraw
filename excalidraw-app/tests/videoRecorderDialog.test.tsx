@@ -190,7 +190,7 @@ describe("VideoRecorderDialog", () => {
 
     expect(ratioSelect.value).toBe("16:9");
     expect(resolutionSelect.value).toBe("1080p");
-    expect(fpsSelect.value).toBe("30");
+    expect(fpsSelect.value).toBe("60");
     expect(formatSelect.value).toBe("video/webm");
   });
 

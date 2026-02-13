@@ -99,11 +99,13 @@ describe("video recorder utils", () => {
     expect(normalizeRecorderMimeType("video/unknown", [])).toBe("");
   });
 
-  it("normalizes fps into a safe recording range", () => {
+  it("normalizes fps to supported recording presets", () => {
     expect(normalizeRecorderFps(30, 24)).toBe(30);
-    expect(normalizeRecorderFps(0, 24)).toBe(1);
+    expect(normalizeRecorderFps(0, 24)).toBe(24);
     expect(normalizeRecorderFps(120, 24)).toBe(60);
     expect(normalizeRecorderFps(29.6, 24)).toBe(30);
+    expect(normalizeRecorderFps(52, 24)).toBe(60);
+    expect(normalizeRecorderFps(25, 60)).toBe(24);
     expect(normalizeRecorderFps(Number.NaN, 24)).toBe(24);
   });
 

@@ -19,6 +19,7 @@ const RESOLUTION_BASE: Record<VideoRecorderResolution, number> = {
   "720p": 720,
   "1080p": 1080,
 };
+export const VIDEO_RECORDER_SUPPORTED_FPS = [24, 30, 60] as const;
 const DEFAULT_VIDEO_RECORDER_ASPECT_RATIO: VideoRecorderAspectRatio = "16:9";
 const DEFAULT_VIDEO_RECORDER_RESOLUTION: VideoRecorderResolution = "1080p";
 
@@ -77,8 +78,25 @@ export const normalizeRecorderFps = (
   candidateFps: number,
   fallbackFps: number,
 ) => {
-  const baseFps = Number.isFinite(candidateFps) ? candidateFps : fallbackFps;
-  return clamp(Math.round(baseFps), 1, 60);
+  const minFps = VIDEO_RECORDER_SUPPORTED_FPS[0];
+  const maxFps =
+    VIDEO_RECORDER_SUPPORTED_FPS[VIDEO_RECORDER_SUPPORTED_FPS.length - 1];
+  const normalizeToSupportedPreset = (fps: number) =>
+    VIDEO_RECORDER_SUPPORTED_FPS.reduce((closest, current) => {
+      if (Math.abs(current - fps) < Math.abs(closest - fps)) {
+        return current;
+      }
+      return closest;
+    }, VIDEO_RECORDER_SUPPORTED_FPS[0]);
+
+  const safeFallback = Number.isFinite(fallbackFps)
+    ? normalizeToSupportedPreset(clamp(Math.round(fallbackFps), minFps, maxFps))
+    : 30;
+  const baseFps = Number.isFinite(candidateFps)
+    ? clamp(Math.round(candidateFps), minFps, maxFps)
+    : safeFallback;
+
+  return normalizeToSupportedPreset(baseFps);
 };
 
 export const clampOverlayLayout = (

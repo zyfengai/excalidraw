@@ -479,6 +479,29 @@ describe("useVideoRecorder", () => {
     });
   });
 
+  it("normalizes fps to supported preset values in setSettings", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({ fps: 5 });
+    });
+    await waitFor(() => {
+      expect(recorder.latest.settings.fps).toBe(24);
+    });
+
+    act(() => {
+      recorder.latest.setSettings({ fps: 52 });
+    });
+    await waitFor(() => {
+      expect(recorder.latest.settings.fps).toBe(60);
+    });
+  });
+
   it("preserves previous settings when malformed top-level payload is provided", async () => {
     setMediaRecorderSupport(["video/webm"]);
     setMediaDevicesMock({

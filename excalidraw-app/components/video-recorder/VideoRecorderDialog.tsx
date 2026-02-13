@@ -9,6 +9,8 @@ import { VideoRecorderTeleprompter } from "./VideoRecorderTeleprompter";
 import { DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT } from "./videoRecorder.config";
 import {
   clampOverlayLayout,
+  normalizeRecorderFps,
+  VIDEO_RECORDER_SUPPORTED_FPS,
   VIDEO_RECORDER_RATIO_MAP,
 } from "./videoRecorder.utils";
 
@@ -189,7 +191,7 @@ export const VideoRecorderDialog = ({
     "720p",
     "1080p",
   ];
-  const supportedFpsValues = [24, 30, 60];
+  const supportedFpsValues = VIDEO_RECORDER_SUPPORTED_FPS;
   const selectedVideoDeviceValue =
     settings.selectedVideoDeviceId &&
     devices.videoInputs.some(
@@ -215,9 +217,7 @@ export const VideoRecorderDialog = ({
   )
     ? settings.resolution
     : "1080p";
-  const selectedFpsValue = supportedFpsValues.includes(settings.fps)
-    ? settings.fps
-    : 30;
+  const selectedFpsValue = normalizeRecorderFps(settings.fps, 30);
   const selectedMimeTypeValue = capabilities.supportedMimeTypes.includes(
     settings.mimeType,
   )
@@ -530,9 +530,11 @@ export const VideoRecorderDialog = ({
                   })
                 }
               >
-                <option value={24}>24</option>
-                <option value={30}>30</option>
-                <option value={60}>60</option>
+                {supportedFpsValues.map((fps) => (
+                  <option key={fps} value={fps}>
+                    {fps}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="video-recorder-dialog__setting">
