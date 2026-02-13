@@ -92,6 +92,7 @@ const setupRecordingFlowMocks = () => {
   const pauseSpy = vi.fn();
   const resumeSpy = vi.fn();
   const videoTrackStop = vi.fn();
+  let latestRecorder: any = null;
   const captureStreamSpy = vi.fn(() => ({
     getVideoTracks: () =>
       [
@@ -141,6 +142,7 @@ const setupRecordingFlowMocks = () => {
 
     constructor(_stream: MediaStream, options?: MediaRecorderOptions) {
       this.mimeType = options?.mimeType || "video/webm";
+      latestRecorder = this;
     }
     start() {
       this.state = "recording";
@@ -192,6 +194,11 @@ const setupRecordingFlowMocks = () => {
     resumeSpy,
     videoTrackStop,
     captureStreamSpy,
+    emitRecorderError: (message?: string) => {
+      latestRecorder?.onerror?.({
+        error: message ? new Error(message) : undefined,
+      });
+    },
     createObjectURLSpy,
     revokeObjectURLSpy,
     clickSpy,
@@ -717,6 +724,36 @@ describe("useVideoRecorder", () => {
     });
     await waitFor(() => {
       expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
+  it("switches to error state when MediaRecorder emits runtime error", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      setup.emitRecorderError("runtime recorder failure");
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe("runtime recorder failure");
       expect(recorder.latest.isRecordingActive).toBe(false);
     });
 
