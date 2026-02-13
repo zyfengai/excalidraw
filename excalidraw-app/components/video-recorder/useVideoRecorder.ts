@@ -57,6 +57,29 @@ const getUserMediaWithDeviceFallback = async (
   }
 };
 
+const hasSpecificDeviceConstraint = (
+  constraint: MediaTrackConstraints | boolean | undefined,
+) => {
+  if (!constraint || typeof constraint === "boolean") {
+    return false;
+  }
+
+  const { deviceId } = constraint;
+  if (!deviceId) {
+    return false;
+  }
+
+  if (typeof deviceId === "string") {
+    return deviceId.length > 0;
+  }
+
+  if (Array.isArray(deviceId)) {
+    return deviceId.length > 0;
+  }
+
+  return "exact" in deviceId && !!deviceId.exact;
+};
+
 const reconcileSelectedDeviceId = (
   selectedDeviceId: string | null,
   availableDevices: VideoRecorderDeviceOption[],
@@ -69,6 +92,16 @@ const reconcileSelectedDeviceId = (
     (device) => device.deviceId === selectedDeviceId,
   );
   return exists ? selectedDeviceId : null;
+};
+
+const stopMediaStreamsTracksOnce = (
+  ...streams: Array<MediaStream | null | undefined>
+) => {
+  const tracksToStop = new Set<MediaStreamTrack>();
+  streams.forEach((stream) => {
+    stream?.getTracks().forEach((track) => tracksToStop.add(track));
+  });
+  tracksToStop.forEach((track) => track.stop());
 };
 
 const getExcalidrawCanvases = () => {
@@ -383,13 +416,13 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       recorder.onstop = null;
     }
 
-    recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
+    stopMediaStreamsTracksOnce(
+      recordingStreamRef.current,
+      cameraStreamRef.current,
+      microphoneStreamRef.current,
+    );
     recordingStreamRef.current = null;
-
-    cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
     cameraStreamRef.current = null;
-
-    microphoneStreamRef.current?.getTracks().forEach((track) => track.stop());
     microphoneStreamRef.current = null;
 
     if (cameraVideoRef.current) {
@@ -464,7 +497,8 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
     try {
       const primaryConstraints = getPermissionRequestConstraints(settings);
       const shouldFallbackToDefaultDevices =
-        !!settings.selectedVideoDeviceId || !!settings.selectedAudioDeviceId;
+        hasSpecificDeviceConstraint(primaryConstraints.video) ||
+        hasSpecificDeviceConstraint(primaryConstraints.audio);
       const stream = await getUserMediaWithDeviceFallback(
         primaryConstraints,
         shouldFallbackToDefaultDevices

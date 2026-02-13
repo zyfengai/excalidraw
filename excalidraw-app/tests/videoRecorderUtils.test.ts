@@ -85,6 +85,19 @@ describe("video recorder utils", () => {
     expect(
       getPermissionRequestConstraints({
         ...defaults,
+        cameraEnabled: false,
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "camera-1",
+        selectedAudioDeviceId: "mic-1",
+      }),
+    ).toEqual({
+      audio: true,
+      video: true,
+    });
+
+    expect(
+      getPermissionRequestConstraints({
+        ...defaults,
         cameraEnabled: true,
         microphoneEnabled: false,
         selectedVideoDeviceId: "camera-1",

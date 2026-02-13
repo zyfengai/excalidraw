@@ -91,6 +91,8 @@ export const normalizeRecorderMimeType = (
 export const getPermissionRequestConstraints = (
   settings: VideoRecorderSettings,
 ): MediaStreamConstraints => {
+  const fallbackPermissionRequest =
+    !settings.cameraEnabled && !settings.microphoneEnabled;
   const shouldRequestVideo =
     settings.cameraEnabled ||
     (!settings.cameraEnabled && !settings.microphoneEnabled);
@@ -100,12 +102,12 @@ export const getPermissionRequestConstraints = (
 
   return {
     video: shouldRequestVideo
-      ? settings.selectedVideoDeviceId
+      ? !fallbackPermissionRequest && settings.selectedVideoDeviceId
         ? { deviceId: { exact: settings.selectedVideoDeviceId } }
         : true
       : false,
     audio: shouldRequestAudio
-      ? settings.selectedAudioDeviceId
+      ? !fallbackPermissionRequest && settings.selectedAudioDeviceId
         ? { deviceId: { exact: settings.selectedAudioDeviceId } }
         : true
       : false,
