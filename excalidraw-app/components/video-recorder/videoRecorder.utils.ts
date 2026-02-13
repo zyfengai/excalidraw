@@ -19,6 +19,8 @@ const RESOLUTION_BASE: Record<VideoRecorderResolution, number> = {
   "720p": 720,
   "1080p": 1080,
 };
+const DEFAULT_VIDEO_RECORDER_ASPECT_RATIO: VideoRecorderAspectRatio = "16:9";
+const DEFAULT_VIDEO_RECORDER_RESOLUTION: VideoRecorderResolution = "1080p";
 
 export const normalizeRecorderAspectRatio = (
   candidateAspectRatio: string,
@@ -43,8 +45,16 @@ export const getVideoDimensions = (
   aspectRatio: VideoRecorderAspectRatio,
   resolution: VideoRecorderResolution,
 ) => {
-  const ratio = VIDEO_RECORDER_RATIO_MAP[aspectRatio];
-  const base = RESOLUTION_BASE[resolution];
+  const normalizedAspectRatio = normalizeRecorderAspectRatio(
+    aspectRatio,
+    DEFAULT_VIDEO_RECORDER_ASPECT_RATIO,
+  );
+  const normalizedResolution = normalizeRecorderResolution(
+    resolution,
+    DEFAULT_VIDEO_RECORDER_RESOLUTION,
+  );
+  const ratio = VIDEO_RECORDER_RATIO_MAP[normalizedAspectRatio];
+  const base = RESOLUTION_BASE[normalizedResolution];
 
   if (ratio >= 1) {
     return {

@@ -32,6 +32,20 @@ describe("video recorder utils", () => {
     });
   });
 
+  it("falls back to default dimensions for unsupported profile values", () => {
+    expect(
+      getVideoDimensions(
+        "unknown-ratio" as unknown as Parameters<typeof getVideoDimensions>[0],
+        "unknown-resolution" as unknown as Parameters<
+          typeof getVideoDimensions
+        >[1],
+      ),
+    ).toEqual({
+      width: 1920,
+      height: 1080,
+    });
+  });
+
   it("clamps camera overlay layout into valid range", () => {
     expect(
       clampOverlayLayout({
