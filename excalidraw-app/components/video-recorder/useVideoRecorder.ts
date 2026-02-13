@@ -12,6 +12,7 @@ import {
   saveVideoRecorderSettings,
 } from "./videoRecorder.storage";
 import {
+  clamp,
   clampOverlayLayout,
   getFileExtensionFromMimeType,
   getPermissionRequestConstraints,
@@ -719,10 +720,18 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           nextValue.mimeType,
           capabilities.supportedMimeTypes,
         );
+        const camera = clampOverlayLayout(nextValue.camera);
+        const teleprompter = {
+          ...nextValue.teleprompter,
+          opacity: clamp(nextValue.teleprompter.opacity, 0.05, 1),
+          speed: clamp(nextValue.teleprompter.speed, 5, 250),
+        };
 
         const normalizedSettings = {
           ...nextValue,
           mimeType,
+          camera,
+          teleprompter,
         };
 
         if (areVideoRecorderSettingsEqual(prev, normalizedSettings)) {

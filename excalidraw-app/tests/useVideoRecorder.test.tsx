@@ -365,6 +365,43 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.settings).toBe(previousSettings);
   });
 
+  it("coerces camera and teleprompter ranges when setSettings receives out-of-range values", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings((settings) => ({
+        ...settings,
+        camera: {
+          x: -0.5,
+          y: 2,
+          width: 2,
+          height: 0.01,
+          shape: "circle",
+        },
+        teleprompter: {
+          ...settings.teleprompter,
+          opacity: 9,
+          speed: 0,
+        },
+      }));
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.settings.camera.shape).toBe("circle");
+      expect(recorder.latest.settings.camera.x).toBe(0);
+      expect(recorder.latest.settings.camera.y).toBeCloseTo(0.2);
+      expect(recorder.latest.settings.camera.width).toBe(0.8);
+      expect(recorder.latest.settings.camera.height).toBe(0.8);
+      expect(recorder.latest.settings.teleprompter.opacity).toBe(1);
+      expect(recorder.latest.settings.teleprompter.speed).toBe(5);
+    });
+  });
+
   it("clamps camera layout updates to valid range", async () => {
     setMediaRecorderSupport(["video/webm"]);
     setMediaDevicesMock({
