@@ -151,28 +151,29 @@ export const getFileExtensionFromMimeType = (mimeType: string) => {
   return "webm";
 };
 
+const canonicalizeMimeType = (mimeType: string) =>
+  mimeType
+    .trim()
+    .toLowerCase()
+    .replace(/\s*;\s*/g, ";")
+    .replace(/\s*=\s*/g, "=")
+    .replace(/\s*,\s*/g, ",");
+
 export const normalizeRecorderMimeType = (
   candidateMimeType: string,
   supportedMimeTypes: string[],
 ) => {
-  const normalizedCandidateMimeType = candidateMimeType.trim();
+  const normalizedCandidateMimeType = canonicalizeMimeType(candidateMimeType);
   if (!normalizedCandidateMimeType) {
     return supportedMimeTypes[0] || "";
   }
 
   const exactMatch = supportedMimeTypes.find(
-    (mimeType) => mimeType === normalizedCandidateMimeType,
+    (mimeType) =>
+      canonicalizeMimeType(mimeType) === normalizedCandidateMimeType,
   );
   if (exactMatch) {
     return exactMatch;
-  }
-
-  const caseInsensitiveMatch = supportedMimeTypes.find(
-    (mimeType) =>
-      mimeType.toLowerCase() === normalizedCandidateMimeType.toLowerCase(),
-  );
-  if (caseInsensitiveMatch) {
-    return caseInsensitiveMatch;
   }
   return supportedMimeTypes[0] || "";
 };

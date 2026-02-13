@@ -359,6 +359,27 @@ describe("useVideoRecorder", () => {
     });
   });
 
+  it("normalizes codec mimeType spacing to supported canonical value", async () => {
+    setMediaRecorderSupport(["video/webm;codecs=vp9,opus", "video/webm"]);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        mimeType: "video/webm; codecs = vp9,opus",
+      });
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.settings.mimeType).toBe(
+        "video/webm;codecs=vp9,opus",
+      );
+    });
+  });
+
   it("skips settings state updates when normalized values are unchanged", async () => {
     setMediaRecorderSupport(["video/webm"]);
     setMediaDevicesMock({

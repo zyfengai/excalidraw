@@ -91,12 +91,20 @@ describe("video recorder utils", () => {
   });
 
   it("normalizes mime type against browser support", () => {
+    const supportedMimeTypes = ["video/webm;codecs=vp9,opus", "video/mp4"];
+
     expect(
       normalizeRecorderMimeType("video/mp4", ["video/webm", "video/mp4"]),
     ).toBe("video/mp4");
     expect(
       normalizeRecorderMimeType(" VIDEO/MP4 ", ["video/webm", "video/mp4"]),
     ).toBe("video/mp4");
+    expect(
+      normalizeRecorderMimeType(
+        "video/webm; codecs = vp9, opus",
+        supportedMimeTypes,
+      ),
+    ).toBe("video/webm;codecs=vp9,opus");
     expect(normalizeRecorderMimeType("video/unknown", ["video/webm"])).toBe(
       "video/webm",
     );
