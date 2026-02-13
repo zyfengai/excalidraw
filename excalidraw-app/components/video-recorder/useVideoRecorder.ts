@@ -617,13 +617,14 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         recorderRef.current.pause();
         setStatus("paused");
         pausedAtRef.current = Date.now();
+        clearElapsedTimer();
       }
     };
 
     document.addEventListener(EVENT.VISIBILITY_CHANGE, onVisibilityChange);
     return () =>
       document.removeEventListener(EVENT.VISIBILITY_CHANGE, onVisibilityChange);
-  }, []);
+  }, [clearElapsedTimer]);
 
   const setSettings = useCallback(
     (
