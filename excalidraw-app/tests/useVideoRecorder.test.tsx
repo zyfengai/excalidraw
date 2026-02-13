@@ -475,6 +475,38 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
   });
 
+  it("does not retry permission request on non-selection errors", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const denied = new DOMException("", "NotAllowedError");
+    const getUserMedia = vi.fn().mockRejectedValue(denied);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "camera-1",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+    expect(getUserMedia).toHaveBeenCalledWith({
+      video: { deviceId: { exact: "camera-1" } },
+      audio: false,
+    });
+    expect(recorder.latest.error).toBe(mapVideoRecorderErrorMessage(denied));
+    expect(recorder.latest.settings.selectedVideoDeviceId).toBe("camera-1");
+  });
+
   it("clears both selected devices when permission fallback downgrades to defaults", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const trackStop = vi.fn();
@@ -1363,6 +1395,48 @@ describe("useVideoRecorder", () => {
       expect(recorder.latest.status).toBe("completed");
     });
     expect(cameraTrackStop).toHaveBeenCalledTimes(1);
+
+    setup.cleanupCanvases();
+  });
+
+  it("does not retry start recording on non-selection media errors", async () => {
+    const setup = setupRecordingFlowMocks();
+    const enumerateDevices = vi.fn(async () => []);
+    const denied = new DOMException("", "NotAllowedError");
+    const getUserMedia = vi.fn().mockRejectedValue(denied);
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "camera-1",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(mapVideoRecorderErrorMessage(denied));
+      expect(recorder.latest.settings.selectedVideoDeviceId).toBe("camera-1");
+    });
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+    expect(getUserMedia).toHaveBeenCalledWith({
+      video: { deviceId: { exact: "camera-1" } },
+      audio: false,
+    });
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
 
     setup.cleanupCanvases();
   });
