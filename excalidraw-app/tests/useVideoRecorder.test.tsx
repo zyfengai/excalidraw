@@ -1507,6 +1507,46 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("resolves pending stop promise immediately when recorder errors while stopping", async () => {
+    const setup = setupRecordingFlowMocks({ deferStop: true });
+    const recorder = renderUseVideoRecorder();
+    let stopPromise: Promise<void> = Promise.resolve();
+    let didResolve = false;
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    expect(recorder.latest.status).toBe("recording");
+
+    act(() => {
+      stopPromise = recorder.latest.stopRecording();
+      void stopPromise.then(() => {
+        didResolve = true;
+      });
+    });
+    expect(recorder.latest.status).toBe("stopping");
+
+    act(() => {
+      setup.emitRecorderError("fatal recorder error");
+    });
+
+    await waitFor(() => {
+      expect(didResolve).toBe(true);
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe("fatal recorder error");
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("resolves pending stop promise when hook unmounts during stopping", async () => {
     const setup = setupRecordingFlowMocks({ deferStop: true });
     const recorder = renderUseVideoRecorder();
