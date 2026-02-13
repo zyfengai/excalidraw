@@ -38,6 +38,31 @@ describe("video recorder capabilities", () => {
     ).toBe(true);
   });
 
+  it("returns unsupported when isTypeSupported is unavailable", () => {
+    class MockMediaRecorder {}
+    globalThis.MediaRecorder = MockMediaRecorder as any;
+
+    const capabilities = getVideoRecorderCapabilities();
+    expect(capabilities.isSupported).toBe(false);
+    expect(capabilities.reason).toBe("mime-type-detection-not-supported");
+    expect(capabilities.supportedMimeTypes).toEqual([]);
+  });
+
+  it("ignores mime detection errors and keeps checking other formats", () => {
+    class MockMediaRecorder {}
+    (MockMediaRecorder as any).isTypeSupported = (mimeType: string) => {
+      if (mimeType === "video/webm;codecs=vp9,opus") {
+        throw new Error("detector failed");
+      }
+      return mimeType === "video/webm";
+    };
+    globalThis.MediaRecorder = MockMediaRecorder as any;
+
+    const capabilities = getVideoRecorderCapabilities();
+    expect(capabilities.isSupported).toBe(true);
+    expect(capabilities.supportedMimeTypes).toEqual(["video/webm"]);
+  });
+
   it("sets default mime type from capabilities", () => {
     class MockMediaRecorder {}
     (MockMediaRecorder as any).isTypeSupported = (mimeType: string) =>

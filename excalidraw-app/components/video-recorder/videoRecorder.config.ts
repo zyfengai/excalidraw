@@ -41,9 +41,21 @@ export const getVideoRecorderCapabilities = (): VideoRecorderCapabilities => {
     };
   }
 
-  const supportedMimeTypes = PREFERRED_MIME_TYPES.filter((mimeType) =>
-    MediaRecorder.isTypeSupported(mimeType),
-  );
+  if (typeof MediaRecorder.isTypeSupported !== "function") {
+    return {
+      isSupported: false,
+      reason: "mime-type-detection-not-supported",
+      supportedMimeTypes: [],
+    };
+  }
+
+  const supportedMimeTypes = PREFERRED_MIME_TYPES.filter((mimeType) => {
+    try {
+      return MediaRecorder.isTypeSupported(mimeType);
+    } catch {
+      return false;
+    }
+  });
 
   if (!supportedMimeTypes.length) {
     return {
