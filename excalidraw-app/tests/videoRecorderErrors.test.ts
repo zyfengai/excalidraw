@@ -33,6 +33,15 @@ describe("video recorder error mapping", () => {
   });
 
   it("falls back to generic message", () => {
+    expect(
+      mapVideoRecorderErrorMessage(new DOMException("", "UnknownError")),
+    ).toBe("Recording failed. Please try again.");
+    expect(
+      mapVideoRecorderErrorMessage(
+        new DOMException("device disconnected", "UnknownError"),
+      ),
+    ).toBe("device disconnected");
+
     expect(mapVideoRecorderErrorMessage(new Error("custom failure"))).toBe(
       "custom failure",
     );

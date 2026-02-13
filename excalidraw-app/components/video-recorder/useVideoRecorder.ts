@@ -192,7 +192,7 @@ export const mapVideoRecorderErrorMessage = (error: unknown) => {
       case "AbortError":
         return t("videoRecorder.errors.deviceBusy");
       default:
-        return error.message;
+        return error.message || t("videoRecorder.errors.recordingFailed");
     }
   }
 
