@@ -354,6 +354,9 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       }
       setDevices(mediaDevices);
     } catch (deviceError) {
+      if (!isMountedRef.current) {
+        return;
+      }
       console.error(deviceError);
     }
   }, []);

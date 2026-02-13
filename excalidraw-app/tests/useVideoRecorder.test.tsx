@@ -666,6 +666,39 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.error).toBeNull();
   });
 
+  it("ignores device enumeration rejection after unmount without logging", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    let rejectEnumerate: ((reason?: unknown) => void) | null = null;
+    const enumerateDevices = vi.fn(
+      () =>
+        new Promise<MediaDeviceInfo[]>((_, reject) => {
+          rejectEnumerate = reject;
+        }),
+    );
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    setMediaDevicesMock({
+      enumerateDevices,
+    });
+
+    const recorder = renderUseVideoRecorder();
+    await waitFor(() => {
+      expect(enumerateDevices).toHaveBeenCalledTimes(1);
+    });
+
+    act(() => {
+      recorder.unmount();
+    });
+
+    await act(async () => {
+      rejectEnumerate?.(new Error("enumerate failed after unmount"));
+      await Promise.resolve();
+    });
+
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
   it("recovers and allows restart when MediaRecorder initialization throws once", async () => {
     const videoTrackStop = vi.fn();
     const cancelAnimationFrameSpy = vi
