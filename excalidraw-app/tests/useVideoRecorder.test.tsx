@@ -363,6 +363,32 @@ describe("useVideoRecorder", () => {
     });
   });
 
+  it("skips camera layout state updates when next layout is unchanged", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+    });
+
+    const recorder = renderUseVideoRecorder();
+    await waitFor(() => {
+      expect(recorder.latest.devices).toEqual({
+        videoInputs: [],
+        audioInputs: [],
+      });
+    });
+    const previousSettings = recorder.latest.settings;
+    const previousCamera = previousSettings.camera;
+
+    act(() => {
+      recorder.latest.updateCameraLayout((camera) => ({
+        ...camera,
+      }));
+    });
+
+    expect(recorder.latest.settings).toBe(previousSettings);
+    expect(recorder.latest.settings.camera).toBe(previousCamera);
+  });
+
   it("keeps latest device refresh results when earlier requests resolve later", async () => {
     setMediaRecorderSupport(["video/webm"]);
     let resolveInitialRefresh: ((value: MediaDeviceInfo[]) => void) | null =

@@ -673,9 +673,19 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           typeof next === "function"
             ? next(prev.camera)
             : { ...prev.camera, ...next };
+        const camera = clampOverlayLayout(merged);
+        if (
+          camera.x === prev.camera.x &&
+          camera.y === prev.camera.y &&
+          camera.width === prev.camera.width &&
+          camera.height === prev.camera.height &&
+          camera.shape === prev.camera.shape
+        ) {
+          return prev;
+        }
         return {
           ...prev,
-          camera: clampOverlayLayout(merged),
+          camera,
         };
       });
     },
