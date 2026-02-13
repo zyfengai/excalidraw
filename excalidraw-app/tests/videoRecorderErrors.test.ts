@@ -68,6 +68,16 @@ describe("video recorder error mapping", () => {
         reason: "No such device",
       }),
     ).toBe("Selected camera or microphone is not available.");
+    expect(
+      mapVideoRecorderErrorMessage({
+        cause: "NotSupportedError",
+      }),
+    ).toBe("This browser does not support video recording.");
+    expect(
+      mapVideoRecorderErrorMessage({
+        cause: "Permission denied while accessing media input.",
+      }),
+    ).toBe("Camera or microphone permission was denied.");
   });
 
   it("maps media not-supported messages without explicit error names", () => {

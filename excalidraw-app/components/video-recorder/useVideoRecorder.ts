@@ -92,6 +92,9 @@ const getErrorName = (error: unknown) => {
   let currentError: unknown = error;
 
   for (let depth = 0; depth < MAX_ERROR_CAUSE_TRAVERSAL_DEPTH; depth++) {
+    if (typeof currentError === "string") {
+      return getErrorNameFromString(currentError);
+    }
     if (!currentError || typeof currentError !== "object") {
       return "";
     }
@@ -126,6 +129,9 @@ const getErrorMessage = (error: unknown) => {
   let currentError: unknown = error;
 
   for (let depth = 0; depth < MAX_ERROR_CAUSE_TRAVERSAL_DEPTH; depth++) {
+    if (typeof currentError === "string") {
+      return currentError;
+    }
     if (!currentError || typeof currentError !== "object") {
       return "";
     }
