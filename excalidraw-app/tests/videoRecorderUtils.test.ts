@@ -318,6 +318,25 @@ describe("video recorder settings storage", () => {
     });
   });
 
+  it("trims persisted selected device ids", () => {
+    const defaults = getDefaultVideoRecorderSettings();
+    localStorage.setItem(
+      STORAGE_KEYS.LOCAL_STORAGE_VIDEO_RECORDER,
+      JSON.stringify({
+        version: 1,
+        settings: {
+          ...defaults,
+          selectedVideoDeviceId: " camera-1 ",
+          selectedAudioDeviceId: " mic-1 ",
+        },
+      }),
+    );
+
+    const loaded = loadVideoRecorderSettings();
+    expect(loaded.selectedVideoDeviceId).toBe("camera-1");
+    expect(loaded.selectedAudioDeviceId).toBe("mic-1");
+  });
+
   it("returns defaults and logs when persisted json is malformed", () => {
     const defaults = getDefaultVideoRecorderSettings();
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});

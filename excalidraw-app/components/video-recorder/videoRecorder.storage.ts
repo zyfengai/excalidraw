@@ -30,8 +30,13 @@ const asString = (value: unknown, fallback: string) =>
 const asNumber = (value: unknown, fallback: number) =>
   typeof value === "number" ? value : fallback;
 
-const asNullableDeviceId = (value: unknown) =>
-  typeof value === "string" && value.trim().length ? value : null;
+const asNullableDeviceId = (value: unknown) => {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed.length ? trimmed : null;
+};
 
 const asCameraShape = (
   value: unknown,
