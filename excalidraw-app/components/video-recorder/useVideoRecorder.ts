@@ -79,6 +79,21 @@ const getErrorMessage = (error: unknown) => {
   return typeof error.message === "string" ? error.message : "";
 };
 
+const isPermissionDeniedError = (error: unknown) => {
+  if (PERMISSION_DENIED_ERROR_NAMES.has(getNormalizedErrorName(error))) {
+    return true;
+  }
+  const message = getErrorMessage(error).toLowerCase();
+  if (!message) {
+    return false;
+  }
+  return (
+    message.includes("permission denied") ||
+    message.includes("permissiondismissederror") ||
+    message.includes("notallowederror")
+  );
+};
+
 const isDeviceSelectionError = (error: unknown) => {
   if (DEVICE_SELECTION_ERROR_NAMES.has(getNormalizedErrorName(error))) {
     return true;
@@ -103,6 +118,25 @@ const isDeviceSelectionError = (error: unknown) => {
       message.includes("constraint failed"));
 
   return hasNotFoundSignal || hasConstraintSignal;
+};
+
+const isDeviceBusyError = (error: unknown) => {
+  if (DEVICE_BUSY_ERROR_NAMES.has(getNormalizedErrorName(error))) {
+    return true;
+  }
+
+  const message = getErrorMessage(error).toLowerCase();
+  if (!message) {
+    return false;
+  }
+
+  return (
+    message.includes("notreadableerror") ||
+    message.includes("trackstarterror") ||
+    message.includes("source unavailable") ||
+    message.includes("device busy") ||
+    message.includes("could not start video source")
+  );
 };
 
 const isMimeNotSupportedMessage = (error: unknown) => {
@@ -566,16 +600,16 @@ const collectMediaDevices = async () => {
 export const mapVideoRecorderErrorMessage = (error: unknown) => {
   const errorName = getNormalizedErrorName(error);
 
-  if (PERMISSION_DENIED_ERROR_NAMES.has(errorName)) {
+  if (isPermissionDeniedError(error)) {
     return t("videoRecorder.errors.permissionDenied");
   }
   if (errorName === "notsupportederror") {
     return t("videoRecorder.errors.notSupported");
   }
-  if (DEVICE_SELECTION_ERROR_NAMES.has(errorName)) {
+  if (isDeviceSelectionError(error)) {
     return t("videoRecorder.errors.deviceNotFound");
   }
-  if (DEVICE_BUSY_ERROR_NAMES.has(errorName)) {
+  if (isDeviceBusyError(error)) {
     return t("videoRecorder.errors.deviceBusy");
   }
 

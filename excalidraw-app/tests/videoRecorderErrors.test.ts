@@ -76,6 +76,24 @@ describe("video recorder error mapping", () => {
     );
   });
 
+  it("maps known error message signals even without matching names", () => {
+    expect(
+      mapVideoRecorderErrorMessage(
+        new Error("Permission denied while accessing media input."),
+      ),
+    ).toBe("Camera or microphone permission was denied.");
+    expect(
+      mapVideoRecorderErrorMessage(
+        new Error("Requested device not found for selected input."),
+      ),
+    ).toBe("Selected camera or microphone is not available.");
+    expect(
+      mapVideoRecorderErrorMessage(
+        new Error("Could not start video source due to another process."),
+      ),
+    ).toBe("Camera or microphone is currently busy.");
+  });
+
   it("maps busy-device DOMException names", () => {
     expect(
       mapVideoRecorderErrorMessage(new DOMException("", "NotReadableError")),
