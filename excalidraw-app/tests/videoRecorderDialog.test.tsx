@@ -246,7 +246,7 @@ describe("VideoRecorderDialog", () => {
     const settings = {
       ...getDefaultVideoRecorderSettings(),
       cameraEnabled: true,
-      mimeType: "video/webm; codecs = vp9,opus",
+      mimeType: "video / webm; codecs = vp9,opus",
     };
 
     renderDialog({

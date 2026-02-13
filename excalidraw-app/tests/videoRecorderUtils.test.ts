@@ -88,6 +88,9 @@ describe("video recorder utils", () => {
     expect(getFileExtensionFromMimeType(" video/mp4 ; codecs=avc1 ")).toBe(
       "mp4",
     );
+    expect(getFileExtensionFromMimeType("video / mp4 ; codecs=avc1")).toBe(
+      "mp4",
+    );
     expect(getFileExtensionFromMimeType("video/webm;codecs=vp9,opus")).toBe(
       "webm",
     );
@@ -108,6 +111,12 @@ describe("video recorder utils", () => {
     expect(
       normalizeRecorderMimeType(
         "video/webm; codecs = vp9, opus",
+        supportedMimeTypes,
+      ),
+    ).toBe("video/webm;codecs=vp9,opus");
+    expect(
+      normalizeRecorderMimeType(
+        "video / webm; codecs = vp9, opus",
         supportedMimeTypes,
       ),
     ).toBe("video/webm;codecs=vp9,opus");

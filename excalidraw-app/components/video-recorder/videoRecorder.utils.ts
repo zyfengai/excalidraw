@@ -151,7 +151,10 @@ export const normalizedRectToPixels = (
 export const getFileExtensionFromMimeType = (mimeType: string) => {
   const normalizedMimeType = mimeType.toLowerCase().trim();
   const [typeToken] = normalizedMimeType.split(";");
-  const normalizedTypeToken = typeToken?.trim() || "";
+  const normalizedTypeToken = (typeToken || "")
+    .trim()
+    .replace(/\s*\/\s*/g, "/")
+    .trim();
 
   if (normalizedTypeToken.endsWith("/mp4")) {
     return "mp4";
@@ -164,6 +167,7 @@ const canonicalizeMimeType = (mimeType: string) =>
   mimeType
     .trim()
     .toLowerCase()
+    .replace(/\s*\/\s*/g, "/")
     .replace(/\s*;\s*/g, ";")
     .replace(/\s*=\s*/g, "=")
     .replace(/\s*,\s*/g, ",");
