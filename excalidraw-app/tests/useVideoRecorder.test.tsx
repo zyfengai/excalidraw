@@ -669,7 +669,7 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.isRequestingPermissions).toBe(false);
   });
 
-  it("clears both selected devices when permission fallback downgrades to defaults", async () => {
+  it("keeps both selected devices when permission fallback cannot disambiguate stale side", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const trackStop = vi.fn();
     const permissionStream = {
@@ -709,8 +709,10 @@ describe("useVideoRecorder", () => {
     });
     expect(trackStop).toHaveBeenCalledTimes(1);
     expect(recorder.latest.error).toBeNull();
-    expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
-    expect(recorder.latest.settings.selectedAudioDeviceId).toBeNull();
+    expect(recorder.latest.settings.selectedVideoDeviceId).toBe(
+      "missing-camera",
+    );
+    expect(recorder.latest.settings.selectedAudioDeviceId).toBe("missing-mic");
   });
 
   it("does not clear a newly selected device if permission fallback resolves later", async () => {

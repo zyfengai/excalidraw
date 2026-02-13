@@ -515,6 +515,8 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       const shouldClearAudioSelection = hasSpecificDeviceConstraint(
         primaryConstraints.audio,
       );
+      const isDualSpecificSelectionRequest =
+        shouldClearVideoSelection && shouldClearAudioSelection;
       const shouldFallbackToDefaultDevices =
         shouldClearVideoSelection || shouldClearAudioSelection;
       const stream = await getUserMediaWithDeviceFallback(
@@ -532,12 +534,14 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           setSettingsState((prev) => ({
             ...prev,
             selectedVideoDeviceId:
+              !isDualSpecificSelectionRequest &&
               shouldClearVideoSelection &&
               requestedVideoDeviceId &&
               prev.selectedVideoDeviceId === requestedVideoDeviceId
                 ? null
                 : prev.selectedVideoDeviceId,
             selectedAudioDeviceId:
+              !isDualSpecificSelectionRequest &&
               shouldClearAudioSelection &&
               requestedAudioDeviceId &&
               prev.selectedAudioDeviceId === requestedAudioDeviceId
