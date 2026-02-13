@@ -62,11 +62,16 @@ const DEVICE_BUSY_ERROR_NAMES = new Set([
   "sourceunavailableerror",
 ]);
 const ERROR_NAME_PREFIX_REGEX = /^([a-z][a-z0-9]*error)\b/i;
+const ERROR_NAME_ANYWHERE_REGEX = /\b([a-z][a-z0-9]*error)\b/i;
 
 const getErrorNameFromString = (value: string) => {
   const trimmedValue = value.trim();
-  const match = trimmedValue.match(ERROR_NAME_PREFIX_REGEX);
-  return match?.[1] || trimmedValue;
+  const prefixMatch = trimmedValue.match(ERROR_NAME_PREFIX_REGEX);
+  if (prefixMatch?.[1]) {
+    return prefixMatch[1];
+  }
+  const anywhereMatch = trimmedValue.match(ERROR_NAME_ANYWHERE_REGEX);
+  return anywhereMatch?.[1] || trimmedValue;
 };
 
 const getErrorName = (error: unknown) => {

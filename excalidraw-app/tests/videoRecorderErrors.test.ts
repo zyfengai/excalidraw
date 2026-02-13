@@ -183,6 +183,9 @@ describe("video recorder error mapping", () => {
     expect(
       mapVideoRecorderErrorMessage("NotSupportedError: codec mismatch"),
     ).toBe("This browser does not support video recording.");
+    expect(mapVideoRecorderErrorMessage("DOMException: SecurityError")).toBe(
+      "Camera or microphone permission was denied.",
+    );
     expect(mapVideoRecorderErrorMessage(" NotFoundError ")).toBe(
       "Selected camera or microphone is not available.",
     );
