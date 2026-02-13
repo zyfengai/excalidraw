@@ -165,6 +165,7 @@ const isMimeNotSupportedMessage = (error: unknown) => {
   const hasMimeContext =
     message.includes("mime") ||
     message.includes("mediarecorder") ||
+    message.includes("media recorder") ||
     message.includes("type provided") ||
     message.includes("video/") ||
     message.includes("audio/");
