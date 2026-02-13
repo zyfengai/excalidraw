@@ -74,14 +74,44 @@ const getErrorNameFromString = (value: string) => {
   return anywhereMatch?.[1] || trimmedValue;
 };
 
+const MAX_ERROR_CAUSE_TRAVERSAL_DEPTH = 3;
+
+const getErrorCause = (error: unknown) => {
+  if (!error || typeof error !== "object" || !("cause" in error)) {
+    return undefined;
+  }
+  return (error as { cause?: unknown }).cause;
+};
+
 const getErrorName = (error: unknown) => {
   if (typeof error === "string") {
     return getErrorNameFromString(error);
   }
-  if (!error || typeof error !== "object" || !("name" in error)) {
-    return "";
+
+  const visited = new Set<unknown>();
+  let currentError: unknown = error;
+
+  for (let depth = 0; depth < MAX_ERROR_CAUSE_TRAVERSAL_DEPTH; depth++) {
+    if (!currentError || typeof currentError !== "object") {
+      return "";
+    }
+    if (visited.has(currentError)) {
+      return "";
+    }
+    visited.add(currentError);
+
+    if ("name" in currentError && typeof currentError.name === "string") {
+      return currentError.name;
+    }
+
+    const cause = getErrorCause(currentError);
+    if (cause === undefined) {
+      return "";
+    }
+    currentError = cause;
   }
-  return typeof error.name === "string" ? error.name : "";
+
+  return "";
 };
 
 const getNormalizedErrorName = (error: unknown) =>
@@ -91,10 +121,34 @@ const getErrorMessage = (error: unknown) => {
   if (typeof error === "string") {
     return error;
   }
-  if (!error || typeof error !== "object" || !("message" in error)) {
-    return "";
+
+  const visited = new Set<unknown>();
+  let currentError: unknown = error;
+
+  for (let depth = 0; depth < MAX_ERROR_CAUSE_TRAVERSAL_DEPTH; depth++) {
+    if (!currentError || typeof currentError !== "object") {
+      return "";
+    }
+    if (visited.has(currentError)) {
+      return "";
+    }
+    visited.add(currentError);
+
+    if ("message" in currentError && typeof currentError.message === "string") {
+      return currentError.message;
+    }
+    if ("reason" in currentError && typeof currentError.reason === "string") {
+      return currentError.reason;
+    }
+
+    const cause = getErrorCause(currentError);
+    if (cause === undefined) {
+      return "";
+    }
+    currentError = cause;
   }
-  return typeof error.message === "string" ? error.message : "";
+
+  return "";
 };
 
 const getNormalizedErrorMessage = (error: unknown) =>

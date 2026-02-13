@@ -52,6 +52,24 @@ describe("video recorder error mapping", () => {
     );
   });
 
+  it("maps nested cause and reason payloads", () => {
+    expect(
+      mapVideoRecorderErrorMessage({
+        cause: { name: "NotFoundError" },
+      }),
+    ).toBe("Selected camera or microphone is not available.");
+    expect(
+      mapVideoRecorderErrorMessage({
+        cause: { message: "Permission denied while accessing media input." },
+      }),
+    ).toBe("Camera or microphone permission was denied.");
+    expect(
+      mapVideoRecorderErrorMessage({
+        reason: "No such device",
+      }),
+    ).toBe("Selected camera or microphone is not available.");
+  });
+
   it("maps media not-supported messages without explicit error names", () => {
     expect(
       mapVideoRecorderErrorMessage(
