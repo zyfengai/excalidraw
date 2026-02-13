@@ -764,7 +764,10 @@
       "notSupported": "This browser does not support video recording.",
       "canvasNotFound": "Unable to capture drawing canvas.",
       "contextUnavailable": "Unable to initialize recorder context.",
-      "recordingFailed": "Recording failed. Please try again."
+      "recordingFailed": "Recording failed. Please try again.",
+      "permissionDenied": "Camera or microphone permission was denied.",
+      "deviceNotFound": "Selected camera or microphone is not available.",
+      "deviceBusy": "Camera or microphone is currently busy."
     }
   },
   "keys": {

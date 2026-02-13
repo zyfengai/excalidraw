@@ -178,10 +178,26 @@ const collectMediaDevices = async () => {
 };
 
 const getErrorMessage = (error: unknown) => {
-  if (error instanceof Error) {
-    return error.message;
+  if (error instanceof DOMException) {
+    switch (error.name) {
+      case "NotAllowedError":
+      case "SecurityError":
+        return t("videoRecorder.errors.permissionDenied");
+      case "NotFoundError":
+      case "OverconstrainedError":
+        return t("videoRecorder.errors.deviceNotFound");
+      case "NotReadableError":
+      case "AbortError":
+        return t("videoRecorder.errors.deviceBusy");
+      default:
+        return error.message;
+    }
   }
-  return String(error);
+
+  if (error instanceof Error) {
+    return error.message || t("videoRecorder.errors.recordingFailed");
+  }
+  return t("videoRecorder.errors.recordingFailed");
 };
 
 type UseVideoRecorderReturn = {
@@ -405,6 +421,10 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
     }
 
     try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error(t("videoRecorder.errors.notSupported"));
+      }
+
       setError(null);
       setResult(null);
       setStatus("preparing");
