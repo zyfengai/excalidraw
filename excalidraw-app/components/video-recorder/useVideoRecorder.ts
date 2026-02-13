@@ -534,6 +534,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           setSettingsState((prev) => {
             const selectedVideoDeviceId =
               !isDualSpecificSelectionRequest &&
+              prev.cameraEnabled &&
               shouldClearVideoSelection &&
               requestedVideoDeviceId &&
               prev.selectedVideoDeviceId === requestedVideoDeviceId
@@ -541,6 +542,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
                 : prev.selectedVideoDeviceId;
             const selectedAudioDeviceId =
               !isDualSpecificSelectionRequest &&
+              prev.microphoneEnabled &&
               shouldClearAudioSelection &&
               requestedAudioDeviceId &&
               prev.selectedAudioDeviceId === requestedAudioDeviceId
@@ -750,6 +752,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
             }
             setSettingsState((prev) => {
               const selectedVideoDeviceId =
+                prev.cameraEnabled &&
                 prev.selectedVideoDeviceId === requestedVideoDeviceId
                   ? null
                   : prev.selectedVideoDeviceId;
@@ -794,6 +797,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
             }
             setSettingsState((prev) => {
               const selectedAudioDeviceId =
+                prev.microphoneEnabled &&
                 prev.selectedAudioDeviceId === requestedAudioDeviceId
                   ? null
                   : prev.selectedAudioDeviceId;
