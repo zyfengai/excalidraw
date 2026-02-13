@@ -66,6 +66,7 @@ const GENERIC_ERROR_NAMES = new Set([
   "exception",
   "domexception",
   "mediaerror",
+  "aggregateerror",
 ]);
 const ERROR_NAME_PREFIX_REGEX = /^([a-z][a-z0-9]*error)\b/i;
 const ERROR_NAME_ANYWHERE_REGEX = /\b([a-z][a-z0-9]*error)\b/i;
@@ -81,6 +82,18 @@ const getErrorNameFromString = (value: string) => {
 };
 
 const MAX_ERROR_CAUSE_TRAVERSAL_DEPTH = 3;
+
+const getFirstArrayEntry = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  for (const entry of value) {
+    if (entry !== undefined && entry !== null) {
+      return entry;
+    }
+  }
+  return undefined;
+};
 
 const getNextNestedError = (error: unknown) => {
   if (!error || typeof error !== "object") {
@@ -107,6 +120,15 @@ const getNextNestedError = (error: unknown) => {
     (error as { originalError?: unknown }).originalError !== undefined
   ) {
     return (error as { originalError?: unknown }).originalError;
+  }
+
+  if ("errors" in error) {
+    const firstNestedError = getFirstArrayEntry(
+      (error as { errors?: unknown }).errors,
+    );
+    if (firstNestedError !== undefined) {
+      return firstNestedError;
+    }
   }
 
   if (
