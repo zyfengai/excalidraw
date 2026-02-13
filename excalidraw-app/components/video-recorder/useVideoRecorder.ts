@@ -108,6 +108,17 @@ const getNextNestedError = (error: unknown) => {
     return (error as { error?: unknown }).error;
   }
 
+  if ("err" in error && (error as { err?: unknown }).err !== undefined) {
+    return (error as { err?: unknown }).err;
+  }
+
+  if (
+    "exception" in error &&
+    (error as { exception?: unknown }).exception !== undefined
+  ) {
+    return (error as { exception?: unknown }).exception;
+  }
+
   if (
     "innerError" in error &&
     (error as { innerError?: unknown }).innerError !== undefined
