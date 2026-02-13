@@ -85,9 +85,14 @@ const hasSpecificDeviceConstraint = (
 const reconcileSelectedDeviceId = (
   selectedDeviceId: string | null,
   availableDevices: VideoRecorderDeviceOption[],
+  shouldPreserveWhenDeviceTypeMissing: boolean,
 ) => {
-  if (!selectedDeviceId || availableDevices.length === 0) {
+  if (!selectedDeviceId) {
     return selectedDeviceId;
+  }
+
+  if (availableDevices.length === 0) {
+    return shouldPreserveWhenDeviceTypeMissing ? selectedDeviceId : null;
   }
 
   const exists = availableDevices.some(
@@ -449,13 +454,17 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       }
       setDevices(mediaDevices);
       setSettingsState((prev) => {
+        const hasVideoInputs = mediaDevices.videoInputs.length > 0;
+        const hasAudioInputs = mediaDevices.audioInputs.length > 0;
         const selectedVideoDeviceId = reconcileSelectedDeviceId(
           prev.selectedVideoDeviceId,
           mediaDevices.videoInputs,
+          !hasAudioInputs,
         );
         const selectedAudioDeviceId = reconcileSelectedDeviceId(
           prev.selectedAudioDeviceId,
           mediaDevices.audioInputs,
+          !hasVideoInputs,
         );
 
         if (
