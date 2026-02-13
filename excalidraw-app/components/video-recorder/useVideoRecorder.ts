@@ -61,10 +61,17 @@ const DEVICE_BUSY_ERROR_NAMES = new Set([
   "trackstarterror",
   "sourceunavailableerror",
 ]);
+const ERROR_NAME_PREFIX_REGEX = /^([a-z][a-z0-9]*error)\b/i;
+
+const getErrorNameFromString = (value: string) => {
+  const trimmedValue = value.trim();
+  const match = trimmedValue.match(ERROR_NAME_PREFIX_REGEX);
+  return match?.[1] || trimmedValue;
+};
 
 const getErrorName = (error: unknown) => {
   if (typeof error === "string") {
-    return error;
+    return getErrorNameFromString(error);
   }
   if (!error || typeof error !== "object" || !("name" in error)) {
     return "";

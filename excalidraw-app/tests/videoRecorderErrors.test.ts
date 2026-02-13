@@ -172,9 +172,15 @@ describe("video recorder error mapping", () => {
     expect(mapVideoRecorderErrorMessage("NotSupportedError")).toBe(
       "This browser does not support video recording.",
     );
+    expect(
+      mapVideoRecorderErrorMessage("NotSupportedError: codec mismatch"),
+    ).toBe("This browser does not support video recording.");
     expect(mapVideoRecorderErrorMessage(" NotFoundError ")).toBe(
       "Selected camera or microphone is not available.",
     );
+    expect(
+      mapVideoRecorderErrorMessage("NotFoundError: selected input missing"),
+    ).toBe("Selected camera or microphone is not available.");
     expect(mapVideoRecorderErrorMessage("TrackStartError")).toBe(
       "Camera or microphone is currently busy.",
     );
