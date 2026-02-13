@@ -565,7 +565,7 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.error).toBeNull();
   });
 
-  it("cleans up and reports error when MediaRecorder initialization throws", async () => {
+  it("recovers and allows restart when MediaRecorder initialization throws once", async () => {
     const videoTrackStop = vi.fn();
     const cancelAnimationFrameSpy = vi
       .spyOn(window, "cancelAnimationFrame")
@@ -609,10 +609,42 @@ describe("useVideoRecorder", () => {
     }
     globalThis.MediaStream = MockMediaStream as any;
 
+    let constructorCalls = 0;
     class ThrowingMediaRecorder {
       static isTypeSupported = (mimeType: string) => mimeType.includes("webm");
-      constructor() {
-        throw new Error("recorder init failed");
+      state: RecordingState = "inactive";
+      mimeType = "video/webm";
+      ondataavailable: ((event: BlobEvent) => void) | null = null;
+      onstop: (() => void) | null = null;
+      onerror: ((event: any) => void) | null = null;
+      private stopListeners = new Set<() => void>();
+      constructor(_stream: MediaStream, options?: MediaRecorderOptions) {
+        constructorCalls += 1;
+        if (constructorCalls === 1) {
+          throw new Error("recorder init failed");
+        }
+        this.mimeType = options?.mimeType || "video/webm";
+      }
+      start() {
+        this.state = "recording";
+        this.ondataavailable?.({
+          data: new Blob(["chunk"], { type: this.mimeType }),
+        } as BlobEvent);
+      }
+      stop() {
+        this.state = "inactive";
+        this.stopListeners.forEach((listener) => listener());
+        this.onstop?.();
+      }
+      addEventListener(event: "stop", listener: () => void) {
+        if (event === "stop") {
+          this.stopListeners.add(listener);
+        }
+      }
+      removeEventListener(event: "stop", listener: () => void) {
+        if (event === "stop") {
+          this.stopListeners.delete(listener);
+        }
       }
     }
     globalThis.MediaRecorder = ThrowingMediaRecorder as any;
@@ -634,11 +666,30 @@ describe("useVideoRecorder", () => {
       expect(recorder.latest.status).toBe("error");
       expect(recorder.latest.error).toBe("recorder init failed");
     });
-
     expect(videoTrackStop).toHaveBeenCalledTimes(1);
     expect(cancelAnimationFrameSpy).toHaveBeenCalledTimes(1);
     expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
     expect(recorder.latest.isRecordingActive).toBe(false);
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+      expect(recorder.latest.error).toBeNull();
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result).toBeTruthy();
+    });
+
+    expect(videoTrackStop).toHaveBeenCalledTimes(2);
+    expect(cancelAnimationFrameSpy).toHaveBeenCalledTimes(2);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
 
     cleanup();
   });
