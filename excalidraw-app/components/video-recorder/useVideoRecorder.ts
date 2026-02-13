@@ -76,11 +76,36 @@ const getErrorNameFromString = (value: string) => {
 
 const MAX_ERROR_CAUSE_TRAVERSAL_DEPTH = 3;
 
-const getErrorCause = (error: unknown) => {
-  if (!error || typeof error !== "object" || !("cause" in error)) {
+const getNextNestedError = (error: unknown) => {
+  if (!error || typeof error !== "object") {
     return undefined;
   }
-  return (error as { cause?: unknown }).cause;
+
+  if ("cause" in error && (error as { cause?: unknown }).cause !== undefined) {
+    return (error as { cause?: unknown }).cause;
+  }
+
+  if ("error" in error && (error as { error?: unknown }).error !== undefined) {
+    return (error as { error?: unknown }).error;
+  }
+
+  if (
+    "detail" in error &&
+    (error as { detail?: unknown }).detail !== undefined
+  ) {
+    const detail = (error as { detail?: unknown }).detail;
+    if (
+      detail &&
+      typeof detail === "object" &&
+      "error" in detail &&
+      (detail as { error?: unknown }).error !== undefined
+    ) {
+      return (detail as { error?: unknown }).error;
+    }
+    return detail;
+  }
+
+  return undefined;
 };
 
 const getErrorName = (error: unknown) => {
@@ -107,11 +132,11 @@ const getErrorName = (error: unknown) => {
       return currentError.name;
     }
 
-    const cause = getErrorCause(currentError);
-    if (cause === undefined) {
+    const nextError = getNextNestedError(currentError);
+    if (nextError === undefined) {
       return "";
     }
-    currentError = cause;
+    currentError = nextError;
   }
 
   return "";
@@ -147,11 +172,11 @@ const getErrorMessage = (error: unknown) => {
       return currentError.reason;
     }
 
-    const cause = getErrorCause(currentError);
-    if (cause === undefined) {
+    const nextError = getNextNestedError(currentError);
+    if (nextError === undefined) {
       return "";
     }
-    currentError = cause;
+    currentError = nextError;
   }
 
   return "";
