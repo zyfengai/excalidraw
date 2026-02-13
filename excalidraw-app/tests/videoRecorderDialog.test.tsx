@@ -16,10 +16,12 @@ vi.mock("@excalidraw/excalidraw/i18n", () => {
     "videoRecorder.title": "Video recorder",
     "videoRecorder.actions.requestPermissions":
       "Enable camera & microphone access",
+    "videoRecorder.actions.startRecording": "Start recording",
     "videoRecorder.camera.shape": "Camera shape",
     "videoRecorder.camera.sizeWidth": "Camera width",
     "videoRecorder.camera.sizeHeight": "Camera height",
     "videoRecorder.camera.resetLayout": "Reset camera position & size",
+    "buttons.cancel": "Cancel",
   };
 
   const translate = (key: string) => dictionary[key] ?? key;
@@ -44,10 +46,18 @@ const renderDialog = (
     settings: ReturnType<typeof getDefaultVideoRecorderSettings>;
     onCameraLayoutChange: ReturnType<typeof vi.fn>;
     onRequestPermissions: ReturnType<typeof vi.fn>;
+    onStart: ReturnType<typeof vi.fn>;
+    status: "idle" | "preparing";
+    isRequestingPermissions: boolean;
+    capabilities: {
+      isSupported: boolean;
+      supportedMimeTypes: string[];
+    };
   }> = {},
 ) => {
   const onCameraLayoutChange = opts.onCameraLayoutChange ?? vi.fn();
   const onRequestPermissions = opts.onRequestPermissions ?? vi.fn();
+  const onStart = opts.onStart ?? vi.fn(async () => undefined);
 
   const settings = opts.settings ?? {
     ...getDefaultVideoRecorderSettings(),
@@ -59,19 +69,21 @@ const renderDialog = (
       <UIAppStateContext.Provider value={getUIAppState()}>
         <VideoRecorderDialog
           isOpen={true}
-          capabilities={{
-            isSupported: true,
-            supportedMimeTypes: ["video/webm"],
-          }}
-          status="idle"
+          capabilities={
+            opts.capabilities ?? {
+              isSupported: true,
+              supportedMimeTypes: ["video/webm"],
+            }
+          }
+          status={opts.status ?? "idle"}
           error={null}
           settings={settings}
           devices={{ videoInputs: [], audioInputs: [] }}
           onClose={vi.fn()}
           onRefreshDevices={vi.fn(async () => undefined)}
-          onStart={vi.fn(async () => undefined)}
+          onStart={onStart}
           onRequestPermissions={onRequestPermissions}
-          isRequestingPermissions={false}
+          isRequestingPermissions={opts.isRequestingPermissions ?? false}
           onSettingsChange={vi.fn()}
           onCameraLayoutChange={onCameraLayoutChange}
         />
@@ -82,6 +94,7 @@ const renderDialog = (
   return {
     onCameraLayoutChange,
     onRequestPermissions,
+    onStart,
   };
 };
 
@@ -98,6 +111,62 @@ describe("VideoRecorderDialog", () => {
     );
 
     expect(onRequestPermissions).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables permission request while permissions are in-flight", () => {
+    const { onRequestPermissions } = renderDialog({
+      onRequestPermissions: vi.fn(async () => undefined),
+      isRequestingPermissions: true,
+    });
+
+    const requestButton = screen.getByRole("button", {
+      name: /Enable camera & microphone access/i,
+    });
+    expect(requestButton).toBeDisabled();
+    fireEvent.click(requestButton);
+
+    expect(onRequestPermissions).toHaveBeenCalledTimes(0);
+  });
+
+  it("starts recording when start action is enabled", () => {
+    const { onStart } = renderDialog();
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Start recording/i,
+      }),
+    );
+
+    expect(onStart).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables start action while preparing", () => {
+    const { onStart } = renderDialog({
+      status: "preparing",
+    });
+
+    const startButton = screen.getByRole("button", {
+      name: /Start recording/i,
+    });
+    expect(startButton).toBeDisabled();
+    fireEvent.click(startButton);
+    expect(onStart).toHaveBeenCalledTimes(0);
+  });
+
+  it("disables start action when browser support is missing", () => {
+    const { onStart } = renderDialog({
+      capabilities: {
+        isSupported: false,
+        supportedMimeTypes: [],
+      },
+    });
+
+    const startButton = screen.getByRole("button", {
+      name: /Start recording/i,
+    });
+    expect(startButton).toBeDisabled();
+    fireEvent.click(startButton);
+    expect(onStart).toHaveBeenCalledTimes(0);
   });
 
   it("updates camera width in non-circle mode", () => {
