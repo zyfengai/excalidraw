@@ -90,6 +90,8 @@ const createExcalidrawCanvases = () => {
 const setupRecordingFlowMocks = (opts?: {
   deferStop?: boolean;
   stopThrows?: boolean;
+  pauseThrows?: boolean;
+  resumeThrows?: boolean;
 }) => {
   const cleanupSpy = vi.fn();
   const pauseSpy = vi.fn();
@@ -156,10 +158,16 @@ const setupRecordingFlowMocks = (opts?: {
       } as BlobEvent);
     }
     pause() {
+      if (opts?.pauseThrows) {
+        throw new Error("pause failed");
+      }
       this.state = "paused";
       pauseSpy();
     }
     resume() {
+      if (opts?.resumeThrows) {
+        throw new Error("resume failed");
+      }
       this.state = "recording";
       resumeSpy();
     }
@@ -1937,6 +1945,88 @@ describe("useVideoRecorder", () => {
       expect(recorder.latest.status).toBe("completed");
       expect(recorder.latest.isRecordingActive).toBe(false);
     });
+
+    setup.cleanupCanvases();
+  });
+
+  it("switches to error and cleans up when pause action throws", async () => {
+    const setup = setupRecordingFlowMocks({ pauseThrows: true });
+    const recorder = renderUseVideoRecorder();
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      recorder.latest.pauseRecording();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe("pause failed");
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+    expect(setup.videoTrackStop).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(setup.pauseSpy).toHaveBeenCalledTimes(0);
+
+    setup.cleanupCanvases();
+  });
+
+  it("switches to error and cleans up when resume action throws", async () => {
+    const setup = setupRecordingFlowMocks({ resumeThrows: true });
+    const recorder = renderUseVideoRecorder();
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      recorder.latest.pauseRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("paused");
+    });
+    expect(setup.pauseSpy).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      recorder.latest.resumeRecording();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe("resume failed");
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+    expect(setup.videoTrackStop).toHaveBeenCalledTimes(1);
+    expect(setup.resumeSpy).toHaveBeenCalledTimes(0);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
 
     setup.cleanupCanvases();
   });

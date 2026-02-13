@@ -957,24 +957,38 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
     if (recorderRef.current?.state !== "recording") {
       return;
     }
-    recorderRef.current.pause();
-    pausedAtRef.current = Date.now();
-    setStatus("paused");
-    clearElapsedTimer();
-  }, [clearElapsedTimer]);
+    try {
+      recorderRef.current.pause();
+      pausedAtRef.current = Date.now();
+      setStatus("paused");
+      clearElapsedTimer();
+    } catch (pauseError) {
+      console.error(pauseError);
+      setError(mapVideoRecorderErrorMessage(pauseError));
+      setStatus("error");
+      cleanupStreams();
+    }
+  }, [cleanupStreams, clearElapsedTimer]);
 
   const resumeRecording = useCallback(() => {
     if (recorderRef.current?.state !== "paused") {
       return;
     }
-    recorderRef.current.resume();
-    if (pausedAtRef.current) {
-      pausedAccumulatedRef.current += Date.now() - pausedAtRef.current;
-      pausedAtRef.current = null;
+    try {
+      recorderRef.current.resume();
+      if (pausedAtRef.current) {
+        pausedAccumulatedRef.current += Date.now() - pausedAtRef.current;
+        pausedAtRef.current = null;
+      }
+      setStatus("recording");
+      startElapsedTicker();
+    } catch (resumeError) {
+      console.error(resumeError);
+      setError(mapVideoRecorderErrorMessage(resumeError));
+      setStatus("error");
+      cleanupStreams();
     }
-    setStatus("recording");
-    startElapsedTicker();
-  }, [startElapsedTicker]);
+  }, [cleanupStreams, startElapsedTicker]);
 
   const stopRecording = useCallback(async () => {
     if (stopRecordingInFlightRef.current) {
