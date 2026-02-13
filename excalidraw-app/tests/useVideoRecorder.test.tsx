@@ -97,6 +97,7 @@ const setupRecordingFlowMocks = (opts?: {
   trackStopThrows?: boolean;
   supportedMimeTypes?: string[];
   unsupportedConstructorMimeTypes?: string[];
+  defaultConstructorMimeType?: string;
 }) => {
   const cleanupSpy = vi.fn();
   const pauseSpy = vi.fn();
@@ -160,8 +161,12 @@ const setupRecordingFlowMocks = (opts?: {
     private stopListeners = new Set<() => void>();
 
     constructor(_stream: MediaStream, options?: MediaRecorderOptions) {
-      const requestedMimeType = options?.mimeType || "video/webm";
-      if (opts?.unsupportedConstructorMimeTypes?.includes(requestedMimeType)) {
+      const requestedMimeType =
+        options?.mimeType || opts?.defaultConstructorMimeType || "video/webm";
+      if (
+        options?.mimeType &&
+        opts?.unsupportedConstructorMimeTypes?.includes(requestedMimeType)
+      ) {
         throw new DOMException("mime type not supported", "NotSupportedError");
       }
       this.mimeType = requestedMimeType;
@@ -2655,6 +2660,42 @@ describe("useVideoRecorder", () => {
     const setup = setupRecordingFlowMocks({
       supportedMimeTypes: ["video/mp4", "video/webm"],
       unsupportedConstructorMimeTypes: ["video/mp4"],
+    });
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+        mimeType: "video/mp4",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+      expect(recorder.latest.error).toBeNull();
+      expect(recorder.latest.settings.mimeType).toBe("video/webm");
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result?.mimeType).toBe("video/webm");
+    });
+
+    setup.cleanupCanvases();
+  });
+
+  it("syncs settings to runtime mimeType when fallback constructor succeeds without mime option", async () => {
+    const setup = setupRecordingFlowMocks({
+      supportedMimeTypes: ["video/mp4"],
+      unsupportedConstructorMimeTypes: ["video/mp4"],
+      defaultConstructorMimeType: "video/webm",
     });
     const recorder = renderUseVideoRecorder();
 

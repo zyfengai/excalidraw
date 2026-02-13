@@ -1119,18 +1119,20 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         .forEach((track) => composedStream.addTrack(track));
       recordingStreamRef.current = composedStream;
 
+      const requestedMimeType = settings.mimeType.trim();
       const preferredMimeType = normalizeRecorderMimeType(
-        settings.mimeType,
+        requestedMimeType,
         capabilities.supportedMimeTypes,
       );
-      const mimeTypeCandidates = [
-        preferredMimeType,
-        ...capabilities.supportedMimeTypes.filter(
-          (mimeType) => mimeType !== preferredMimeType,
-        ),
-      ];
+      const mimeTypeCandidates = Array.from(
+        new Set([
+          requestedMimeType,
+          preferredMimeType,
+          ...capabilities.supportedMimeTypes,
+        ]),
+      ).filter(Boolean);
 
-      let selectedMimeType = preferredMimeType;
+      let selectedMimeType = mimeTypeCandidates[0] || preferredMimeType;
       let recorder: MediaRecorder | null = null;
       let recorderCreationError: unknown = null;
 
@@ -1155,6 +1157,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       if (!recorder) {
         try {
           recorder = new MediaRecorder(composedStream);
+          selectedMimeType = recorder.mimeType || selectedMimeType;
         } catch {
           throw (
             recorderCreationError ||
@@ -1164,12 +1167,16 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       }
 
       recorderRef.current = recorder;
-      const normalizedSelectedMimeType = normalizeRecorderMimeType(
-        selectedMimeType,
-        capabilities.supportedMimeTypes,
-      );
+      const normalizedSelectedMimeType = (
+        recorder.mimeType ||
+        selectedMimeType ||
+        ""
+      ).trim();
       setSettingsState((prev) => {
-        if (prev.mimeType === normalizedSelectedMimeType) {
+        if (
+          !normalizedSelectedMimeType ||
+          prev.mimeType === normalizedSelectedMimeType
+        ) {
           return prev;
         }
         const next = {
@@ -1202,8 +1209,11 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           return;
         }
 
-        const finalizedMimeType =
-          recorder?.mimeType || selectedMimeType || settings.mimeType;
+        const finalizedMimeType = (
+          recorder?.mimeType ||
+          selectedMimeType ||
+          settings.mimeType
+        ).trim();
         const blob = new Blob(chunksRef.current, {
           type: finalizedMimeType,
         });
