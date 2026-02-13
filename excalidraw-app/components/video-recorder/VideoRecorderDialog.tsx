@@ -180,6 +180,20 @@ export const VideoRecorderDialog = ({
   }
 
   const aspectRatioValue = VIDEO_RECORDER_RATIO_MAP[settings.aspectRatio];
+  const selectedVideoDeviceValue =
+    settings.selectedVideoDeviceId &&
+    devices.videoInputs.some(
+      (device) => device.deviceId === settings.selectedVideoDeviceId,
+    )
+      ? settings.selectedVideoDeviceId
+      : "";
+  const selectedAudioDeviceValue =
+    settings.selectedAudioDeviceId &&
+    devices.audioInputs.some(
+      (device) => device.deviceId === settings.selectedAudioDeviceId,
+    )
+      ? settings.selectedAudioDeviceId
+      : "";
   const hasActiveRecordingSession =
     status === "preparing" ||
     status === "recording" ||
@@ -280,7 +294,7 @@ export const VideoRecorderDialog = ({
               <select
                 id="video-recorder-camera-device"
                 className="TextInput"
-                value={settings.selectedVideoDeviceId || ""}
+                value={selectedVideoDeviceValue}
                 onChange={(event) =>
                   onSettingsChange({
                     selectedVideoDeviceId: event.target.value || null,
@@ -415,7 +429,7 @@ export const VideoRecorderDialog = ({
               <select
                 id="video-recorder-mic-device"
                 className="TextInput"
-                value={settings.selectedAudioDeviceId || ""}
+                value={selectedAudioDeviceValue}
                 onChange={(event) =>
                   onSettingsChange({
                     selectedAudioDeviceId: event.target.value || null,

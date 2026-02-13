@@ -54,6 +54,10 @@ const renderDialog = (
     status: VideoRecorderStatus;
     isRequestingPermissions: boolean;
     isOpen: boolean;
+    devices: {
+      videoInputs: Array<{ deviceId: string; label: string }>;
+      audioInputs: Array<{ deviceId: string; label: string }>;
+    };
     capabilities: {
       isSupported: boolean;
       supportedMimeTypes: string[];
@@ -85,7 +89,7 @@ const renderDialog = (
           status={opts.status ?? "idle"}
           error={null}
           settings={settings}
-          devices={{ videoInputs: [], audioInputs: [] }}
+          devices={opts.devices ?? { videoInputs: [], audioInputs: [] }}
           onClose={vi.fn()}
           onRefreshDevices={onRefreshDevices}
           onStart={onStart}
@@ -120,6 +124,33 @@ describe("VideoRecorderDialog", () => {
     );
 
     expect(onRequestPermissions).toHaveBeenCalledTimes(1);
+  });
+
+  it("falls back to auto when selected devices are unavailable", () => {
+    const settings = {
+      ...getDefaultVideoRecorderSettings(),
+      cameraEnabled: true,
+      selectedVideoDeviceId: "missing-camera",
+      selectedAudioDeviceId: "missing-mic",
+    };
+
+    renderDialog({
+      settings,
+      devices: {
+        videoInputs: [{ deviceId: "camera-1", label: "Camera 1" }],
+        audioInputs: [{ deviceId: "mic-1", label: "Mic 1" }],
+      },
+    });
+
+    const cameraSelect = screen.getByLabelText(
+      "videoRecorder.camera.device",
+    ) as HTMLSelectElement;
+    const microphoneSelect = screen.getByLabelText(
+      "videoRecorder.microphone.device",
+    ) as HTMLSelectElement;
+
+    expect(cameraSelect.value).toBe("");
+    expect(microphoneSelect.value).toBe("");
   });
 
   it("refreshes devices only on open transitions", () => {
