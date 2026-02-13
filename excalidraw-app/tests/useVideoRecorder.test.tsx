@@ -3685,6 +3685,38 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("maps spaced media recorder unavailable messages to not-supported copy", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    expect(recorder.latest.status).toBe("recording");
+
+    act(() => {
+      setup.emitRecorderErrorEvent(
+        "Media Recorder API is unavailable in this browser.",
+      );
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        "This browser does not support video recording.",
+      );
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("maps string event payload runtime permission denied messages to permission copy", async () => {
     const setup = setupRecordingFlowMocks();
     const recorder = renderUseVideoRecorder();

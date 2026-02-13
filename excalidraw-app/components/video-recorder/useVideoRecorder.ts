@@ -167,6 +167,12 @@ const isMimeNotSupportedMessage = (error: unknown) => {
   if (!message) {
     return false;
   }
+  const hasUnavailableMediaRecorderSignal =
+    (message.includes("unavailable") || message.includes("not available")) &&
+    (message.includes("mediarecorder") || message.includes("media recorder"));
+  if (hasUnavailableMediaRecorderSignal) {
+    return true;
+  }
   const hasUnsupportedToken =
     message.includes("unsupported") ||
     message.includes("not supported") ||
@@ -200,6 +206,7 @@ const isMimeRelatedTypeError = (error: unknown) => {
 
   return (
     message.includes("mediarecorder") ||
+    message.includes("media recorder") ||
     message.includes("mime") ||
     message.includes("type provided") ||
     message.includes("unsupported") ||
