@@ -901,6 +901,9 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
     if (startRecordingInFlightRef.current) {
       return;
     }
+    if (permissionRequestInFlightRef.current) {
+      return;
+    }
 
     if (!capabilities.isSupported) {
       setError(t("videoRecorder.errors.notSupported"));
