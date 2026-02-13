@@ -642,6 +642,25 @@ export const mapVideoRecorderErrorMessage = (error: unknown) => {
   return t("videoRecorder.errors.recordingFailed");
 };
 
+const getMediaRecorderRuntimeError = (event: unknown) => {
+  if (!event || typeof event !== "object") {
+    return event;
+  }
+
+  const eventPayload = event as {
+    error?: unknown;
+    target?: { error?: unknown } | null;
+    currentTarget?: { error?: unknown } | null;
+  };
+
+  return (
+    eventPayload.error ??
+    eventPayload.target?.error ??
+    eventPayload.currentTarget?.error ??
+    event
+  );
+};
+
 const sanitizeRecordingFileName = (name: string) => {
   const normalizedName = name
     .trim()
@@ -1329,9 +1348,9 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
 
       recorder.onerror = (event) => {
         didRecorderFail = true;
-        const runtimeRecorderError =
-          (event as { error?: unknown } | undefined)?.error ?? event;
-        setError(mapVideoRecorderErrorMessage(runtimeRecorderError));
+        setError(
+          mapVideoRecorderErrorMessage(getMediaRecorderRuntimeError(event)),
+        );
         setStatus("error");
         cleanupStreams();
       };
