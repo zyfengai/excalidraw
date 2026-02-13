@@ -284,9 +284,11 @@ const setupRecordingFlowMocks = (opts?: {
     captureStreamSpy,
     getStopCallCount: () => stopCallCount,
     flushStop: () => flushStop?.(),
-    emitRecorderError: (message?: string) => {
+    emitRecorderError: (error?: unknown) => {
+      const normalizedError =
+        typeof error === "string" ? new Error(error) : error;
       latestRecorder?.onerror?.({
-        error: message ? new Error(message) : undefined,
+        error: normalizedError,
       });
     },
     emitRecorderStop: () => {
@@ -3478,6 +3480,38 @@ describe("useVideoRecorder", () => {
     await waitFor(() => {
       expect(recorder.latest.status).toBe("error");
       expect(recorder.latest.error).toBe("Recording failed. Please try again.");
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
+  it("maps recorder runtime errors by name when message is missing", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      setup.emitRecorderError(new DOMException("", "NotSupportedError"));
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        "This browser does not support video recording.",
+      );
       expect(recorder.latest.isRecordingActive).toBe(false);
     });
 

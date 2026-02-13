@@ -1329,9 +1329,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
 
       recorder.onerror = (event) => {
         didRecorderFail = true;
-        setError(
-          event.error?.message || t("videoRecorder.errors.recordingFailed"),
-        );
+        setError(mapVideoRecorderErrorMessage(event.error));
         setStatus("error");
         cleanupStreams();
       };
