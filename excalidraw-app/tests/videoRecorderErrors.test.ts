@@ -166,6 +166,15 @@ describe("video recorder error mapping", () => {
         "Requested device not found for selected input.",
       ),
     ).toBe("Selected camera or microphone is not available.");
+    expect(mapVideoRecorderErrorMessage("NotSupportedError")).toBe(
+      "This browser does not support video recording.",
+    );
+    expect(mapVideoRecorderErrorMessage(" NotFoundError ")).toBe(
+      "Selected camera or microphone is not available.",
+    );
+    expect(mapVideoRecorderErrorMessage("TrackStartError")).toBe(
+      "Camera or microphone is currently busy.",
+    );
   });
 
   it("maps busy-device DOMException names", () => {

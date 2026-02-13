@@ -63,6 +63,9 @@ const DEVICE_BUSY_ERROR_NAMES = new Set([
 ]);
 
 const getErrorName = (error: unknown) => {
+  if (typeof error === "string") {
+    return error;
+  }
   if (!error || typeof error !== "object" || !("name" in error)) {
     return "";
   }
