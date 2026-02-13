@@ -53,11 +53,13 @@ const PERMISSION_DENIED_ERROR_NAMES = new Set([
   "NotAllowedError",
   "SecurityError",
   "PermissionDeniedError",
+  "PermissionDismissedError",
 ]);
 const DEVICE_BUSY_ERROR_NAMES = new Set([
   "NotReadableError",
   "AbortError",
   "TrackStartError",
+  "SourceUnavailableError",
 ]);
 
 const getErrorName = (error: unknown) => {

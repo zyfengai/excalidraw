@@ -46,6 +46,11 @@ describe("video recorder error mapping", () => {
     expect(mapVideoRecorderErrorMessage(permissionDeniedError)).toBe(
       "Camera or microphone permission was denied.",
     );
+    const permissionDismissedError = new Error("");
+    permissionDismissedError.name = "PermissionDismissedError";
+    expect(mapVideoRecorderErrorMessage(permissionDismissedError)).toBe(
+      "Camera or microphone permission was denied.",
+    );
 
     const constraintError = new Error("");
     constraintError.name = "ConstraintNotSatisfiedError";
@@ -56,6 +61,11 @@ describe("video recorder error mapping", () => {
     const trackStartError = new Error("");
     trackStartError.name = "TrackStartError";
     expect(mapVideoRecorderErrorMessage(trackStartError)).toBe(
+      "Camera or microphone is currently busy.",
+    );
+    const sourceUnavailableError = new Error("");
+    sourceUnavailableError.name = "SourceUnavailableError";
+    expect(mapVideoRecorderErrorMessage(sourceUnavailableError)).toBe(
       "Camera or microphone is currently busy.",
     );
   });

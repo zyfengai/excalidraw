@@ -1228,6 +1228,50 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
   });
 
+  it("falls back on devices-not-found alias during permission request", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const notFoundAliasError = new Error("devices not found");
+    notFoundAliasError.name = "DevicesNotFoundError";
+    const trackStop = vi.fn();
+    const permissionStream = {
+      getTracks: () => [{ stop: trackStop }],
+    } as unknown as MediaStream;
+    const getUserMedia = vi
+      .fn()
+      .mockRejectedValueOnce(notFoundAliasError)
+      .mockResolvedValueOnce(permissionStream);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "alias-missing-camera",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    expect(getUserMedia).toHaveBeenNthCalledWith(1, {
+      video: { deviceId: { exact: "alias-missing-camera" } },
+      audio: false,
+    });
+    expect(getUserMedia).toHaveBeenNthCalledWith(2, {
+      video: true,
+      audio: false,
+    });
+    expect(trackStop).toHaveBeenCalledTimes(1);
+    expect(recorder.latest.error).toBeNull();
+    expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
+  });
+
   it("keeps non-requested selected audio device on camera-only permission fallback", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const trackStop = vi.fn();
@@ -2847,7 +2891,10 @@ describe("useVideoRecorder", () => {
   it("falls back to normalized supported mimeType when raw mime option throws TypeError", async () => {
     const setup = setupRecordingFlowMocks({
       supportedMimeTypes: ["video/webm;codecs=vp9,opus", "video/webm"],
-      typeErrorConstructorMimeTypes: ["video / webm; codecs = opus, vp9"],
+      typeErrorConstructorMimeTypes: [
+        "video/webm;codecs=vp9,opus",
+        "video / webm; codecs = opus, vp9",
+      ],
     });
     const recorder = renderUseVideoRecorder();
 
@@ -2865,9 +2912,7 @@ describe("useVideoRecorder", () => {
     await waitFor(() => {
       expect(recorder.latest.status).toBe("recording");
       expect(recorder.latest.error).toBeNull();
-      expect(recorder.latest.settings.mimeType).toBe(
-        "video/webm;codecs=vp9,opus",
-      );
+      expect(recorder.latest.settings.mimeType).toBe("video/webm");
     });
 
     await act(async () => {
@@ -2875,9 +2920,7 @@ describe("useVideoRecorder", () => {
     });
     await waitFor(() => {
       expect(recorder.latest.status).toBe("completed");
-      expect(recorder.latest.result?.mimeType).toBe(
-        "video/webm;codecs=vp9,opus",
-      );
+      expect(recorder.latest.result?.mimeType).toBe("video/webm");
     });
 
     setup.cleanupCanvases();
@@ -2887,6 +2930,7 @@ describe("useVideoRecorder", () => {
     const setup = setupRecordingFlowMocks({
       supportedMimeTypes: ["video/webm;codecs=vp9,opus", "video/webm"],
       namedNotSupportedConstructorMimeTypes: [
+        "video/webm;codecs=vp9,opus",
         "video / webm; codecs = opus, vp9",
       ],
     });
@@ -2906,9 +2950,7 @@ describe("useVideoRecorder", () => {
     await waitFor(() => {
       expect(recorder.latest.status).toBe("recording");
       expect(recorder.latest.error).toBeNull();
-      expect(recorder.latest.settings.mimeType).toBe(
-        "video/webm;codecs=vp9,opus",
-      );
+      expect(recorder.latest.settings.mimeType).toBe("video/webm");
     });
 
     await act(async () => {
@@ -2916,9 +2958,7 @@ describe("useVideoRecorder", () => {
     });
     await waitFor(() => {
       expect(recorder.latest.status).toBe("completed");
-      expect(recorder.latest.result?.mimeType).toBe(
-        "video/webm;codecs=vp9,opus",
-      );
+      expect(recorder.latest.result?.mimeType).toBe("video/webm");
     });
 
     setup.cleanupCanvases();
@@ -2928,6 +2968,7 @@ describe("useVideoRecorder", () => {
     const setup = setupRecordingFlowMocks({
       supportedMimeTypes: ["video/webm;codecs=vp9,opus", "video/webm"],
       messageNotSupportedConstructorMimeTypes: [
+        "video/webm;codecs=vp9,opus",
         "video / webm; codecs = opus, vp9",
       ],
     });
@@ -2947,9 +2988,7 @@ describe("useVideoRecorder", () => {
     await waitFor(() => {
       expect(recorder.latest.status).toBe("recording");
       expect(recorder.latest.error).toBeNull();
-      expect(recorder.latest.settings.mimeType).toBe(
-        "video/webm;codecs=vp9,opus",
-      );
+      expect(recorder.latest.settings.mimeType).toBe("video/webm");
     });
 
     await act(async () => {
@@ -2957,9 +2996,7 @@ describe("useVideoRecorder", () => {
     });
     await waitFor(() => {
       expect(recorder.latest.status).toBe("completed");
-      expect(recorder.latest.result?.mimeType).toBe(
-        "video/webm;codecs=vp9,opus",
-      );
+      expect(recorder.latest.result?.mimeType).toBe("video/webm");
     });
 
     setup.cleanupCanvases();
@@ -2969,6 +3006,7 @@ describe("useVideoRecorder", () => {
     const setup = setupRecordingFlowMocks({
       supportedMimeTypes: ["video/webm;codecs=vp9,opus", "video/webm"],
       messageNotSupportedConstructorMimeTypes: [
+        "video/webm;codecs=vp9,opus",
         "video / webm; codecs = opus, vp9",
       ],
       messageNotSupportedConstructorErrorMessage:
@@ -2990,9 +3028,7 @@ describe("useVideoRecorder", () => {
     await waitFor(() => {
       expect(recorder.latest.status).toBe("recording");
       expect(recorder.latest.error).toBeNull();
-      expect(recorder.latest.settings.mimeType).toBe(
-        "video/webm;codecs=vp9,opus",
-      );
+      expect(recorder.latest.settings.mimeType).toBe("video/webm");
     });
 
     await act(async () => {
@@ -3000,9 +3036,42 @@ describe("useVideoRecorder", () => {
     });
     await waitFor(() => {
       expect(recorder.latest.status).toBe("completed");
-      expect(recorder.latest.result?.mimeType).toBe(
+      expect(recorder.latest.result?.mimeType).toBe("video/webm");
+    });
+
+    setup.cleanupCanvases();
+  });
+
+  it("does not treat generic unsupported errors as recoverable mime mismatch", async () => {
+    const setup = setupRecordingFlowMocks({
+      supportedMimeTypes: ["video/webm;codecs=vp9,opus", "video/webm"],
+      messageNotSupportedConstructorMimeTypes: [
         "video/webm;codecs=vp9,opus",
+        "video / webm; codecs = opus, vp9",
+      ],
+      messageNotSupportedConstructorErrorMessage:
+        "Operation is not supported in current context.",
+    });
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+        mimeType: "video / webm; codecs = opus, vp9",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        "Operation is not supported in current context.",
       );
+      expect(recorder.latest.result).toBeNull();
     });
 
     setup.cleanupCanvases();
