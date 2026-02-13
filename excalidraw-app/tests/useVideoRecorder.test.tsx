@@ -1128,6 +1128,43 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("ignores duplicate stop requests in the same tick before stopping state flushes", async () => {
+    const setup = setupRecordingFlowMocks({ deferStop: true });
+    const recorder = renderUseVideoRecorder();
+    let firstStopPromise: Promise<void> | null = null;
+    let secondStopPromise: Promise<void> | null = null;
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      firstStopPromise = recorder.latest.stopRecording();
+      secondStopPromise = recorder.latest.stopRecording();
+    });
+    expect(setup.getStopCallCount()).toBe(1);
+
+    await act(async () => {
+      setup.flushStop();
+      await Promise.all([firstStopPromise, secondStopPromise]);
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("switches to error state when recorder stop throws", async () => {
     const setup = setupRecordingFlowMocks({ stopThrows: true });
     const recorder = renderUseVideoRecorder();

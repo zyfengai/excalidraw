@@ -282,6 +282,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   const elapsedTimerRef = useRef<number | null>(null);
   const permissionRequestInFlightRef = useRef(false);
   const startRecordingInFlightRef = useRef(false);
+  const stopRecordingInFlightRef = useRef(false);
 
   const clearElapsedTimer = useCallback(() => {
     if (elapsedTimerRef.current != null) {
@@ -657,6 +658,10 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   }, [startElapsedTicker]);
 
   const stopRecording = useCallback(async () => {
+    if (stopRecordingInFlightRef.current) {
+      return;
+    }
+
     if (status === "stopping") {
       return;
     }
@@ -669,17 +674,20 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       return;
     }
 
+    stopRecordingInFlightRef.current = true;
     setStatus("stopping");
     clearElapsedTimer();
 
     await new Promise<void>((resolve) => {
       const recorder = recorderRef.current;
       if (!recorder) {
+        stopRecordingInFlightRef.current = false;
         resolve();
         return;
       }
       const handleStop = () => {
         recorder.removeEventListener("stop", handleStop);
+        stopRecordingInFlightRef.current = false;
         resolve();
       };
       recorder.addEventListener("stop", handleStop);
@@ -687,6 +695,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         recorder.stop();
       } catch (stopError) {
         recorder.removeEventListener("stop", handleStop);
+        stopRecordingInFlightRef.current = false;
         setError(mapVideoRecorderErrorMessage(stopError));
         setStatus("error");
         cleanupStreams();
