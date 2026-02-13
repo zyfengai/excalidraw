@@ -1995,6 +1995,65 @@ describe("useVideoRecorder", () => {
       video: { deviceId: { exact: "camera-1" } },
       audio: false,
     });
+    expect(enumerateDevices).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+    setup.cleanupCanvases();
+  });
+
+  it("refreshes devices after start fails with device-selection errors", async () => {
+    const setup = setupRecordingFlowMocks();
+    const enumerateDevices = vi
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        createMockMediaDevice("videoinput", "camera-1", "Camera One"),
+      ]);
+    const notFound = new DOMException("", "NotFoundError");
+    const getUserMedia = vi.fn().mockRejectedValue(notFound);
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "stale-camera",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        mapVideoRecorderErrorMessage(notFound),
+      );
+      expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
+      expect(recorder.latest.devices).toEqual({
+        videoInputs: [{ deviceId: "camera-1", label: "Camera One" }],
+        audioInputs: [],
+      });
+    });
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+    expect(getUserMedia).toHaveBeenNthCalledWith(1, {
+      video: { deviceId: { exact: "stale-camera" } },
+      audio: false,
+    });
+    expect(getUserMedia).toHaveBeenNthCalledWith(2, {
+      video: true,
+      audio: false,
+    });
+    expect(enumerateDevices).toHaveBeenCalledTimes(2);
     expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
 
     setup.cleanupCanvases();
