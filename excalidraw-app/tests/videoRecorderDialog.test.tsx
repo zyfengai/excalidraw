@@ -450,4 +450,31 @@ describe("VideoRecorderDialog", () => {
 
     expect(onCameraLayoutChange).toHaveBeenCalledTimes(0);
   });
+
+  it("ignores overlay drag on non-primary pointer button", () => {
+    const { onCameraLayoutChange } = renderDialog({
+      settings: {
+        ...getDefaultVideoRecorderSettings(),
+        cameraEnabled: true,
+      },
+    });
+
+    const overlay = document.querySelector(
+      ".video-recorder-dialog__camera-overlay",
+    ) as HTMLDivElement;
+    expect(overlay).not.toBeNull();
+
+    fireEvent.pointerDown(overlay, {
+      button: 2,
+      clientX: 120,
+      clientY: 80,
+    });
+    fireEvent.pointerMove(window, {
+      clientX: 220,
+      clientY: 160,
+    });
+    fireEvent.pointerUp(window);
+
+    expect(onCameraLayoutChange).toHaveBeenCalledTimes(0);
+  });
 });

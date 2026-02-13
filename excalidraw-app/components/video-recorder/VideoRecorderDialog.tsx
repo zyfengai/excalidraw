@@ -156,6 +156,9 @@ export const VideoRecorderDialog = ({
     mode: InteractionState["mode"],
     event: ReactPointerEvent,
   ) => {
+    if (event.button !== 0) {
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     const container = previewRef.current;
