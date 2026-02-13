@@ -87,12 +87,14 @@ const createExcalidrawCanvases = () => {
   };
 };
 
-const setupRecordingFlowMocks = () => {
+const setupRecordingFlowMocks = (opts?: { deferStop?: boolean }) => {
   const cleanupSpy = vi.fn();
   const pauseSpy = vi.fn();
   const resumeSpy = vi.fn();
   const videoTrackStop = vi.fn();
   let latestRecorder: any = null;
+  let stopCallCount = 0;
+  let flushStop: (() => void) | null = null;
   const captureStreamSpy = vi.fn(() => ({
     getVideoTracks: () =>
       [
@@ -159,10 +161,20 @@ const setupRecordingFlowMocks = () => {
       resumeSpy();
     }
     stop() {
-      this.state = "inactive";
-      this.stopListeners.forEach((listener) => listener());
-      this.onstop?.();
-      cleanupSpy();
+      stopCallCount += 1;
+      const finalizeStop = () => {
+        this.state = "inactive";
+        this.stopListeners.forEach((listener) => listener());
+        this.onstop?.();
+        cleanupSpy();
+      };
+
+      if (opts?.deferStop) {
+        flushStop = finalizeStop;
+        return;
+      }
+
+      finalizeStop();
     }
     addEventListener(event: "stop", listener: () => void) {
       if (event === "stop") {
@@ -194,6 +206,8 @@ const setupRecordingFlowMocks = () => {
     resumeSpy,
     videoTrackStop,
     captureStreamSpy,
+    getStopCallCount: () => stopCallCount,
+    flushStop: () => flushStop?.(),
     emitRecorderError: (message?: string) => {
       latestRecorder?.onerror?.({
         error: message ? new Error(message) : undefined,
@@ -875,6 +889,48 @@ describe("useVideoRecorder", () => {
     expect(enumerateDevices).toHaveBeenCalledTimes(1);
 
     cleanup();
+  });
+
+  it("prevents duplicate stop calls while stopping", async () => {
+    const setup = setupRecordingFlowMocks({ deferStop: true });
+    const recorder = renderUseVideoRecorder();
+    let firstStopPromise: Promise<void> | null = null;
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      firstStopPromise = recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("stopping");
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    expect(setup.getStopCallCount()).toBe(1);
+
+    await act(async () => {
+      setup.flushStop();
+      await firstStopPromise;
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+    });
+
+    setup.cleanupCanvases();
   });
 
   it("auto-pauses recording when page becomes hidden", async () => {

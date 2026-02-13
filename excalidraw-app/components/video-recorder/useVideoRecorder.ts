@@ -629,6 +629,10 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   }, [startElapsedTicker]);
 
   const stopRecording = useCallback(async () => {
+    if (status === "stopping") {
+      return;
+    }
+
     if (
       !recorderRef.current ||
       (recorderRef.current.state !== "recording" &&
@@ -653,7 +657,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       recorder.addEventListener("stop", handleStop);
       recorder.stop();
     });
-  }, [clearElapsedTimer]);
+  }, [clearElapsedTimer, status]);
 
   const resetResult = useCallback(() => {
     setResult(null);
