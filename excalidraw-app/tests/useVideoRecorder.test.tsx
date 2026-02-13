@@ -497,6 +497,46 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.error).toBeNull();
   });
 
+  it("clears previous permission errors after a later successful request", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const denied = new DOMException("", "NotAllowedError");
+    const stopTrack = vi.fn();
+    const permissionStream = {
+      getTracks: () => [{ stop: stopTrack }],
+    } as unknown as MediaStream;
+    const getUserMedia = vi
+      .fn()
+      .mockRejectedValueOnce(denied)
+      .mockResolvedValueOnce(permissionStream);
+    const enumerateDevices = vi.fn(async () => []);
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.error).toBe(mapVideoRecorderErrorMessage(denied));
+      expect(recorder.latest.isRequestingPermissions).toBe(false);
+    });
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.error).toBeNull();
+      expect(recorder.latest.isRequestingPermissions).toBe(false);
+    });
+
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+    expect(stopTrack).toHaveBeenCalledTimes(1);
+    expect(enumerateDevices).toHaveBeenCalledTimes(2);
+  });
+
   it("sets error when starting recording without MediaRecorder support", async () => {
     delete (globalThis as any).MediaRecorder;
     setMediaDevicesMock({
