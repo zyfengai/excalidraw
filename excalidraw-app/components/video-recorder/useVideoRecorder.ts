@@ -440,12 +440,17 @@ const collectUniqueDeviceOptions = (
     }
   });
 
-  return Array.from(labelsByDeviceId.entries()).map(
-    ([deviceId, label], idx) => ({
+  const deduplicatedDevices = Array.from(labelsByDeviceId.entries())
+    .map(([deviceId, label]) => ({
       deviceId,
-      label: label || `${fallbackLabel} ${idx + 1}`,
-    }),
-  );
+      label,
+    }))
+    .sort((a, b) => a.deviceId.localeCompare(b.deviceId));
+
+  return deduplicatedDevices.map((device, idx) => ({
+    deviceId: device.deviceId,
+    label: device.label || `${fallbackLabel} ${idx + 1}`,
+  }));
 };
 
 const collectMediaDevices = async () => {

@@ -803,17 +803,21 @@ describe("useVideoRecorder", () => {
     });
   });
 
-  it("avoids replacing devices state when refresh result is unchanged", async () => {
+  it("avoids replacing devices state when refresh result is unchanged after normalization", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const enumerateDevices = vi
       .fn()
       .mockResolvedValueOnce([
         createMockMediaDevice("videoinput", "camera-1", "Camera One"),
+        createMockMediaDevice("videoinput", "camera-2", "Camera Two"),
         createMockMediaDevice("audioinput", "mic-1", "Microphone One"),
+        createMockMediaDevice("audioinput", "mic-2", "Microphone Two"),
       ])
       .mockResolvedValueOnce([
-        createMockMediaDevice("videoinput", "camera-1", "Camera One"),
+        createMockMediaDevice("audioinput", "mic-2", "Microphone Two"),
         createMockMediaDevice("audioinput", "mic-1", "Microphone One"),
+        createMockMediaDevice("videoinput", "camera-2", "Camera Two"),
+        createMockMediaDevice("videoinput", "camera-1", "Camera One"),
       ]);
     setMediaDevicesMock({
       enumerateDevices,
@@ -823,8 +827,14 @@ describe("useVideoRecorder", () => {
 
     await waitFor(() => {
       expect(recorder.latest.devices).toEqual({
-        videoInputs: [{ deviceId: "camera-1", label: "Camera One" }],
-        audioInputs: [{ deviceId: "mic-1", label: "Microphone One" }],
+        videoInputs: [
+          { deviceId: "camera-1", label: "Camera One" },
+          { deviceId: "camera-2", label: "Camera Two" },
+        ],
+        audioInputs: [
+          { deviceId: "mic-1", label: "Microphone One" },
+          { deviceId: "mic-2", label: "Microphone Two" },
+        ],
       });
     });
     const previousDevices = recorder.latest.devices;
