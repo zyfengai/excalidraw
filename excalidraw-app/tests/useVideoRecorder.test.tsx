@@ -237,7 +237,7 @@ const renderUseVideoRecorder = () => {
     return null;
   };
 
-  render(<Probe />);
+  const rendered = render(<Probe />);
 
   return {
     get latest() {
@@ -246,6 +246,7 @@ const renderUseVideoRecorder = () => {
       }
       return latest;
     },
+    unmount: () => rendered.unmount(),
   };
 };
 
@@ -1269,6 +1270,38 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.status).toBe("error");
     expect(recorder.latest.error).toBe("fatal recorder error");
     expect(recorder.latest.isRecordingActive).toBe(false);
+    expect(setup.videoTrackStop).toHaveBeenCalledTimes(1);
+
+    setup.cleanupCanvases();
+  });
+
+  it("resolves pending stop promise when hook unmounts during stopping", async () => {
+    const setup = setupRecordingFlowMocks({ deferStop: true });
+    const recorder = renderUseVideoRecorder();
+    let stopPromise: Promise<void> = Promise.resolve();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    expect(recorder.latest.status).toBe("recording");
+
+    act(() => {
+      stopPromise = recorder.latest.stopRecording();
+    });
+    expect(recorder.latest.status).toBe("stopping");
+
+    await act(async () => {
+      recorder.unmount();
+      await stopPromise;
+    });
+    expect(setup.getStopCallCount()).toBe(1);
     expect(setup.videoTrackStop).toHaveBeenCalledTimes(1);
 
     setup.cleanupCanvases();
