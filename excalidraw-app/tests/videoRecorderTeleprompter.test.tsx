@@ -171,4 +171,50 @@ describe("VideoRecorderTeleprompter", () => {
 
     expect(cancelAnimationFrameSpy).toHaveBeenCalledTimes(1);
   });
+
+  it("continues scrolling from previous offset after pause and resume", () => {
+    const { runNextFrame } = installRafMock();
+
+    const { container, rerender } = render(
+      <VideoRecorderTeleprompter
+        text="line"
+        speed={40}
+        opacity={0.7}
+        running={true}
+      />,
+    );
+
+    const content = () =>
+      container.querySelector(
+        ".video-recorder-teleprompter__content",
+      ) as HTMLDivElement;
+
+    act(() => runNextFrame(1000));
+    act(() => runNextFrame(2000));
+    expect(content().style.transform).toBe("translateY(-40px)");
+
+    rerender(
+      <VideoRecorderTeleprompter
+        text="line"
+        speed={40}
+        opacity={0.7}
+        running={false}
+      />,
+    );
+
+    rerender(
+      <VideoRecorderTeleprompter
+        text="line"
+        speed={40}
+        opacity={0.7}
+        running={true}
+      />,
+    );
+
+    act(() => runNextFrame(3000));
+    expect(content().style.transform).toBe("translateY(-40px)");
+
+    act(() => runNextFrame(4000));
+    expect(content().style.transform).toBe("translateY(-80px)");
+  });
 });
