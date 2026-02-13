@@ -1234,6 +1234,56 @@ describe("useVideoRecorder", () => {
     cleanup();
   });
 
+  it("ignores start permission rejection after unmount without logging", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const { cleanup } = createExcalidrawCanvases();
+    const enumerateDevices = vi.fn(async () => []);
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    let rejectCameraRequest: ((reason?: unknown) => void) | null = null;
+    const getUserMedia = vi.fn(
+      () =>
+        new Promise<MediaStream>((_resolve, reject) => {
+          rejectCameraRequest = reject;
+        }),
+    );
+
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+      });
+    });
+
+    act(() => {
+      void recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("preparing");
+    });
+
+    act(() => {
+      recorder.unmount();
+    });
+    await act(async () => {
+      rejectCameraRequest?.(new DOMException("", "NotAllowedError"));
+      await Promise.resolve();
+    });
+
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+    expect(enumerateDevices).toHaveBeenCalledTimes(1);
+
+    cleanup();
+  });
+
   it("prevents duplicate stop calls while stopping", async () => {
     const setup = setupRecordingFlowMocks({ deferStop: true });
     const recorder = renderUseVideoRecorder();

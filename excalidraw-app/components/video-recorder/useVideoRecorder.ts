@@ -677,7 +677,11 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       await refreshDevices();
       assertStartRequestActive();
     } catch (startError) {
-      if (startError instanceof StartRecordingCancelledError) {
+      if (
+        startError instanceof StartRecordingCancelledError ||
+        !isMountedRef.current ||
+        requestId !== startRecordingRequestIdRef.current
+      ) {
         cleanupStreams();
         return;
       }
