@@ -225,37 +225,38 @@ const normalizeNumber = (value: unknown, fallback: number) =>
   isFiniteNumber(value) ? value : fallback;
 
 const normalizeSettingsInput = (
-  value: Partial<VideoRecorderSettings>,
+  value: unknown,
   fallback: VideoRecorderSettings,
   supportedMimeTypes: string[],
 ): VideoRecorderSettings => {
+  const input = isObject(value) ? value : {};
   const cameraEnabled = normalizeBoolean(
-    value.cameraEnabled,
+    input.cameraEnabled,
     fallback.cameraEnabled,
   );
   const microphoneEnabled = normalizeBoolean(
-    value.microphoneEnabled,
+    input.microphoneEnabled,
     fallback.microphoneEnabled,
   );
   const aspectRatio = normalizeRecorderAspectRatio(
-    normalizeString(value.aspectRatio, fallback.aspectRatio),
+    normalizeString(input.aspectRatio, fallback.aspectRatio),
     fallback.aspectRatio,
   );
   const resolution = normalizeRecorderResolution(
-    normalizeString(value.resolution, fallback.resolution),
+    normalizeString(input.resolution, fallback.resolution),
     fallback.resolution,
   );
   const fps = normalizeRecorderFps(
-    normalizeNumber(value.fps, fallback.fps),
+    normalizeNumber(input.fps, fallback.fps),
     fallback.fps,
   );
   const mimeType = normalizeRecorderMimeType(
-    normalizeString(value.mimeType, fallback.mimeType),
+    normalizeString(input.mimeType, fallback.mimeType),
     supportedMimeTypes,
   );
-  const camera = normalizeOverlayLayoutInput(value.camera, fallback.camera);
+  const camera = normalizeOverlayLayoutInput(input.camera, fallback.camera);
   const teleprompter = normalizeTeleprompterInput(
-    value.teleprompter,
+    input.teleprompter,
     fallback.teleprompter,
   );
 
@@ -263,11 +264,11 @@ const normalizeSettingsInput = (
     cameraEnabled,
     microphoneEnabled,
     selectedVideoDeviceId: normalizeSelectedDeviceId(
-      value.selectedVideoDeviceId,
+      input.selectedVideoDeviceId,
       fallback.selectedVideoDeviceId,
     ),
     selectedAudioDeviceId: normalizeSelectedDeviceId(
-      value.selectedAudioDeviceId,
+      input.selectedAudioDeviceId,
       fallback.selectedAudioDeviceId,
     ),
     aspectRatio,
@@ -835,7 +836,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         | ((prev: VideoRecorderSettings) => VideoRecorderSettings),
     ) => {
       setSettingsState((prev) => {
-        const nextValue: Partial<VideoRecorderSettings> =
+        const nextValue =
           typeof next === "function"
             ? next(prev)
             : {
