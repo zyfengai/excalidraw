@@ -61,7 +61,12 @@ const DEVICE_BUSY_ERROR_NAMES = new Set([
   "trackstarterror",
   "sourceunavailableerror",
 ]);
-const GENERIC_ERROR_NAMES = new Set(["error", "exception"]);
+const GENERIC_ERROR_NAMES = new Set([
+  "error",
+  "exception",
+  "domexception",
+  "mediaerror",
+]);
 const ERROR_NAME_PREFIX_REGEX = /^([a-z][a-z0-9]*error)\b/i;
 const ERROR_NAME_ANYWHERE_REGEX = /\b([a-z][a-z0-9]*error)\b/i;
 

@@ -104,6 +104,12 @@ describe("video recorder error mapping", () => {
         cause: { name: "NotSupportedError" },
       }),
     ).toBe("This browser does not support video recording.");
+    expect(
+      mapVideoRecorderErrorMessage({
+        name: "DOMException",
+        cause: { name: "NotSupportedError" },
+      }),
+    ).toBe("This browser does not support video recording.");
   });
 
   it("maps media not-supported messages without explicit error names", () => {
