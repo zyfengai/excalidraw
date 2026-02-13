@@ -111,6 +111,12 @@ const stopMediaStreamsTracksOnce = (
   tracksToStop.forEach((track) => track.stop());
 };
 
+const replaceControlCharacters = (value: string) =>
+  Array.from(value, (char) => {
+    const charCode = char.charCodeAt(0);
+    return charCode <= 31 || charCode === 127 ? "-" : char;
+  }).join("");
+
 const areOverlayLayoutsEqual = (
   a: VideoRecorderOverlayLayout,
   b: VideoRecorderOverlayLayout,
@@ -316,10 +322,11 @@ const sanitizeRecordingFileName = (name: string) => {
   const normalizedName = name
     .trim()
     .replace(TRAILING_RECORDING_FILE_EXTENSION, "");
+  const normalizedWithoutInvalidChars = replaceControlCharacters(
+    normalizedName.trim().replace(INVALID_FILE_NAME_CHARS, "-"),
+  );
 
-  const sanitized = normalizedName
-    .trim()
-    .replace(INVALID_FILE_NAME_CHARS, "-")
+  const sanitized = normalizedWithoutInvalidChars
     .replace(/\s+/g, " ")
     .replace(/-+/g, "-")
     .replace(/^[-.\s]+|[-.\s]+$/g, "")
