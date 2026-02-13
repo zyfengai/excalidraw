@@ -390,6 +390,40 @@ describe("useVideoRecorder", () => {
     expect(getUserMedia).toHaveBeenCalledTimes(1);
   });
 
+  it("requests both audio and video as fallback when all devices are disabled", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const stopTrack = vi.fn();
+    const permissionStream = {
+      getTracks: () => [{ stop: stopTrack }],
+    } as unknown as MediaStream;
+    const getUserMedia = vi.fn(async () => permissionStream);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    expect(getUserMedia).toHaveBeenCalledWith({
+      video: true,
+      audio: true,
+    });
+    expect(stopTrack).toHaveBeenCalledTimes(1);
+    expect(recorder.latest.error).toBeNull();
+    expect(recorder.latest.isRequestingPermissions).toBe(false);
+  });
+
   it("sets error when starting recording without MediaRecorder support", async () => {
     delete (globalThis as any).MediaRecorder;
     setMediaDevicesMock({
