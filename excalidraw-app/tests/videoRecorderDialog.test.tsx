@@ -11,6 +11,8 @@ import {
   getDefaultVideoRecorderSettings,
 } from "../components/video-recorder/videoRecorder.config";
 
+import type { VideoRecorderStatus } from "../components/video-recorder/videoRecorder.types";
+
 vi.mock("@excalidraw/excalidraw/i18n", () => {
   const dictionary: Record<string, string> = {
     "videoRecorder.title": "Video recorder",
@@ -48,7 +50,7 @@ const renderDialog = (
     onRequestPermissions: ReturnType<typeof vi.fn>;
     onRefreshDevices: ReturnType<typeof vi.fn>;
     onStart: ReturnType<typeof vi.fn>;
-    status: "idle" | "preparing";
+    status: VideoRecorderStatus;
     isRequestingPermissions: boolean;
     isOpen: boolean;
     capabilities: {
@@ -281,6 +283,32 @@ describe("VideoRecorderDialog", () => {
     expect(startButton).toBeDisabled();
     fireEvent.click(startButton);
     expect(onStart).toHaveBeenCalledTimes(0);
+  });
+
+  it("disables start action while recording is active", () => {
+    const { onStart } = renderDialog({
+      status: "recording",
+    });
+
+    const startButton = screen.getByRole("button", {
+      name: /Start recording/i,
+    });
+    expect(startButton).toBeDisabled();
+    fireEvent.click(startButton);
+    expect(onStart).toHaveBeenCalledTimes(0);
+  });
+
+  it("keeps start action enabled after recording is completed", () => {
+    const { onStart } = renderDialog({
+      status: "completed",
+    });
+
+    const startButton = screen.getByRole("button", {
+      name: /Start recording/i,
+    });
+    expect(startButton).not.toBeDisabled();
+    fireEvent.click(startButton);
+    expect(onStart).toHaveBeenCalledTimes(1);
   });
 
   it("disables start action when browser support is missing", () => {

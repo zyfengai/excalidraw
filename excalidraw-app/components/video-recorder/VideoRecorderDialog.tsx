@@ -145,6 +145,12 @@ export const VideoRecorderDialog = ({
   }
 
   const aspectRatioValue = VIDEO_RECORDER_RATIO_MAP[settings.aspectRatio];
+  const isStartDisabled =
+    !capabilities.isSupported ||
+    status === "preparing" ||
+    status === "recording" ||
+    status === "paused" ||
+    status === "stopping";
 
   const startInteraction = (
     mode: InteractionState["mode"],
@@ -599,7 +605,7 @@ export const VideoRecorderDialog = ({
             onClick={() => {
               void onStart();
             }}
-            disabled={!capabilities.isSupported || status === "preparing"}
+            disabled={isStartDisabled}
           >
             {t("videoRecorder.actions.startRecording")}
           </FilledButton>
