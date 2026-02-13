@@ -81,7 +81,7 @@ const getErrorNameFromString = (value: string) => {
   return anywhereMatch?.[1] || trimmedValue;
 };
 
-const MAX_ERROR_CAUSE_TRAVERSAL_DEPTH = 3;
+const MAX_ERROR_CAUSE_TRAVERSAL_DEPTH = 5;
 
 const getFirstArrayEntry = (value: unknown) => {
   if (!Array.isArray(value)) {
