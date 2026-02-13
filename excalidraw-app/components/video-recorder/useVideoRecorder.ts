@@ -188,6 +188,8 @@ export const mapVideoRecorderErrorMessage = (error: unknown) => {
       case "NotAllowedError":
       case "SecurityError":
         return t("videoRecorder.errors.permissionDenied");
+      case "NotSupportedError":
+        return t("videoRecorder.errors.notSupported");
       case "NotFoundError":
       case "OverconstrainedError":
         return t("videoRecorder.errors.deviceNotFound");

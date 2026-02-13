@@ -10,6 +10,9 @@ describe("video recorder error mapping", () => {
     expect(
       mapVideoRecorderErrorMessage(new DOMException("", "SecurityError")),
     ).toBe("Camera or microphone permission was denied.");
+    expect(
+      mapVideoRecorderErrorMessage(new DOMException("", "NotSupportedError")),
+    ).toBe("This browser does not support video recording.");
   });
 
   it("maps missing device DOMException names", () => {
