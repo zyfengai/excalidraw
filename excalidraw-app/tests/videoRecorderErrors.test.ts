@@ -44,6 +44,12 @@ describe("video recorder error mapping", () => {
     expect(mapVideoRecorderErrorMessage(lowercaseNotSupportedError)).toBe(
       "This browser does not support video recording.",
     );
+
+    const paddedNotFoundError = new Error("");
+    paddedNotFoundError.name = " NotFoundError ";
+    expect(mapVideoRecorderErrorMessage(paddedNotFoundError)).toBe(
+      "Selected camera or microphone is not available.",
+    );
   });
 
   it("maps legacy browser alias error names", () => {
@@ -115,6 +121,9 @@ describe("video recorder error mapping", () => {
 
     expect(mapVideoRecorderErrorMessage(new Error("custom failure"))).toBe(
       "custom failure",
+    );
+    expect(mapVideoRecorderErrorMessage(new Error("   "))).toBe(
+      "Recording failed. Please try again.",
     );
     expect(mapVideoRecorderErrorMessage("oops")).toBe(
       "Recording failed. Please try again.",

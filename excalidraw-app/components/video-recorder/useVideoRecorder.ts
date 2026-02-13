@@ -79,11 +79,14 @@ const getErrorMessage = (error: unknown) => {
   return typeof error.message === "string" ? error.message : "";
 };
 
+const getNormalizedErrorMessage = (error: unknown) =>
+  getErrorMessage(error).trim().toLowerCase();
+
 const isPermissionDeniedError = (error: unknown) => {
   if (PERMISSION_DENIED_ERROR_NAMES.has(getNormalizedErrorName(error))) {
     return true;
   }
-  const message = getErrorMessage(error).toLowerCase();
+  const message = getNormalizedErrorMessage(error);
   if (!message) {
     return false;
   }
@@ -99,7 +102,7 @@ const isDeviceSelectionError = (error: unknown) => {
     return true;
   }
 
-  const message = getErrorMessage(error).toLowerCase();
+  const message = getNormalizedErrorMessage(error);
   if (!message) {
     return false;
   }
@@ -125,7 +128,7 @@ const isDeviceBusyError = (error: unknown) => {
     return true;
   }
 
-  const message = getErrorMessage(error).toLowerCase();
+  const message = getNormalizedErrorMessage(error);
   if (!message) {
     return false;
   }
@@ -140,7 +143,7 @@ const isDeviceBusyError = (error: unknown) => {
 };
 
 const isMimeNotSupportedMessage = (error: unknown) => {
-  const message = getErrorMessage(error).toLowerCase();
+  const message = getNormalizedErrorMessage(error);
   if (!message) {
     return false;
   }
@@ -613,11 +616,8 @@ export const mapVideoRecorderErrorMessage = (error: unknown) => {
     return t("videoRecorder.errors.deviceBusy");
   }
 
-  if (error instanceof Error) {
-    return error.message || t("videoRecorder.errors.recordingFailed");
-  }
-  const errorMessage = getErrorMessage(error);
-  if (errorMessage) {
+  const errorMessage = getErrorMessage(error).trim();
+  if (errorMessage.length > 0) {
     return errorMessage;
   }
   return t("videoRecorder.errors.recordingFailed");
