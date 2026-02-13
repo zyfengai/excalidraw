@@ -811,10 +811,11 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         return;
       }
       const extension = getFileExtensionFromMimeType(result.mimeType);
+      const sanitizedName = name.trim() || "excalidraw-recording";
       const url = URL.createObjectURL(result.blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `${name || "excalidraw-recording"}.${extension}`;
+      anchor.download = `${sanitizedName}.${extension}`;
       document.body.appendChild(anchor);
       anchor.click();
       document.body.removeChild(anchor);

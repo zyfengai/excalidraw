@@ -202,9 +202,12 @@ const setupRecordingFlowMocks = (opts?: {
   const revokeObjectURLSpy = vi
     .spyOn(URL, "revokeObjectURL")
     .mockImplementation(() => {});
+  const downloadedFileNames: string[] = [];
   const clickSpy = vi
     .spyOn(HTMLAnchorElement.prototype, "click")
-    .mockImplementation(() => {});
+    .mockImplementation(function (this: HTMLAnchorElement) {
+      downloadedFileNames.push(this.download);
+    });
 
   return {
     cleanupSpy,
@@ -230,6 +233,7 @@ const setupRecordingFlowMocks = (opts?: {
     createObjectURLSpy,
     revokeObjectURLSpy,
     clickSpy,
+    getDownloadedFileNames: () => downloadedFileNames,
     cleanupCanvases: cleanup,
   };
 };
@@ -2135,6 +2139,7 @@ describe("useVideoRecorder", () => {
     });
     expect(setup.createObjectURLSpy).toHaveBeenCalledTimes(1);
     expect(setup.clickSpy).toHaveBeenCalledTimes(1);
+    expect(setup.getDownloadedFileNames()).toEqual(["demo.webm"]);
     expect(setup.revokeObjectURLSpy).toHaveBeenCalledWith("blob:mock-url");
 
     act(() => {
@@ -2146,6 +2151,40 @@ describe("useVideoRecorder", () => {
       expect(recorder.latest.error).toBeNull();
       expect(recorder.latest.elapsedMs).toBe(0);
     });
+
+    setup.cleanupCanvases();
+  });
+
+  it("falls back to default filename when download name is blank", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result).toBeTruthy();
+    });
+
+    act(() => {
+      recorder.latest.downloadRecording("   ");
+    });
+
+    expect(setup.createObjectURLSpy).toHaveBeenCalledTimes(1);
+    expect(setup.clickSpy).toHaveBeenCalledTimes(1);
+    expect(setup.getDownloadedFileNames()).toEqual([
+      "excalidraw-recording.webm",
+    ]);
+    expect(setup.revokeObjectURLSpy).toHaveBeenCalledWith("blob:mock-url");
 
     setup.cleanupCanvases();
   });
