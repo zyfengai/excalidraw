@@ -760,6 +760,36 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("falls back to generic error text when recorder error has no message", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      setup.emitRecorderError();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe("Recording failed. Please try again.");
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("ignores duplicate start requests while recording", async () => {
     const setup = setupRecordingFlowMocks();
     const recorder = renderUseVideoRecorder();
