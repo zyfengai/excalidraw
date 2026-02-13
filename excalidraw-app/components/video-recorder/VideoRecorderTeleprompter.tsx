@@ -32,7 +32,7 @@ export const VideoRecorderTeleprompter = ({
   );
 
   useEffect(() => {
-    if (!running) {
+    if (!running || lines.length === 0) {
       if (rafRef.current != null) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = null;
@@ -62,7 +62,7 @@ export const VideoRecorderTeleprompter = ({
       }
       startedAtRef.current = null;
     };
-  }, [running, speed]);
+  }, [lines.length, running, speed]);
 
   useEffect(() => {
     setOffset(0);
@@ -70,7 +70,7 @@ export const VideoRecorderTeleprompter = ({
     startedAtRef.current = null;
   }, [text]);
 
-  if (!text.trim().length) {
+  if (!lines.length) {
     return null;
   }
 

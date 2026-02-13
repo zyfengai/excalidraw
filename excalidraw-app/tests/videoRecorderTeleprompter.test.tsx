@@ -57,6 +57,25 @@ describe("VideoRecorderTeleprompter", () => {
     expect(container.firstChild).toBeNull();
   });
 
+  it("does not schedule animation frame for empty text", () => {
+    const { requestAnimationFrameSpy, cancelAnimationFrameSpy } =
+      installRafMock();
+
+    const { unmount } = render(
+      <VideoRecorderTeleprompter
+        text="   "
+        speed={50}
+        opacity={0.6}
+        running={true}
+      />,
+    );
+
+    expect(requestAnimationFrameSpy).not.toHaveBeenCalled();
+
+    unmount();
+    expect(cancelAnimationFrameSpy).not.toHaveBeenCalled();
+  });
+
   it("renders trimmed lines, floating class, and clamped opacity", () => {
     const { container } = render(
       <VideoRecorderTeleprompter
