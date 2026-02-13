@@ -154,4 +154,21 @@ describe("VideoRecorderTeleprompter", () => {
       callCountBeforePause,
     );
   });
+
+  it("cancels pending animation frame on unmount", () => {
+    const { cancelAnimationFrameSpy } = installRafMock();
+
+    const { unmount } = render(
+      <VideoRecorderTeleprompter
+        text="line"
+        speed={30}
+        opacity={0.7}
+        running={true}
+      />,
+    );
+
+    unmount();
+
+    expect(cancelAnimationFrameSpy).toHaveBeenCalledTimes(1);
+  });
 });
