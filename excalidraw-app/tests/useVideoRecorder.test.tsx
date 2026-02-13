@@ -712,6 +712,68 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.error).toBeNull();
   });
 
+  it("clears stale selected device ids when refreshed device lists no longer contain them", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const enumerateDevices = vi
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        createMockMediaDevice("videoinput", "camera-1", "Camera One"),
+        createMockMediaDevice("audioinput", "mic-1", "Microphone One"),
+      ]);
+    setMediaDevicesMock({
+      enumerateDevices,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        selectedVideoDeviceId: "stale-camera",
+        selectedAudioDeviceId: "stale-mic",
+      });
+    });
+    expect(recorder.latest.settings.selectedVideoDeviceId).toBe("stale-camera");
+    expect(recorder.latest.settings.selectedAudioDeviceId).toBe("stale-mic");
+
+    await act(async () => {
+      await recorder.latest.refreshDevices();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
+      expect(recorder.latest.settings.selectedAudioDeviceId).toBeNull();
+    });
+  });
+
+  it("keeps selected device ids when refreshed device lists are empty", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const enumerateDevices = vi.fn().mockResolvedValue([]);
+    setMediaDevicesMock({
+      enumerateDevices,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        selectedVideoDeviceId: "camera-preferred",
+        selectedAudioDeviceId: "mic-preferred",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.refreshDevices();
+    });
+
+    expect(recorder.latest.settings.selectedVideoDeviceId).toBe(
+      "camera-preferred",
+    );
+    expect(recorder.latest.settings.selectedAudioDeviceId).toBe(
+      "mic-preferred",
+    );
+  });
+
   it("ignores device enumeration rejection after unmount without logging", async () => {
     setMediaRecorderSupport(["video/webm"]);
     let rejectEnumerate: ((reason?: unknown) => void) | null = null;

@@ -57,6 +57,20 @@ const getUserMediaWithDeviceFallback = async (
   }
 };
 
+const reconcileSelectedDeviceId = (
+  selectedDeviceId: string | null,
+  availableDevices: VideoRecorderDeviceOption[],
+) => {
+  if (!selectedDeviceId || availableDevices.length === 0) {
+    return selectedDeviceId;
+  }
+
+  const exists = availableDevices.some(
+    (device) => device.deviceId === selectedDeviceId,
+  );
+  return exists ? selectedDeviceId : null;
+};
+
 const getExcalidrawCanvases = () => {
   const staticCanvas = document.querySelector<HTMLCanvasElement>(
     ".excalidraw canvas.static",
@@ -399,6 +413,29 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         return;
       }
       setDevices(mediaDevices);
+      setSettingsState((prev) => {
+        const selectedVideoDeviceId = reconcileSelectedDeviceId(
+          prev.selectedVideoDeviceId,
+          mediaDevices.videoInputs,
+        );
+        const selectedAudioDeviceId = reconcileSelectedDeviceId(
+          prev.selectedAudioDeviceId,
+          mediaDevices.audioInputs,
+        );
+
+        if (
+          selectedVideoDeviceId === prev.selectedVideoDeviceId &&
+          selectedAudioDeviceId === prev.selectedAudioDeviceId
+        ) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          selectedVideoDeviceId,
+          selectedAudioDeviceId,
+        };
+      });
     } catch (deviceError) {
       if (!isMountedRef.current) {
         return;
