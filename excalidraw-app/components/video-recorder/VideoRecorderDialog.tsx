@@ -1,0 +1,518 @@
+import { useEffect, useRef } from "react";
+
+import { Dialog } from "@excalidraw/excalidraw/components/Dialog";
+import { FilledButton } from "@excalidraw/excalidraw/components/FilledButton";
+import { Switch } from "@excalidraw/excalidraw/components/Switch";
+import { useI18n } from "@excalidraw/excalidraw/i18n";
+
+import { VideoRecorderTeleprompter } from "./VideoRecorderTeleprompter";
+import {
+  clampOverlayLayout,
+  VIDEO_RECORDER_RATIO_MAP,
+} from "./videoRecorder.utils";
+
+import type { PointerEvent as ReactPointerEvent } from "react";
+
+import type {
+  VideoRecorderCapabilities,
+  VideoRecorderDeviceOption,
+  VideoRecorderOverlayLayout,
+  VideoRecorderSettings,
+  VideoRecorderStatus,
+} from "./videoRecorder.types";
+
+type VideoRecorderDialogProps = {
+  isOpen: boolean;
+  capabilities: VideoRecorderCapabilities;
+  status: VideoRecorderStatus;
+  error: string | null;
+  settings: VideoRecorderSettings;
+  devices: {
+    videoInputs: VideoRecorderDeviceOption[];
+    audioInputs: VideoRecorderDeviceOption[];
+  };
+  onClose: () => void;
+  onRefreshDevices: () => Promise<void>;
+  onStart: () => Promise<void>;
+  onSettingsChange: (
+    next:
+      | Partial<VideoRecorderSettings>
+      | ((prev: VideoRecorderSettings) => VideoRecorderSettings),
+  ) => void;
+  onCameraLayoutChange: (
+    next:
+      | Partial<VideoRecorderOverlayLayout>
+      | ((prev: VideoRecorderOverlayLayout) => VideoRecorderOverlayLayout),
+  ) => void;
+};
+
+type InteractionState = {
+  mode: "drag" | "resize";
+  startX: number;
+  startY: number;
+  startLayout: VideoRecorderOverlayLayout;
+  containerWidth: number;
+  containerHeight: number;
+};
+
+export const VideoRecorderDialog = ({
+  isOpen,
+  capabilities,
+  status,
+  error,
+  settings,
+  devices,
+  onClose,
+  onRefreshDevices,
+  onStart,
+  onSettingsChange,
+  onCameraLayoutChange,
+}: VideoRecorderDialogProps) => {
+  const { t } = useI18n();
+  const previewRef = useRef<HTMLDivElement>(null);
+  const interactionRef = useRef<InteractionState | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+    onRefreshDevices();
+  }, [isOpen, onRefreshDevices]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const onPointerMove = (event: PointerEvent) => {
+      const interaction = interactionRef.current;
+      if (!interaction) {
+        return;
+      }
+
+      const deltaX =
+        (event.clientX - interaction.startX) / interaction.containerWidth;
+      const deltaY =
+        (event.clientY - interaction.startY) / interaction.containerHeight;
+
+      let nextLayout = interaction.startLayout;
+      if (interaction.mode === "drag") {
+        nextLayout = {
+          ...nextLayout,
+          x: interaction.startLayout.x + deltaX,
+          y: interaction.startLayout.y + deltaY,
+        };
+      } else {
+        let nextWidth = interaction.startLayout.width + deltaX;
+        let nextHeight = interaction.startLayout.height + deltaY;
+        if (interaction.startLayout.shape === "circle") {
+          const size = Math.max(nextWidth, nextHeight);
+          nextWidth = size;
+          nextHeight = size;
+        }
+        nextLayout = {
+          ...nextLayout,
+          width: nextWidth,
+          height: nextHeight,
+        };
+      }
+
+      onCameraLayoutChange(clampOverlayLayout(nextLayout));
+    };
+
+    const onPointerUp = () => {
+      interactionRef.current = null;
+    };
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+
+    return () => {
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+      interactionRef.current = null;
+    };
+  }, [isOpen, onCameraLayoutChange]);
+
+  if (!isOpen) {
+    return null;
+  }
+
+  const aspectRatioValue = VIDEO_RECORDER_RATIO_MAP[settings.aspectRatio];
+
+  const startInteraction = (
+    mode: InteractionState["mode"],
+    event: ReactPointerEvent,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const container = previewRef.current;
+    if (!container) {
+      return;
+    }
+    const containerRect = container.getBoundingClientRect();
+    interactionRef.current = {
+      mode,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLayout: settings.camera,
+      containerWidth: containerRect.width,
+      containerHeight: containerRect.height,
+    };
+  };
+
+  return (
+    <Dialog
+      size="wide"
+      onCloseRequest={onClose}
+      title={t("videoRecorder.title")}
+      className="video-recorder-dialog"
+    >
+      <div className="video-recorder-dialog__content">
+        {!capabilities.isSupported && (
+          <div className="video-recorder-dialog__unsupported">
+            {t("videoRecorder.errors.notSupported")}
+          </div>
+        )}
+        {error && <div className="video-recorder-dialog__error">{error}</div>}
+
+        <div className="video-recorder-dialog__columns">
+          <div className="video-recorder-dialog__settings">
+            <h3>{t("videoRecorder.sections.devices")}</h3>
+            <div className="video-recorder-dialog__setting">
+              <label htmlFor="video-recorder-camera-enabled">
+                {t("videoRecorder.camera.enabled")}
+              </label>
+              <Switch
+                name="video-recorder-camera-enabled"
+                checked={settings.cameraEnabled}
+                onChange={(checked) =>
+                  onSettingsChange({ cameraEnabled: checked })
+                }
+              />
+            </div>
+            <div className="video-recorder-dialog__setting">
+              <label htmlFor="video-recorder-camera-device">
+                {t("videoRecorder.camera.device")}
+              </label>
+              <select
+                id="video-recorder-camera-device"
+                className="TextInput"
+                value={settings.selectedVideoDeviceId || ""}
+                onChange={(event) =>
+                  onSettingsChange({
+                    selectedVideoDeviceId: event.target.value || null,
+                  })
+                }
+                disabled={!settings.cameraEnabled}
+              >
+                <option value="">{t("videoRecorder.defaults.auto")}</option>
+                {devices.videoInputs.map((device) => (
+                  <option key={device.deviceId} value={device.deviceId}>
+                    {device.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="video-recorder-dialog__setting">
+              <label htmlFor="video-recorder-camera-shape">
+                {t("videoRecorder.camera.shape")}
+              </label>
+              <select
+                id="video-recorder-camera-shape"
+                className="TextInput"
+                value={settings.camera.shape}
+                onChange={(event) =>
+                  onCameraLayoutChange({
+                    shape: event.target
+                      .value as VideoRecorderOverlayLayout["shape"],
+                  })
+                }
+                disabled={!settings.cameraEnabled}
+              >
+                <option value="rectangle">
+                  {t("videoRecorder.camera.shapeRectangle")}
+                </option>
+                <option value="rounded">
+                  {t("videoRecorder.camera.shapeRounded")}
+                </option>
+                <option value="circle">
+                  {t("videoRecorder.camera.shapeCircle")}
+                </option>
+              </select>
+            </div>
+            <div className="video-recorder-dialog__setting">
+              <label htmlFor="video-recorder-mic-enabled">
+                {t("videoRecorder.microphone.enabled")}
+              </label>
+              <Switch
+                name="video-recorder-mic-enabled"
+                checked={settings.microphoneEnabled}
+                onChange={(checked) =>
+                  onSettingsChange({ microphoneEnabled: checked })
+                }
+              />
+            </div>
+            <div className="video-recorder-dialog__setting">
+              <label htmlFor="video-recorder-mic-device">
+                {t("videoRecorder.microphone.device")}
+              </label>
+              <select
+                id="video-recorder-mic-device"
+                className="TextInput"
+                value={settings.selectedAudioDeviceId || ""}
+                onChange={(event) =>
+                  onSettingsChange({
+                    selectedAudioDeviceId: event.target.value || null,
+                  })
+                }
+                disabled={!settings.microphoneEnabled}
+              >
+                <option value="">{t("videoRecorder.defaults.auto")}</option>
+                {devices.audioInputs.map((device) => (
+                  <option key={device.deviceId} value={device.deviceId}>
+                    {device.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <h3>{t("videoRecorder.sections.video")}</h3>
+            <div className="video-recorder-dialog__setting">
+              <label htmlFor="video-recorder-aspect-ratio">
+                {t("videoRecorder.video.aspectRatio")}
+              </label>
+              <select
+                id="video-recorder-aspect-ratio"
+                className="TextInput"
+                value={settings.aspectRatio}
+                onChange={(event) =>
+                  onSettingsChange({
+                    aspectRatio: event.target
+                      .value as VideoRecorderSettings["aspectRatio"],
+                  })
+                }
+              >
+                <option value="16:9">16:9</option>
+                <option value="4:3">4:3</option>
+                <option value="1:1">1:1</option>
+                <option value="9:16">9:16</option>
+              </select>
+            </div>
+            <div className="video-recorder-dialog__setting">
+              <label htmlFor="video-recorder-resolution">
+                {t("videoRecorder.video.resolution")}
+              </label>
+              <select
+                id="video-recorder-resolution"
+                className="TextInput"
+                value={settings.resolution}
+                onChange={(event) =>
+                  onSettingsChange({
+                    resolution: event.target
+                      .value as VideoRecorderSettings["resolution"],
+                  })
+                }
+              >
+                <option value="720p">720p</option>
+                <option value="1080p">1080p</option>
+              </select>
+            </div>
+            <div className="video-recorder-dialog__setting">
+              <label htmlFor="video-recorder-fps">
+                {t("videoRecorder.video.fps")}
+              </label>
+              <select
+                id="video-recorder-fps"
+                className="TextInput"
+                value={settings.fps}
+                onChange={(event) =>
+                  onSettingsChange({
+                    fps: Number(event.target.value),
+                  })
+                }
+              >
+                <option value={24}>24</option>
+                <option value={30}>30</option>
+                <option value={60}>60</option>
+              </select>
+            </div>
+            <div className="video-recorder-dialog__setting">
+              <label htmlFor="video-recorder-format">
+                {t("videoRecorder.video.format")}
+              </label>
+              <select
+                id="video-recorder-format"
+                className="TextInput"
+                value={settings.mimeType}
+                onChange={(event) =>
+                  onSettingsChange({
+                    mimeType: event.target.value,
+                  })
+                }
+              >
+                {capabilities.supportedMimeTypes.map((mimeType) => (
+                  <option key={mimeType} value={mimeType}>
+                    {mimeType}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <h3>{t("videoRecorder.sections.teleprompter")}</h3>
+            <div className="video-recorder-dialog__setting">
+              <label htmlFor="video-recorder-teleprompter-enabled">
+                {t("videoRecorder.teleprompter.enabled")}
+              </label>
+              <Switch
+                name="video-recorder-teleprompter-enabled"
+                checked={settings.teleprompter.enabled}
+                onChange={(checked) =>
+                  onSettingsChange((prev) => ({
+                    ...prev,
+                    teleprompter: {
+                      ...prev.teleprompter,
+                      enabled: checked,
+                    },
+                  }))
+                }
+              />
+            </div>
+            <div className="video-recorder-dialog__setting video-recorder-dialog__setting--column">
+              <label htmlFor="video-recorder-teleprompter-text">
+                {t("videoRecorder.teleprompter.text")}
+              </label>
+              <textarea
+                id="video-recorder-teleprompter-text"
+                className="TextInput video-recorder-dialog__textarea"
+                value={settings.teleprompter.text}
+                onChange={(event) =>
+                  onSettingsChange((prev) => ({
+                    ...prev,
+                    teleprompter: {
+                      ...prev.teleprompter,
+                      text: event.target.value,
+                    },
+                  }))
+                }
+                placeholder={t("videoRecorder.teleprompter.placeholder")}
+              />
+            </div>
+            <div className="video-recorder-dialog__setting">
+              <label htmlFor="video-recorder-teleprompter-opacity">
+                {t("videoRecorder.teleprompter.opacity")}
+              </label>
+              <input
+                id="video-recorder-teleprompter-opacity"
+                type="range"
+                min={0.05}
+                max={1}
+                step={0.05}
+                value={settings.teleprompter.opacity}
+                onChange={(event) =>
+                  onSettingsChange((prev) => ({
+                    ...prev,
+                    teleprompter: {
+                      ...prev.teleprompter,
+                      opacity: Number(event.target.value),
+                    },
+                  }))
+                }
+              />
+            </div>
+            <div className="video-recorder-dialog__setting">
+              <label htmlFor="video-recorder-teleprompter-speed">
+                {t("videoRecorder.teleprompter.speed")}
+              </label>
+              <input
+                id="video-recorder-teleprompter-speed"
+                type="range"
+                min={5}
+                max={250}
+                step={5}
+                value={settings.teleprompter.speed}
+                onChange={(event) =>
+                  onSettingsChange((prev) => ({
+                    ...prev,
+                    teleprompter: {
+                      ...prev.teleprompter,
+                      speed: Number(event.target.value),
+                    },
+                  }))
+                }
+              />
+            </div>
+          </div>
+
+          <div className="video-recorder-dialog__preview-column">
+            <h3>{t("videoRecorder.preview.title")}</h3>
+            <div
+              ref={previewRef}
+              className="video-recorder-dialog__preview"
+              style={
+                { "--video-recorder-ratio": String(aspectRatioValue) } as any
+              }
+            >
+              <div className="video-recorder-dialog__preview-canvas" />
+              {settings.cameraEnabled && (
+                <div
+                  className={`video-recorder-dialog__camera-overlay video-recorder-dialog__camera-overlay--${settings.camera.shape}`}
+                  style={{
+                    left: `${settings.camera.x * 100}%`,
+                    top: `${settings.camera.y * 100}%`,
+                    width: `${settings.camera.width * 100}%`,
+                    height: `${settings.camera.height * 100}%`,
+                  }}
+                  onPointerDown={(event) => startInteraction("drag", event)}
+                >
+                  <div className="video-recorder-dialog__camera-label">
+                    {t("videoRecorder.preview.camera")}
+                  </div>
+                  <button
+                    type="button"
+                    className="video-recorder-dialog__camera-resize-handle"
+                    onPointerDown={(event) => startInteraction("resize", event)}
+                    aria-label={t("videoRecorder.preview.resizeHandle")}
+                  />
+                </div>
+              )}
+            </div>
+            <p className="video-recorder-dialog__helper-text">
+              {t("videoRecorder.preview.helper")}
+            </p>
+            <div className="video-recorder-dialog__teleprompter-preview">
+              <VideoRecorderTeleprompter
+                text={settings.teleprompter.text}
+                speed={settings.teleprompter.speed}
+                opacity={settings.teleprompter.opacity}
+                running={settings.teleprompter.enabled}
+              />
+            </div>
+            <p className="video-recorder-dialog__helper-text">
+              {t("videoRecorder.teleprompter.notInOutput")}
+            </p>
+          </div>
+        </div>
+
+        <div className="video-recorder-dialog__actions">
+          <FilledButton
+            label={t("buttons.cancel")}
+            onClick={onClose}
+            variant="outlined"
+          >
+            {t("buttons.cancel")}
+          </FilledButton>
+          <FilledButton
+            label={t("videoRecorder.actions.startRecording")}
+            onClick={() => {
+              void onStart();
+            }}
+            disabled={!capabilities.isSupported || status === "preparing"}
+          >
+            {t("videoRecorder.actions.startRecording")}
+          </FilledButton>
+        </div>
+      </div>
+    </Dialog>
+  );
+};

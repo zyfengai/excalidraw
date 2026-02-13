@@ -4,13 +4,15 @@ import type {
   VideoRecorderResolution,
 } from "./videoRecorder.types";
 
-export const VIDEO_RECORDER_RATIO_MAP: Record<VideoRecorderAspectRatio, number> =
-  {
-    "16:9": 16 / 9,
-    "4:3": 4 / 3,
-    "1:1": 1,
-    "9:16": 9 / 16,
-  };
+export const VIDEO_RECORDER_RATIO_MAP: Record<
+  VideoRecorderAspectRatio,
+  number
+> = {
+  "16:9": 16 / 9,
+  "4:3": 4 / 3,
+  "1:1": 1,
+  "9:16": 9 / 16,
+};
 
 const RESOLUTION_BASE: Record<VideoRecorderResolution, number> = {
   "720p": 720,

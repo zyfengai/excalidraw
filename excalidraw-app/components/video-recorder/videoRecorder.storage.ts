@@ -1,4 +1,5 @@
 import { STORAGE_KEYS } from "../../app_constants";
+
 import { getDefaultVideoRecorderSettings } from "./videoRecorder.config";
 import { clampOverlayLayout, clamp } from "./videoRecorder.utils";
 
@@ -47,7 +48,9 @@ const coerceSettings = (value: unknown): VideoRecorderSettings | null => {
 export const loadVideoRecorderSettings = (): VideoRecorderSettings => {
   const defaults = getDefaultVideoRecorderSettings();
   try {
-    const value = localStorage.getItem(STORAGE_KEYS.LOCAL_STORAGE_VIDEO_RECORDER);
+    const value = localStorage.getItem(
+      STORAGE_KEYS.LOCAL_STORAGE_VIDEO_RECORDER,
+    );
     if (!value) {
       return defaults;
     }

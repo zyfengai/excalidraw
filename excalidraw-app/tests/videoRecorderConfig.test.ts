@@ -1,0 +1,49 @@
+import { afterEach, describe, expect, it } from "vitest";
+
+import {
+  getDefaultVideoRecorderSettings,
+  getVideoRecorderCapabilities,
+} from "../components/video-recorder/videoRecorder.config";
+
+const OriginalMediaRecorder = globalThis.MediaRecorder;
+
+describe("video recorder capabilities", () => {
+  afterEach(() => {
+    if (OriginalMediaRecorder) {
+      globalThis.MediaRecorder = OriginalMediaRecorder;
+    } else {
+      delete (globalThis as any).MediaRecorder;
+    }
+  });
+
+  it("returns unsupported when MediaRecorder is missing", () => {
+    delete (globalThis as any).MediaRecorder;
+    const capabilities = getVideoRecorderCapabilities();
+    expect(capabilities.isSupported).toBe(false);
+    expect(capabilities.supportedMimeTypes).toEqual([]);
+  });
+
+  it("detects supported mime types", () => {
+    class MockMediaRecorder {}
+    (MockMediaRecorder as any).isTypeSupported = (mimeType: string) =>
+      mimeType.includes("webm");
+
+    globalThis.MediaRecorder = MockMediaRecorder as any;
+
+    const capabilities = getVideoRecorderCapabilities();
+    expect(capabilities.isSupported).toBe(true);
+    expect(
+      capabilities.supportedMimeTypes.every((mime) => mime.includes("webm")),
+    ).toBe(true);
+  });
+
+  it("sets default mime type from capabilities", () => {
+    class MockMediaRecorder {}
+    (MockMediaRecorder as any).isTypeSupported = (mimeType: string) =>
+      mimeType === "video/webm";
+    globalThis.MediaRecorder = MockMediaRecorder as any;
+
+    const defaults = getDefaultVideoRecorderSettings();
+    expect(defaults.mimeType).toBe("video/webm");
+  });
+});
