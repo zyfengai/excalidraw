@@ -261,6 +261,20 @@ describe("VideoRecorderDialog", () => {
     expect(onRequestPermissions).toHaveBeenCalledTimes(0);
   });
 
+  it("disables start action while permissions are in-flight", () => {
+    const { onStart } = renderDialog({
+      isRequestingPermissions: true,
+    });
+
+    const startButton = screen.getByRole("button", {
+      name: /Start recording/i,
+    });
+    expect(startButton).toBeDisabled();
+    fireEvent.click(startButton);
+
+    expect(onStart).toHaveBeenCalledTimes(0);
+  });
+
   it("starts recording when start action is enabled", () => {
     const { onStart } = renderDialog();
 

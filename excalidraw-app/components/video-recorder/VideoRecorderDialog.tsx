@@ -174,6 +174,7 @@ export const VideoRecorderDialog = ({
   const aspectRatioValue = VIDEO_RECORDER_RATIO_MAP[settings.aspectRatio];
   const isStartDisabled =
     !capabilities.isSupported ||
+    isRequestingPermissions ||
     status === "preparing" ||
     status === "recording" ||
     status === "paused" ||
