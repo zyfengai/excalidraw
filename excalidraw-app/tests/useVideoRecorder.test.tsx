@@ -1,6 +1,8 @@
 import { act, render, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { EVENT } from "@excalidraw/common";
+
 import { STORAGE_KEYS } from "../app_constants";
 import { getDefaultVideoRecorderSettings } from "../components/video-recorder/videoRecorder.config";
 import {
@@ -12,6 +14,10 @@ const OriginalMediaRecorder = globalThis.MediaRecorder;
 const OriginalMediaStream = globalThis.MediaStream;
 const OriginalMediaDevices = navigator.mediaDevices;
 const OriginalCanvasCaptureStream = HTMLCanvasElement.prototype.captureStream;
+const OriginalDocumentHiddenDescriptor = Object.getOwnPropertyDescriptor(
+  document,
+  "hidden",
+);
 
 const setMediaRecorderSupport = (supportedMimeTypes: string[]) => {
   class MockMediaRecorder {}
@@ -234,6 +240,10 @@ afterEach(() => {
     HTMLCanvasElement.prototype.captureStream = OriginalCanvasCaptureStream;
   } else {
     delete (HTMLCanvasElement.prototype as any).captureStream;
+  }
+
+  if (OriginalDocumentHiddenDescriptor) {
+    Object.defineProperty(document, "hidden", OriginalDocumentHiddenDescriptor);
   }
 
   localStorage.removeItem(STORAGE_KEYS.LOCAL_STORAGE_VIDEO_RECORDER);
@@ -481,6 +491,48 @@ describe("useVideoRecorder", () => {
     await waitFor(() => {
       expect(recorder.latest.status).toBe("completed");
       expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
+  it("auto-pauses recording when page becomes hidden", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    Object.defineProperty(document, "hidden", {
+      configurable: true,
+      value: true,
+    });
+    act(() => {
+      document.dispatchEvent(new Event(EVENT.VISIBILITY_CHANGE));
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("paused");
+      expect(recorder.latest.isRecordingActive).toBe(true);
+    });
+    expect(setup.pauseSpy).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
     });
 
     setup.cleanupCanvases();
