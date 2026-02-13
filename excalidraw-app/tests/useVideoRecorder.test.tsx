@@ -9,7 +9,9 @@ import {
 } from "../components/video-recorder/useVideoRecorder";
 
 const OriginalMediaRecorder = globalThis.MediaRecorder;
+const OriginalMediaStream = globalThis.MediaStream;
 const OriginalMediaDevices = navigator.mediaDevices;
+const OriginalCanvasCaptureStream = HTMLCanvasElement.prototype.captureStream;
 
 const setMediaRecorderSupport = (supportedMimeTypes: string[]) => {
   class MockMediaRecorder {}
@@ -39,6 +41,46 @@ const createMockMediaDevice = (
     toJSON: () => ({}),
   } as MediaDeviceInfo);
 
+const createMockCanvasContext = () =>
+  ({
+    fillStyle: "",
+    fillRect: vi.fn(),
+    drawImage: vi.fn(),
+    save: vi.fn(),
+    restore: vi.fn(),
+    beginPath: vi.fn(),
+    arc: vi.fn(),
+    clip: vi.fn(),
+    moveTo: vi.fn(),
+    lineTo: vi.fn(),
+    quadraticCurveTo: vi.fn(),
+    closePath: vi.fn(),
+  } as unknown as CanvasRenderingContext2D);
+
+const createExcalidrawCanvases = () => {
+  const root = document.createElement("div");
+  root.className = "excalidraw";
+
+  const staticCanvas = document.createElement("canvas");
+  staticCanvas.className = "static";
+  staticCanvas.width = 1200;
+  staticCanvas.height = 800;
+
+  const interactiveCanvas = document.createElement("canvas");
+  interactiveCanvas.className = "interactive";
+  interactiveCanvas.width = 1200;
+  interactiveCanvas.height = 800;
+
+  root.appendChild(staticCanvas);
+  root.appendChild(interactiveCanvas);
+  document.body.appendChild(root);
+
+  return {
+    root,
+    cleanup: () => root.remove(),
+  };
+};
+
 const renderUseVideoRecorder = () => {
   let latest: ReturnType<typeof useVideoRecorder> | null = null;
 
@@ -66,10 +108,22 @@ afterEach(() => {
     delete (globalThis as any).MediaRecorder;
   }
 
+  if (OriginalMediaStream) {
+    globalThis.MediaStream = OriginalMediaStream;
+  } else {
+    delete (globalThis as any).MediaStream;
+  }
+
   if (OriginalMediaDevices) {
     setMediaDevicesMock(OriginalMediaDevices);
   } else {
     delete (navigator as any).mediaDevices;
+  }
+
+  if (OriginalCanvasCaptureStream) {
+    HTMLCanvasElement.prototype.captureStream = OriginalCanvasCaptureStream;
+  } else {
+    delete (HTMLCanvasElement.prototype as any).captureStream;
   }
 
   localStorage.removeItem(STORAGE_KEYS.LOCAL_STORAGE_VIDEO_RECORDER);
@@ -271,6 +325,145 @@ describe("useVideoRecorder", () => {
     });
     expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
     expect(getUserMedia).not.toHaveBeenCalled();
+  });
+
+  it("stops recording, downloads result and resets state", async () => {
+    const cleanupSpy = vi.fn();
+    const videoTrackStop = vi.fn();
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia: vi.fn(),
+    });
+    vi.spyOn(window, "requestAnimationFrame").mockImplementation(() => 1);
+    vi.spyOn(window, "cancelAnimationFrame").mockImplementation(() => {});
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(() =>
+      createMockCanvasContext(),
+    );
+    Object.defineProperty(HTMLCanvasElement.prototype, "captureStream", {
+      configurable: true,
+      value: vi.fn(() => ({
+        getVideoTracks: () =>
+          [
+            {
+              kind: "video",
+              stop: videoTrackStop,
+            },
+          ] as unknown as MediaStreamTrack[],
+      })),
+    });
+
+    class MockMediaStream {
+      private tracks: MediaStreamTrack[] = [];
+      addTrack(track: MediaStreamTrack) {
+        this.tracks.push(track);
+      }
+      getTracks() {
+        return this.tracks;
+      }
+      getAudioTracks() {
+        return this.tracks.filter((track) => track.kind === "audio");
+      }
+    }
+    globalThis.MediaStream = MockMediaStream as any;
+
+    class FunctionalMediaRecorder {
+      static isTypeSupported = (mimeType: string) => mimeType.includes("webm");
+      state: RecordingState = "inactive";
+      mimeType: string;
+      ondataavailable: ((event: BlobEvent) => void) | null = null;
+      onstop: (() => void) | null = null;
+      onerror: ((event: any) => void) | null = null;
+      private stopListeners = new Set<() => void>();
+
+      constructor(_stream: MediaStream, options?: MediaRecorderOptions) {
+        this.mimeType = options?.mimeType || "video/webm";
+      }
+      start() {
+        this.state = "recording";
+        this.ondataavailable?.({
+          data: new Blob(["chunk"], { type: this.mimeType }),
+        } as BlobEvent);
+      }
+      pause() {
+        this.state = "paused";
+      }
+      resume() {
+        this.state = "recording";
+      }
+      stop() {
+        this.state = "inactive";
+        this.stopListeners.forEach((listener) => listener());
+        this.onstop?.();
+        cleanupSpy();
+      }
+      addEventListener(event: "stop", listener: () => void) {
+        if (event === "stop") {
+          this.stopListeners.add(listener);
+        }
+      }
+      removeEventListener(event: "stop", listener: () => void) {
+        if (event === "stop") {
+          this.stopListeners.delete(listener);
+        }
+      }
+    }
+    globalThis.MediaRecorder = FunctionalMediaRecorder as any;
+
+    const { cleanup } = createExcalidrawCanvases();
+    const createObjectURLSpy = vi
+      .spyOn(URL, "createObjectURL")
+      .mockReturnValue("blob:mock-url");
+    const revokeObjectURLSpy = vi
+      .spyOn(URL, "revokeObjectURL")
+      .mockImplementation(() => {});
+    const clickSpy = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result).toBeTruthy();
+    });
+    expect(cleanupSpy).toHaveBeenCalledTimes(1);
+    expect(videoTrackStop).toHaveBeenCalledTimes(1);
+
+    act(() => {
+      recorder.latest.downloadRecording("demo");
+    });
+    expect(createObjectURLSpy).toHaveBeenCalledTimes(1);
+    expect(clickSpy).toHaveBeenCalledTimes(1);
+    expect(revokeObjectURLSpy).toHaveBeenCalledWith("blob:mock-url");
+
+    act(() => {
+      recorder.latest.resetResult();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("idle");
+      expect(recorder.latest.result).toBeNull();
+      expect(recorder.latest.error).toBeNull();
+      expect(recorder.latest.elapsedMs).toBe(0);
+    });
+
+    cleanup();
   });
 
   it("sets error when requesting permissions without getUserMedia", async () => {
