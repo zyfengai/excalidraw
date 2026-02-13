@@ -11,6 +11,7 @@ import {
   clampOverlayLayout,
   normalizeRecorderAspectRatio,
   normalizeRecorderFps,
+  normalizeRecorderMimeType,
   normalizeRecorderResolution,
   VIDEO_RECORDER_SUPPORTED_ASPECT_RATIOS,
   VIDEO_RECORDER_SUPPORTED_FPS,
@@ -210,17 +211,12 @@ export const VideoRecorderDialog = ({
     "1080p",
   );
   const selectedFpsValue = normalizeRecorderFps(settings.fps, 30);
-  const normalizedSelectedMimeType = settings.mimeType.trim();
-  const selectedMimeTypeValue =
-    capabilities.supportedMimeTypes.find(
-      (mimeType) => mimeType === normalizedSelectedMimeType,
-    ) ||
-    capabilities.supportedMimeTypes.find(
-      (mimeType) =>
-        mimeType.toLowerCase() === normalizedSelectedMimeType.toLowerCase(),
-    ) ||
-    capabilities.supportedMimeTypes[0] ||
-    "";
+  const selectedMimeTypeValue = normalizeRecorderMimeType(
+    settings.mimeType,
+    capabilities.supportedMimeTypes,
+  );
+  const isFormatDisabled =
+    !capabilities.isSupported || capabilities.supportedMimeTypes.length === 0;
   const hasActiveRecordingSession =
     status === "preparing" ||
     status === "recording" ||
@@ -552,6 +548,7 @@ export const VideoRecorderDialog = ({
                     mimeType: event.target.value,
                   })
                 }
+                disabled={isFormatDisabled}
               >
                 {capabilities.supportedMimeTypes.map((mimeType) => (
                   <option key={mimeType} value={mimeType}>

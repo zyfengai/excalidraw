@@ -414,6 +414,21 @@ describe("VideoRecorderDialog", () => {
     expect(onRequestPermissions).toHaveBeenCalledTimes(0);
   });
 
+  it("disables format selector when browser support is missing", () => {
+    renderDialog({
+      capabilities: {
+        isSupported: false,
+        supportedMimeTypes: [],
+      },
+    });
+
+    const formatSelect = screen.getByLabelText(
+      "videoRecorder.video.format",
+    ) as HTMLSelectElement;
+    expect(formatSelect).toBeDisabled();
+    expect(formatSelect.value).toBe("");
+  });
+
   it("disables start action while permissions are in-flight", () => {
     const { onStart } = renderDialog({
       isRequestingPermissions: true,
