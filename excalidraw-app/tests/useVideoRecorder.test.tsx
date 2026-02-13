@@ -868,6 +868,67 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.isRequestingPermissions).toBe(false);
   });
 
+  it("does not block permission retries while refresh reconciliation is pending", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const pendingRefreshResolvers: Array<(value: MediaDeviceInfo[]) => void> =
+      [];
+    const enumerateDevices = vi
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockImplementation(
+        () =>
+          new Promise<MediaDeviceInfo[]>((resolve) => {
+            pendingRefreshResolvers.push(resolve);
+          }),
+      );
+    const notFound = new DOMException("", "NotFoundError");
+    const getUserMedia = vi.fn().mockRejectedValue(notFound);
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "stale-camera",
+      });
+    });
+
+    act(() => {
+      void recorder.latest.requestMediaPermissions();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.error).toBe(
+        mapVideoRecorderErrorMessage(notFound),
+      );
+      expect(recorder.latest.isRequestingPermissions).toBe(false);
+    });
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+
+    act(() => {
+      void recorder.latest.requestMediaPermissions();
+    });
+
+    await waitFor(() => {
+      expect(getUserMedia).toHaveBeenCalledTimes(3);
+      expect(recorder.latest.isRequestingPermissions).toBe(false);
+    });
+    expect(getUserMedia).toHaveBeenNthCalledWith(3, {
+      video: true,
+      audio: false,
+    });
+
+    pendingRefreshResolvers.forEach((resolve) => resolve([]));
+    await act(async () => {
+      await Promise.resolve();
+    });
+  });
+
   it("does not clear a newly selected device if permission fallback resolves later", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const trackStop = vi.fn();
@@ -2127,6 +2188,73 @@ describe("useVideoRecorder", () => {
     });
     expect(enumerateDevices).toHaveBeenCalledTimes(2);
     expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+    setup.cleanupCanvases();
+  });
+
+  it("allows retrying start while refresh reconciliation is pending", async () => {
+    const setup = setupRecordingFlowMocks();
+    const pendingRefreshResolvers: Array<(value: MediaDeviceInfo[]) => void> =
+      [];
+    const enumerateDevices = vi
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockImplementation(
+        () =>
+          new Promise<MediaDeviceInfo[]>((resolve) => {
+            pendingRefreshResolvers.push(resolve);
+          }),
+      );
+    const notFound = new DOMException("", "NotFoundError");
+    const getUserMedia = vi.fn().mockRejectedValue(notFound);
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "stale-camera",
+      });
+    });
+
+    act(() => {
+      void recorder.latest.startRecording();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        mapVideoRecorderErrorMessage(notFound),
+      );
+    });
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+
+    act(() => {
+      void recorder.latest.startRecording();
+    });
+
+    await waitFor(() => {
+      expect(getUserMedia).toHaveBeenCalledTimes(3);
+      expect(recorder.latest.status).toBe("error");
+    });
+    expect(getUserMedia).toHaveBeenNthCalledWith(3, {
+      video: true,
+      audio: false,
+    });
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
+
+    pendingRefreshResolvers.forEach((resolve) => resolve([]));
+    await act(async () => {
+      await Promise.resolve();
+    });
 
     setup.cleanupCanvases();
   });

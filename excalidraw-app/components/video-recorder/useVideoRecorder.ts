@@ -579,14 +579,14 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         return;
       }
       stream.getTracks().forEach((track) => track.stop());
-      await refreshDevices();
+      void refreshDevices();
     } catch (permissionError) {
       if (!isMountedRef.current) {
         return;
       }
       setError(mapVideoRecorderErrorMessage(permissionError));
       if (isDeviceSelectionError(permissionError)) {
-        await refreshDevices();
+        void refreshDevices();
       }
     } finally {
       permissionRequestInFlightRef.current = false;
@@ -923,8 +923,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       setStatus("recording");
       setDialogOpen(false);
       startElapsedTicker();
-      await refreshDevices();
-      assertStartRequestActive();
+      void refreshDevices();
     } catch (startError) {
       if (
         startError instanceof StartRecordingCancelledError ||
@@ -939,7 +938,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       setStatus("error");
       cleanupStreams();
       if (isDeviceSelectionError(startError)) {
-        await refreshDevices();
+        void refreshDevices();
       }
     } finally {
       startRecordingInFlightRef.current = false;
