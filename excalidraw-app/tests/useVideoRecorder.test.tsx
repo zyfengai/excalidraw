@@ -883,6 +883,47 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("ignores start requests while paused", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      recorder.latest.pauseRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("paused");
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    expect(setup.captureStreamSpy).toHaveBeenCalledTimes(1);
+    expect(recorder.latest.status).toBe("paused");
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("ignores duplicate start requests while preparing", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const { cleanup } = createExcalidrawCanvases();
@@ -966,6 +1007,49 @@ describe("useVideoRecorder", () => {
       await recorder.latest.stopRecording();
     });
     expect(setup.getStopCallCount()).toBe(1);
+
+    await act(async () => {
+      setup.flushStop();
+      await firstStopPromise;
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+    });
+
+    setup.cleanupCanvases();
+  });
+
+  it("ignores start requests while stopping", async () => {
+    const setup = setupRecordingFlowMocks({ deferStop: true });
+    const recorder = renderUseVideoRecorder();
+    let firstStopPromise: Promise<void> | null = null;
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      firstStopPromise = recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("stopping");
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    expect(setup.captureStreamSpy).toHaveBeenCalledTimes(1);
+    expect(recorder.latest.status).toBe("stopping");
 
     await act(async () => {
       setup.flushStop();

@@ -448,7 +448,12 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       return;
     }
 
-    if (status === "recording" || status === "preparing") {
+    if (
+      status === "recording" ||
+      status === "paused" ||
+      status === "preparing" ||
+      status === "stopping"
+    ) {
       return;
     }
 
