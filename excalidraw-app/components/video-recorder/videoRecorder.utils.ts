@@ -44,12 +44,15 @@ export const normalizeRecorderAspectRatio = (
 export const normalizeRecorderResolution = (
   candidateResolution: string,
   fallbackResolution: VideoRecorderResolution,
-): VideoRecorderResolution =>
-  VIDEO_RECORDER_SUPPORTED_RESOLUTIONS.some(
-    (resolution) => resolution === candidateResolution.trim(),
-  )
-    ? (candidateResolution.trim() as VideoRecorderResolution)
-    : fallbackResolution;
+): VideoRecorderResolution => {
+  const normalizedCandidateResolution = candidateResolution
+    .trim()
+    .toLowerCase();
+  const matchedResolution = VIDEO_RECORDER_SUPPORTED_RESOLUTIONS.find(
+    (resolution) => resolution.toLowerCase() === normalizedCandidateResolution,
+  );
+  return matchedResolution || fallbackResolution;
+};
 
 export const getVideoDimensions = (
   aspectRatio: VideoRecorderAspectRatio,
