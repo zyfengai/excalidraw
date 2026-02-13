@@ -151,6 +151,30 @@ const areVideoRecorderSettingsEqual = (
   a.teleprompter.speed === b.teleprompter.speed &&
   areOverlayLayoutsEqual(a.camera, b.camera);
 
+const areDeviceOptionListsEqual = (
+  a: VideoRecorderDeviceOption[],
+  b: VideoRecorderDeviceOption[],
+) =>
+  a.length === b.length &&
+  a.every(
+    (device, index) =>
+      device.deviceId === b[index]?.deviceId &&
+      device.label === b[index]?.label,
+  );
+
+const areDeviceCollectionsEqual = (
+  a: {
+    videoInputs: VideoRecorderDeviceOption[];
+    audioInputs: VideoRecorderDeviceOption[];
+  },
+  b: {
+    videoInputs: VideoRecorderDeviceOption[];
+    audioInputs: VideoRecorderDeviceOption[];
+  },
+) =>
+  areDeviceOptionListsEqual(a.videoInputs, b.videoInputs) &&
+  areDeviceOptionListsEqual(a.audioInputs, b.audioInputs);
+
 const getExcalidrawCanvases = () => {
   const staticCanvas = document.querySelector<HTMLCanvasElement>(
     ".excalidraw canvas.static",
@@ -500,7 +524,9 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       ) {
         return;
       }
-      setDevices(mediaDevices);
+      setDevices((prev) =>
+        areDeviceCollectionsEqual(prev, mediaDevices) ? prev : mediaDevices,
+      );
       setSettingsState((prev) => {
         const hasVideoInputs = mediaDevices.videoInputs.length > 0;
         const hasAudioInputs = mediaDevices.audioInputs.length > 0;
