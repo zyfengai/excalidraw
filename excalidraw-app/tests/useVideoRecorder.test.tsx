@@ -465,6 +465,38 @@ describe("useVideoRecorder", () => {
     expect(stopTrack).toHaveBeenCalledTimes(1);
   });
 
+  it("handles device enumeration failures without breaking recorder state", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const enumerateDevices = vi.fn(async () => {
+      throw new Error("enumerate failed");
+    });
+    setMediaDevicesMock({
+      enumerateDevices,
+    });
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    const recorder = renderUseVideoRecorder();
+
+    await waitFor(() => {
+      expect(enumerateDevices).toHaveBeenCalledTimes(1);
+      expect(recorder.latest.devices).toEqual({
+        videoInputs: [],
+        audioInputs: [],
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.refreshDevices();
+    });
+
+    expect(enumerateDevices).toHaveBeenCalledTimes(2);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(2);
+    expect(recorder.latest.status).toBe("idle");
+    expect(recorder.latest.error).toBeNull();
+  });
+
   it("sets error when starting recording without MediaRecorder support", async () => {
     delete (globalThis as any).MediaRecorder;
     setMediaDevicesMock({
