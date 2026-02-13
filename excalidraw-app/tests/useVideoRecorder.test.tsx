@@ -1272,6 +1272,51 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
   });
 
+  it("falls back on selection errors inferred from permission error messages", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const notFoundMessageError = new Error(
+      "Requested device not found for selected input.",
+    );
+    const trackStop = vi.fn();
+    const permissionStream = {
+      getTracks: () => [{ stop: trackStop }],
+    } as unknown as MediaStream;
+    const getUserMedia = vi
+      .fn()
+      .mockRejectedValueOnce(notFoundMessageError)
+      .mockResolvedValueOnce(permissionStream);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "message-missing-camera",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    expect(getUserMedia).toHaveBeenNthCalledWith(1, {
+      video: { deviceId: { exact: "message-missing-camera" } },
+      audio: false,
+    });
+    expect(getUserMedia).toHaveBeenNthCalledWith(2, {
+      video: true,
+      audio: false,
+    });
+    expect(trackStop).toHaveBeenCalledTimes(1);
+    expect(recorder.latest.error).toBeNull();
+    expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
+  });
+
   it("keeps non-requested selected audio device on camera-only permission fallback", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const trackStop = vi.fn();
@@ -3372,6 +3417,65 @@ describe("useVideoRecorder", () => {
       expect(recorder.latest.status).toBe("recording");
       expect(recorder.latest.error).toBeNull();
       expect(recorder.latest.settings.selectedAudioDeviceId).toBe("keep-mic");
+    });
+
+    expect(getUserMedia).toHaveBeenNthCalledWith(1, {
+      video: { deviceId: { exact: "missing-camera" } },
+      audio: false,
+    });
+    expect(getUserMedia).toHaveBeenNthCalledWith(2, {
+      video: true,
+      audio: false,
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+    });
+    expect(cameraTrackStop).toHaveBeenCalledTimes(1);
+
+    setup.cleanupCanvases();
+  });
+
+  it("falls back to default camera when start error message indicates missing selected input", async () => {
+    const setup = setupRecordingFlowMocks();
+    const enumerateDevices = vi.fn(async () => []);
+    const cameraTrackStop = vi.fn();
+    const cameraStream = {
+      getTracks: () => [{ stop: cameraTrackStop }],
+    } as unknown as MediaStream;
+    const getUserMedia = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new Error("Requested device not found for selected input."),
+      )
+      .mockResolvedValueOnce(cameraStream);
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+    vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "missing-camera",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+      expect(recorder.latest.error).toBeNull();
+      expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
     });
 
     expect(getUserMedia).toHaveBeenNthCalledWith(1, {

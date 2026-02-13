@@ -76,8 +76,28 @@ const getErrorMessage = (error: unknown) => {
   return typeof error.message === "string" ? error.message : "";
 };
 
-const isDeviceSelectionError = (error: unknown) =>
-  DEVICE_SELECTION_ERROR_NAMES.has(getErrorName(error));
+const isDeviceSelectionError = (error: unknown) => {
+  if (DEVICE_SELECTION_ERROR_NAMES.has(getErrorName(error))) {
+    return true;
+  }
+
+  const message = getErrorMessage(error).toLowerCase();
+  if (!message) {
+    return false;
+  }
+
+  const hasNotFoundSignal =
+    message.includes("notfounderror") ||
+    ((message.includes("device") || message.includes("input")) &&
+      (message.includes("not found") || message.includes("unavailable")));
+  const hasConstraintSignal =
+    (message.includes("overconstrained") || message.includes("constraint")) &&
+    (message.includes("not satisfied") ||
+      message.includes("cannot be satisfied") ||
+      message.includes("unsatisfied"));
+
+  return hasNotFoundSignal || hasConstraintSignal;
+};
 
 const isMimeNotSupportedMessage = (error: unknown) => {
   const message = getErrorMessage(error).toLowerCase();
