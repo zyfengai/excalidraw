@@ -1573,6 +1573,42 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("detaches recorder callbacks after successful stop", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    expect(setup.getRecorderHandlers()).toMatchObject({
+      ondataavailable: expect.any(Function),
+      onerror: expect.any(Function),
+      onstop: expect.any(Function),
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+    });
+
+    expect(setup.getRecorderHandlers()).toEqual({
+      ondataavailable: null,
+      onerror: null,
+      onstop: null,
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("keeps completed state after successful stop even past timeout window", async () => {
     vi.useFakeTimers();
     const setup = setupRecordingFlowMocks();
