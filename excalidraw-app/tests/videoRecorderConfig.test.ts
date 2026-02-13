@@ -38,13 +38,24 @@ describe("video recorder capabilities", () => {
     ).toBe(true);
   });
 
-  it("returns unsupported when isTypeSupported is unavailable", () => {
+  it("keeps recording supported when isTypeSupported is unavailable", () => {
     class MockMediaRecorder {}
     globalThis.MediaRecorder = MockMediaRecorder as any;
 
     const capabilities = getVideoRecorderCapabilities();
-    expect(capabilities.isSupported).toBe(false);
+    expect(capabilities.isSupported).toBe(true);
     expect(capabilities.reason).toBe("mime-type-detection-not-supported");
+    expect(capabilities.supportedMimeTypes).toEqual([]);
+  });
+
+  it("keeps recording supported when preferred mime list is empty", () => {
+    class MockMediaRecorder {}
+    (MockMediaRecorder as any).isTypeSupported = () => false;
+    globalThis.MediaRecorder = MockMediaRecorder as any;
+
+    const capabilities = getVideoRecorderCapabilities();
+    expect(capabilities.isSupported).toBe(true);
+    expect(capabilities.reason).toBe("no-supported-mime-type");
     expect(capabilities.supportedMimeTypes).toEqual([]);
   });
 
@@ -67,6 +78,14 @@ describe("video recorder capabilities", () => {
     class MockMediaRecorder {}
     (MockMediaRecorder as any).isTypeSupported = (mimeType: string) =>
       mimeType === "video/webm";
+    globalThis.MediaRecorder = MockMediaRecorder as any;
+
+    const defaults = getDefaultVideoRecorderSettings();
+    expect(defaults.mimeType).toBe("video/webm");
+  });
+
+  it("falls back to webm default mime when support probing is unavailable", () => {
+    class MockMediaRecorder {}
     globalThis.MediaRecorder = MockMediaRecorder as any;
 
     const defaults = getDefaultVideoRecorderSettings();

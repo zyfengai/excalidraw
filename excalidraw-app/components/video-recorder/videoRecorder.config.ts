@@ -43,7 +43,7 @@ export const getVideoRecorderCapabilities = (): VideoRecorderCapabilities => {
 
   if (typeof MediaRecorder.isTypeSupported !== "function") {
     return {
-      isSupported: false,
+      isSupported: true,
       reason: "mime-type-detection-not-supported",
       supportedMimeTypes: [],
     };
@@ -59,7 +59,7 @@ export const getVideoRecorderCapabilities = (): VideoRecorderCapabilities => {
 
   if (!supportedMimeTypes.length) {
     return {
-      isSupported: false,
+      isSupported: true,
       reason: "no-supported-mime-type",
       supportedMimeTypes: [],
     };

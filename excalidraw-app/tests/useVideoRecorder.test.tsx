@@ -103,6 +103,7 @@ const setupRecordingFlowMocks = (opts?: {
   messageNotSupportedConstructorMimeTypes?: string[];
   messageNotSupportedConstructorErrorMessage?: string;
   defaultConstructorMimeType?: string;
+  omitIsTypeSupported?: boolean;
 }) => {
   const cleanupSpy = vi.fn();
   const pauseSpy = vi.fn();
@@ -259,6 +260,9 @@ const setupRecordingFlowMocks = (opts?: {
         this.stopListeners.delete(listener);
       }
     }
+  }
+  if (opts?.omitIsTypeSupported) {
+    delete (FunctionalMediaRecorder as any).isTypeSupported;
   }
   globalThis.MediaRecorder = FunctionalMediaRecorder as any;
 
@@ -3031,6 +3035,43 @@ describe("useVideoRecorder", () => {
     await waitFor(() => {
       expect(recorder.latest.status).toBe("completed");
       expect(recorder.latest.result?.mimeType).toBe("video/webm");
+    });
+
+    setup.cleanupCanvases();
+  });
+
+  it("records when mime probing is unavailable by falling back to constructor defaults", async () => {
+    const setup = setupRecordingFlowMocks({
+      omitIsTypeSupported: true,
+      unsupportedConstructorMimeTypes: ["video/webm"],
+      defaultConstructorMimeType: "video/mp4",
+    });
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.capabilities.isSupported).toBe(true);
+      expect(recorder.latest.capabilities.supportedMimeTypes).toEqual([]);
+      expect(recorder.latest.status).toBe("recording");
+      expect(recorder.latest.error).toBeNull();
+      expect(recorder.latest.settings.mimeType).toBe("video/mp4");
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result?.mimeType).toBe("video/mp4");
     });
 
     setup.cleanupCanvases();
