@@ -98,6 +98,7 @@ const setupRecordingFlowMocks = (opts?: {
   supportedMimeTypes?: string[];
   unsupportedConstructorMimeTypes?: string[];
   typeErrorConstructorMimeTypes?: string[];
+  nonRecoverableTypeErrorConstructorMimeTypes?: string[];
   namedNotSupportedConstructorMimeTypes?: string[];
   messageNotSupportedConstructorMimeTypes?: string[];
   messageNotSupportedConstructorErrorMessage?: string;
@@ -185,6 +186,14 @@ const setupRecordingFlowMocks = (opts?: {
           opts?.messageNotSupportedConstructorErrorMessage ||
             "The MIME type provided is not supported by this user agent.",
         );
+      }
+      if (
+        options?.mimeType &&
+        opts?.nonRecoverableTypeErrorConstructorMimeTypes?.includes(
+          requestedMimeType,
+        )
+      ) {
+        throw new TypeError("Cannot convert undefined or null to object");
       }
       if (
         options?.mimeType &&
@@ -3056,6 +3065,41 @@ describe("useVideoRecorder", () => {
       expect(recorder.latest.status).toBe("completed");
       expect(recorder.latest.result?.mimeType).toBe("video/webm");
     });
+
+    setup.cleanupCanvases();
+  });
+
+  it("does not treat non-mime TypeError as recoverable recorder mime mismatch", async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const setup = setupRecordingFlowMocks({
+      supportedMimeTypes: ["video/webm;codecs=vp9,opus", "video/webm"],
+      nonRecoverableTypeErrorConstructorMimeTypes: [
+        "video/webm;codecs=vp9,opus",
+      ],
+    });
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+        mimeType: "video / webm; codecs = opus, vp9",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        "Cannot convert undefined or null to object",
+      );
+      expect(recorder.latest.result).toBeNull();
+    });
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
 
     setup.cleanupCanvases();
   });
