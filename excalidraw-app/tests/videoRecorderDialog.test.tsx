@@ -46,9 +46,11 @@ const renderDialog = (
     settings: ReturnType<typeof getDefaultVideoRecorderSettings>;
     onCameraLayoutChange: ReturnType<typeof vi.fn>;
     onRequestPermissions: ReturnType<typeof vi.fn>;
+    onRefreshDevices: ReturnType<typeof vi.fn>;
     onStart: ReturnType<typeof vi.fn>;
     status: "idle" | "preparing";
     isRequestingPermissions: boolean;
+    isOpen: boolean;
     capabilities: {
       isSupported: boolean;
       supportedMimeTypes: string[];
@@ -57,6 +59,8 @@ const renderDialog = (
 ) => {
   const onCameraLayoutChange = opts.onCameraLayoutChange ?? vi.fn();
   const onRequestPermissions = opts.onRequestPermissions ?? vi.fn();
+  const onRefreshDevices =
+    opts.onRefreshDevices ?? vi.fn(async () => undefined);
   const onStart = opts.onStart ?? vi.fn(async () => undefined);
 
   const settings = opts.settings ?? {
@@ -64,11 +68,11 @@ const renderDialog = (
     cameraEnabled: true,
   };
 
-  render(
+  const view = render(
     <EditorJotaiProvider>
       <UIAppStateContext.Provider value={getUIAppState()}>
         <VideoRecorderDialog
-          isOpen={true}
+          isOpen={opts.isOpen ?? true}
           capabilities={
             opts.capabilities ?? {
               isSupported: true,
@@ -80,7 +84,7 @@ const renderDialog = (
           settings={settings}
           devices={{ videoInputs: [], audioInputs: [] }}
           onClose={vi.fn()}
-          onRefreshDevices={vi.fn(async () => undefined)}
+          onRefreshDevices={onRefreshDevices}
           onStart={onStart}
           onRequestPermissions={onRequestPermissions}
           isRequestingPermissions={opts.isRequestingPermissions ?? false}
@@ -92,7 +96,9 @@ const renderDialog = (
   );
 
   return {
+    ...view,
     onCameraLayoutChange,
+    onRefreshDevices,
     onRequestPermissions,
     onStart,
   };
@@ -111,6 +117,130 @@ describe("VideoRecorderDialog", () => {
     );
 
     expect(onRequestPermissions).toHaveBeenCalledTimes(1);
+  });
+
+  it("refreshes devices only on open transitions", () => {
+    const initialRefresh = vi.fn(async () => undefined);
+    const nextRefresh = vi.fn(async () => undefined);
+    const settings = {
+      ...getDefaultVideoRecorderSettings(),
+      cameraEnabled: true,
+    };
+
+    const { rerender } = renderDialog({
+      isOpen: false,
+      settings,
+      onRefreshDevices: initialRefresh,
+    });
+
+    expect(initialRefresh).toHaveBeenCalledTimes(0);
+
+    rerender(
+      <EditorJotaiProvider>
+        <UIAppStateContext.Provider value={getUIAppState()}>
+          <VideoRecorderDialog
+            isOpen={true}
+            capabilities={{
+              isSupported: true,
+              supportedMimeTypes: ["video/webm"],
+            }}
+            status="idle"
+            error={null}
+            settings={settings}
+            devices={{ videoInputs: [], audioInputs: [] }}
+            onClose={vi.fn()}
+            onRefreshDevices={initialRefresh}
+            onStart={vi.fn(async () => undefined)}
+            onRequestPermissions={vi.fn(async () => undefined)}
+            isRequestingPermissions={false}
+            onSettingsChange={vi.fn()}
+            onCameraLayoutChange={vi.fn()}
+          />
+        </UIAppStateContext.Provider>
+      </EditorJotaiProvider>,
+    );
+
+    expect(initialRefresh).toHaveBeenCalledTimes(1);
+
+    rerender(
+      <EditorJotaiProvider>
+        <UIAppStateContext.Provider value={getUIAppState()}>
+          <VideoRecorderDialog
+            isOpen={true}
+            capabilities={{
+              isSupported: true,
+              supportedMimeTypes: ["video/webm"],
+            }}
+            status="idle"
+            error={null}
+            settings={settings}
+            devices={{ videoInputs: [], audioInputs: [] }}
+            onClose={vi.fn()}
+            onRefreshDevices={nextRefresh}
+            onStart={vi.fn(async () => undefined)}
+            onRequestPermissions={vi.fn(async () => undefined)}
+            isRequestingPermissions={false}
+            onSettingsChange={vi.fn()}
+            onCameraLayoutChange={vi.fn()}
+          />
+        </UIAppStateContext.Provider>
+      </EditorJotaiProvider>,
+    );
+
+    expect(initialRefresh).toHaveBeenCalledTimes(1);
+    expect(nextRefresh).toHaveBeenCalledTimes(0);
+
+    rerender(
+      <EditorJotaiProvider>
+        <UIAppStateContext.Provider value={getUIAppState()}>
+          <VideoRecorderDialog
+            isOpen={false}
+            capabilities={{
+              isSupported: true,
+              supportedMimeTypes: ["video/webm"],
+            }}
+            status="idle"
+            error={null}
+            settings={settings}
+            devices={{ videoInputs: [], audioInputs: [] }}
+            onClose={vi.fn()}
+            onRefreshDevices={nextRefresh}
+            onStart={vi.fn(async () => undefined)}
+            onRequestPermissions={vi.fn(async () => undefined)}
+            isRequestingPermissions={false}
+            onSettingsChange={vi.fn()}
+            onCameraLayoutChange={vi.fn()}
+          />
+        </UIAppStateContext.Provider>
+      </EditorJotaiProvider>,
+    );
+
+    rerender(
+      <EditorJotaiProvider>
+        <UIAppStateContext.Provider value={getUIAppState()}>
+          <VideoRecorderDialog
+            isOpen={true}
+            capabilities={{
+              isSupported: true,
+              supportedMimeTypes: ["video/webm"],
+            }}
+            status="idle"
+            error={null}
+            settings={settings}
+            devices={{ videoInputs: [], audioInputs: [] }}
+            onClose={vi.fn()}
+            onRefreshDevices={nextRefresh}
+            onStart={vi.fn(async () => undefined)}
+            onRequestPermissions={vi.fn(async () => undefined)}
+            isRequestingPermissions={false}
+            onSettingsChange={vi.fn()}
+            onCameraLayoutChange={vi.fn()}
+          />
+        </UIAppStateContext.Provider>
+      </EditorJotaiProvider>,
+    );
+
+    expect(nextRefresh).toHaveBeenCalledTimes(1);
   });
 
   it("disables permission request while permissions are in-flight", () => {

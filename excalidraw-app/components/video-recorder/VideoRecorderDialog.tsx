@@ -76,12 +76,13 @@ export const VideoRecorderDialog = ({
   const { t } = useI18n();
   const previewRef = useRef<HTMLDivElement>(null);
   const interactionRef = useRef<InteractionState | null>(null);
+  const wasOpenRef = useRef(false);
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
+    if (isOpen && !wasOpenRef.current) {
+      void onRefreshDevices();
     }
-    onRefreshDevices();
+    wasOpenRef.current = isOpen;
   }, [isOpen, onRefreshDevices]);
 
   useEffect(() => {
