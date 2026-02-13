@@ -113,6 +113,16 @@ describe("video recorder error mapping", () => {
         new Error("Could not start video source due to another process."),
       ),
     ).toBe("Camera or microphone is currently busy.");
+    expect(
+      mapVideoRecorderErrorMessage(
+        new Error("Could not start audio source due to another process."),
+      ),
+    ).toBe("Camera or microphone is currently busy.");
+    expect(
+      mapVideoRecorderErrorMessage(
+        new Error("Could not start source because it is in use."),
+      ),
+    ).toBe("Camera or microphone is currently busy.");
   });
 
   it("maps busy-device DOMException names", () => {

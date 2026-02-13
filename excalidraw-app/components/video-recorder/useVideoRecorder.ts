@@ -133,12 +133,17 @@ const isDeviceBusyError = (error: unknown) => {
     return false;
   }
 
+  const hasCouldNotStartSourceSignal =
+    message.includes("could not start video source") ||
+    message.includes("could not start audio source") ||
+    (message.includes("could not start") && message.includes("source"));
+
   return (
     message.includes("notreadableerror") ||
     message.includes("trackstarterror") ||
     message.includes("source unavailable") ||
     message.includes("device busy") ||
-    message.includes("could not start video source")
+    hasCouldNotStartSourceSignal
   );
 };
 
