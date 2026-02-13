@@ -48,12 +48,18 @@ const getUserMediaWithDeviceFallback = async (
   fallbackConstraints?: MediaStreamConstraints,
 ) => {
   try {
-    return await navigator.mediaDevices.getUserMedia(primaryConstraints);
+    return {
+      stream: await navigator.mediaDevices.getUserMedia(primaryConstraints),
+      usedFallback: false,
+    };
   } catch (error) {
     if (!fallbackConstraints || !isDeviceSelectionError(error)) {
       throw error;
     }
-    return navigator.mediaDevices.getUserMedia(fallbackConstraints);
+    return {
+      stream: await navigator.mediaDevices.getUserMedia(fallbackConstraints),
+      usedFallback: true,
+    };
   }
 };
 
@@ -499,7 +505,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       const shouldFallbackToDefaultDevices =
         hasSpecificDeviceConstraint(primaryConstraints.video) ||
         hasSpecificDeviceConstraint(primaryConstraints.audio);
-      const stream = await getUserMediaWithDeviceFallback(
+      const { stream, usedFallback } = await getUserMediaWithDeviceFallback(
         primaryConstraints,
         shouldFallbackToDefaultDevices
           ? {
@@ -511,6 +517,21 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       if (!isMountedRef.current) {
         stream.getTracks().forEach((track) => track.stop());
         return;
+      }
+      if (usedFallback) {
+        setSettingsState((prev) => ({
+          ...prev,
+          selectedVideoDeviceId: hasSpecificDeviceConstraint(
+            primaryConstraints.video,
+          )
+            ? null
+            : prev.selectedVideoDeviceId,
+          selectedAudioDeviceId: hasSpecificDeviceConstraint(
+            primaryConstraints.audio,
+          )
+            ? null
+            : prev.selectedAudioDeviceId,
+        }));
       }
       stream.getTracks().forEach((track) => track.stop());
       await refreshDevices();
@@ -681,19 +702,26 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       }
 
       if (settings.cameraEnabled) {
-        const cameraStream = await getUserMediaWithDeviceFallback(
-          {
-            video: settings.selectedVideoDeviceId
-              ? { deviceId: { exact: settings.selectedVideoDeviceId } }
-              : true,
-            audio: false,
-          },
-          settings.selectedVideoDeviceId
-            ? { video: true, audio: false }
-            : undefined,
-        );
+        const { stream: cameraStream, usedFallback: usedCameraFallback } =
+          await getUserMediaWithDeviceFallback(
+            {
+              video: settings.selectedVideoDeviceId
+                ? { deviceId: { exact: settings.selectedVideoDeviceId } }
+                : true,
+              audio: false,
+            },
+            settings.selectedVideoDeviceId
+              ? { video: true, audio: false }
+              : undefined,
+          );
         cameraStreamRef.current = cameraStream;
         assertStartRequestActive();
+        if (usedCameraFallback && settings.selectedVideoDeviceId) {
+          setSettingsState((prev) => ({
+            ...prev,
+            selectedVideoDeviceId: null,
+          }));
+        }
 
         const cameraVideo = document.createElement("video");
         cameraVideo.srcObject = cameraStream;
@@ -706,19 +734,26 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       }
 
       if (settings.microphoneEnabled) {
-        const micStream = await getUserMediaWithDeviceFallback(
-          {
-            audio: settings.selectedAudioDeviceId
-              ? { deviceId: { exact: settings.selectedAudioDeviceId } }
-              : true,
-            video: false,
-          },
-          settings.selectedAudioDeviceId
-            ? { audio: true, video: false }
-            : undefined,
-        );
+        const { stream: micStream, usedFallback: usedMicrophoneFallback } =
+          await getUserMediaWithDeviceFallback(
+            {
+              audio: settings.selectedAudioDeviceId
+                ? { deviceId: { exact: settings.selectedAudioDeviceId } }
+                : true,
+              video: false,
+            },
+            settings.selectedAudioDeviceId
+              ? { audio: true, video: false }
+              : undefined,
+          );
         microphoneStreamRef.current = micStream;
         assertStartRequestActive();
+        if (usedMicrophoneFallback && settings.selectedAudioDeviceId) {
+          setSettingsState((prev) => ({
+            ...prev,
+            selectedAudioDeviceId: null,
+          }));
+        }
       }
 
       const renderFrame = () => {

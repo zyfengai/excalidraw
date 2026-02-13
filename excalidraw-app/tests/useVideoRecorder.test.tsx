@@ -472,6 +472,7 @@ describe("useVideoRecorder", () => {
     expect(trackStop).toHaveBeenCalledTimes(1);
     expect(recorder.latest.error).toBeNull();
     expect(recorder.latest.isRequestingPermissions).toBe(false);
+    expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
   });
 
   it("does not retry permission request when no specific device constraints were requested", async () => {
@@ -952,6 +953,7 @@ describe("useVideoRecorder", () => {
     await waitFor(() => {
       expect(recorder.latest.status).toBe("recording");
       expect(recorder.latest.error).toBeNull();
+      expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
     });
 
     await act(async () => {
@@ -1241,6 +1243,7 @@ describe("useVideoRecorder", () => {
     await waitFor(() => {
       expect(recorder.latest.status).toBe("recording");
       expect(recorder.latest.error).toBeNull();
+      expect(recorder.latest.settings.selectedAudioDeviceId).toBeNull();
     });
 
     expect(getUserMedia).toHaveBeenNthCalledWith(1, {
