@@ -2189,6 +2189,38 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("avoids appending duplicate extension when download name already has it", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result).toBeTruthy();
+    });
+
+    act(() => {
+      recorder.latest.downloadRecording("demo.webm");
+    });
+
+    expect(setup.createObjectURLSpy).toHaveBeenCalledTimes(1);
+    expect(setup.clickSpy).toHaveBeenCalledTimes(1);
+    expect(setup.getDownloadedFileNames()).toEqual(["demo.webm"]);
+    expect(setup.revokeObjectURLSpy).toHaveBeenCalledWith("blob:mock-url");
+
+    setup.cleanupCanvases();
+  });
+
   it("sanitizes invalid filename characters when downloading recording", async () => {
     const setup = setupRecordingFlowMocks();
     const recorder = renderUseVideoRecorder();

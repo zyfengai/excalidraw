@@ -211,8 +211,12 @@ export const mapVideoRecorderErrorMessage = (error: unknown) => {
   return t("videoRecorder.errors.recordingFailed");
 };
 
-const sanitizeRecordingFileName = (name: string) => {
-  const sanitized = name
+const sanitizeRecordingFileName = (name: string, extension: string) => {
+  const normalizedName = name
+    .trim()
+    .replace(new RegExp(`\\.${extension}$`, "i"), "");
+
+  const sanitized = normalizedName
     .trim()
     .replace(INVALID_FILE_NAME_CHARS, "-")
     .replace(/\s+/g, " ")
@@ -834,7 +838,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         return;
       }
       const extension = getFileExtensionFromMimeType(result.mimeType);
-      const sanitizedName = sanitizeRecordingFileName(name);
+      const sanitizedName = sanitizeRecordingFileName(name, extension);
       const url = URL.createObjectURL(result.blob);
       const anchor = document.createElement("a");
       anchor.href = url;
