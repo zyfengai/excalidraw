@@ -267,7 +267,7 @@ describe("VideoRecorderDialog", () => {
     const settings = {
       ...getDefaultVideoRecorderSettings(),
       cameraEnabled: true,
-      aspectRatio: " 4:3 " as unknown as ReturnType<
+      aspectRatio: " 4 : 3 " as unknown as ReturnType<
         typeof getDefaultVideoRecorderSettings
       >["aspectRatio"],
       resolution: " 720P " as unknown as ReturnType<

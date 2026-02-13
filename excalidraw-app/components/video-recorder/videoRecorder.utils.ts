@@ -34,12 +34,16 @@ const DEFAULT_VIDEO_RECORDER_RESOLUTION: VideoRecorderResolution = "1080p";
 export const normalizeRecorderAspectRatio = (
   candidateAspectRatio: string,
   fallbackAspectRatio: VideoRecorderAspectRatio,
-): VideoRecorderAspectRatio =>
-  VIDEO_RECORDER_SUPPORTED_ASPECT_RATIOS.some(
-    (aspectRatio) => aspectRatio === candidateAspectRatio.trim(),
-  )
-    ? (candidateAspectRatio.trim() as VideoRecorderAspectRatio)
-    : fallbackAspectRatio;
+): VideoRecorderAspectRatio => {
+  const normalizedCandidateAspectRatio = candidateAspectRatio
+    .trim()
+    .replace(/\s+/g, "");
+
+  const matchedAspectRatio = VIDEO_RECORDER_SUPPORTED_ASPECT_RATIOS.find(
+    (aspectRatio) => aspectRatio === normalizedCandidateAspectRatio,
+  );
+  return matchedAspectRatio || fallbackAspectRatio;
+};
 
 export const normalizeRecorderResolution = (
   candidateResolution: string,
