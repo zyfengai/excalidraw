@@ -1085,6 +1085,61 @@ describe("useVideoRecorder", () => {
     cleanup();
   });
 
+  it("cancels pending start flow on unmount and cleans acquired stream", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const { cleanup } = createExcalidrawCanvases();
+    const enumerateDevices = vi.fn(async () => []);
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const cameraTrackStop = vi.fn();
+    const cameraStream = {
+      getTracks: () => [{ stop: cameraTrackStop }],
+    } as unknown as MediaStream;
+    let resolveCameraRequest: ((value: MediaStream) => void) | null = null;
+    const getUserMedia = vi.fn(
+      () =>
+        new Promise<MediaStream>((resolve) => {
+          resolveCameraRequest = resolve;
+        }),
+    );
+
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+      });
+    });
+
+    act(() => {
+      void recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("preparing");
+    });
+
+    act(() => {
+      recorder.unmount();
+    });
+    await act(async () => {
+      resolveCameraRequest?.(cameraStream);
+      await Promise.resolve();
+    });
+
+    expect(cameraTrackStop).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+    expect(enumerateDevices).toHaveBeenCalledTimes(1);
+
+    cleanup();
+  });
+
   it("prevents duplicate stop calls while stopping", async () => {
     const setup = setupRecordingFlowMocks({ deferStop: true });
     const recorder = renderUseVideoRecorder();

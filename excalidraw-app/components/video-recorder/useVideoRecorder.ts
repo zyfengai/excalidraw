@@ -32,6 +32,8 @@ import type {
 const MEDIA_RECORDER_TIMESLICE_MS = 1000;
 const STOP_RECORDING_TIMEOUT_MS = 3000;
 
+class StartRecordingCancelledError extends Error {}
+
 const getExcalidrawCanvases = () => {
   const staticCanvas = document.querySelector<HTMLCanvasElement>(
     ".excalidraw canvas.static",
@@ -283,9 +285,11 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   const elapsedTimerRef = useRef<number | null>(null);
   const permissionRequestInFlightRef = useRef(false);
   const startRecordingInFlightRef = useRef(false);
+  const startRecordingRequestIdRef = useRef(0);
   const stopRecordingInFlightRef = useRef(false);
   const stopRecordingTimeoutRef = useRef<number | null>(null);
   const stopRecordingFinalizeRef = useRef<(() => void) | null>(null);
+  const isMountedRef = useRef(true);
 
   const clearElapsedTimer = useCallback(() => {
     if (elapsedTimerRef.current != null) {
@@ -333,11 +337,15 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
     stopRecordingInFlightRef.current = false;
     startRecordingInFlightRef.current = false;
     permissionRequestInFlightRef.current = false;
+    startRecordingRequestIdRef.current += 1;
   }, [clearElapsedTimer]);
 
   const refreshDevices = useCallback(async () => {
     try {
       const mediaDevices = await collectMediaDevices();
+      if (!isMountedRef.current) {
+        return;
+      }
       setDevices(mediaDevices);
     } catch (deviceError) {
       console.error(deviceError);
@@ -345,6 +353,10 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   }, []);
 
   const requestMediaPermissions = useCallback(async () => {
+    if (!isMountedRef.current) {
+      return;
+    }
+
     if (permissionRequestInFlightRef.current) {
       return;
     }
@@ -361,13 +373,22 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       const stream = await navigator.mediaDevices.getUserMedia(
         getPermissionRequestConstraints(settings),
       );
+      if (!isMountedRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       stream.getTracks().forEach((track) => track.stop());
       await refreshDevices();
     } catch (permissionError) {
+      if (!isMountedRef.current) {
+        return;
+      }
       setError(mapVideoRecorderErrorMessage(permissionError));
     } finally {
       permissionRequestInFlightRef.current = false;
-      setIsRequestingPermissions(false);
+      if (isMountedRef.current) {
+        setIsRequestingPermissions(false);
+      }
     }
   }, [refreshDevices, settings]);
 
@@ -381,6 +402,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
 
   useEffect(() => {
     return () => {
+      isMountedRef.current = false;
       cleanupStreams();
     };
   }, [cleanupStreams]);
@@ -480,6 +502,17 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       return;
     }
 
+    const requestId = startRecordingRequestIdRef.current + 1;
+    startRecordingRequestIdRef.current = requestId;
+    const assertStartRequestActive = () => {
+      if (
+        !isMountedRef.current ||
+        requestId !== startRecordingRequestIdRef.current
+      ) {
+        throw new StartRecordingCancelledError();
+      }
+    };
+
     startRecordingInFlightRef.current = true;
     try {
       if (!navigator.mediaDevices?.getUserMedia) {
@@ -520,6 +553,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           audio: false,
         });
         cameraStreamRef.current = cameraStream;
+        assertStartRequestActive();
 
         const cameraVideo = document.createElement("video");
         cameraVideo.srcObject = cameraStream;
@@ -527,6 +561,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         cameraVideo.muted = true;
         cameraVideo.autoplay = true;
         await cameraVideo.play();
+        assertStartRequestActive();
         cameraVideoRef.current = cameraVideo;
       }
 
@@ -538,6 +573,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           video: false,
         });
         microphoneStreamRef.current = micStream;
+        assertStartRequestActive();
       }
 
       const renderFrame = () => {
@@ -633,7 +669,12 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       setDialogOpen(false);
       startElapsedTicker();
       await refreshDevices();
+      assertStartRequestActive();
     } catch (startError) {
+      if (startError instanceof StartRecordingCancelledError) {
+        cleanupStreams();
+        return;
+      }
       console.error(startError);
       setError(mapVideoRecorderErrorMessage(startError));
       setStatus("error");
