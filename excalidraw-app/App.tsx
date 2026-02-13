@@ -1058,7 +1058,7 @@ const ExcalidrawWrapper = () => {
             {
               label: t("videoRecorder.actions.openSettings"),
               category: DEFAULT_CATEGORIES.app,
-              predicate: true,
+              predicate: () => editorInterface.formFactor !== "phone",
               icon: playerPlayIcon,
               keywords: [
                 "video",
@@ -1076,6 +1076,7 @@ const ExcalidrawWrapper = () => {
               label: t("videoRecorder.actions.startRecording"),
               category: DEFAULT_CATEGORIES.app,
               predicate: () =>
+                editorInterface.formFactor !== "phone" &&
                 videoRecorder.capabilities.isSupported &&
                 !videoRecorder.isRecordingActive &&
                 videoRecorder.status !== "preparing" &&
@@ -1089,7 +1090,9 @@ const ExcalidrawWrapper = () => {
             {
               label: t("videoRecorder.actions.pauseRecording"),
               category: DEFAULT_CATEGORIES.app,
-              predicate: () => videoRecorder.status === "recording",
+              predicate: () =>
+                editorInterface.formFactor !== "phone" &&
+                videoRecorder.status === "recording",
               icon: playerPlayIcon,
               keywords: ["video", "record", "pause"],
               perform: () => {
@@ -1099,7 +1102,9 @@ const ExcalidrawWrapper = () => {
             {
               label: t("videoRecorder.actions.resumeRecording"),
               category: DEFAULT_CATEGORIES.app,
-              predicate: () => videoRecorder.status === "paused",
+              predicate: () =>
+                editorInterface.formFactor !== "phone" &&
+                videoRecorder.status === "paused",
               icon: playerPlayIcon,
               keywords: ["video", "record", "resume"],
               perform: () => {
@@ -1109,7 +1114,9 @@ const ExcalidrawWrapper = () => {
             {
               label: t("videoRecorder.actions.stopRecording"),
               category: DEFAULT_CATEGORIES.app,
-              predicate: () => videoRecorder.isRecordingActive,
+              predicate: () =>
+                editorInterface.formFactor !== "phone" &&
+                videoRecorder.isRecordingActive,
               icon: playerPlayIcon,
               keywords: ["video", "record", "stop", "finish"],
               perform: () => {

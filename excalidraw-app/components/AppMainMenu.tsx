@@ -4,7 +4,7 @@ import {
   eyeIcon,
   playerPlayIcon,
 } from "@excalidraw/excalidraw/components/icons";
-import { MainMenu } from "@excalidraw/excalidraw/index";
+import { MainMenu, useEditorInterface } from "@excalidraw/excalidraw/index";
 import React from "react";
 import { useI18n } from "@excalidraw/excalidraw/i18n";
 
@@ -27,18 +27,24 @@ export const AppMainMenu: React.FC<{
   refresh: () => void;
 }> = React.memo((props) => {
   const { t } = useI18n();
+  const editorInterface = useEditorInterface();
+
+  const shouldShowVideoRecorder = editorInterface.formFactor !== "phone";
+
   return (
     <MainMenu>
       <MainMenu.DefaultItems.LoadScene />
       <MainMenu.DefaultItems.SaveToActiveFile />
       <MainMenu.DefaultItems.Export />
       <MainMenu.DefaultItems.SaveAsImage />
-      <MainMenu.Item
-        icon={playerPlayIcon}
-        onSelect={() => props.onVideoRecorderOpen()}
-      >
-        {t("videoRecorder.actions.openSettings")}
-      </MainMenu.Item>
+      {shouldShowVideoRecorder && (
+        <MainMenu.Item
+          icon={playerPlayIcon}
+          onSelect={() => props.onVideoRecorderOpen()}
+        >
+          {t("videoRecorder.actions.openSettings")}
+        </MainMenu.Item>
+      )}
       {props.isCollabEnabled && (
         <MainMenu.DefaultItems.LiveCollaborationTrigger
           isCollaborating={props.isCollaborating}
