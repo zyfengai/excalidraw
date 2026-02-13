@@ -531,23 +531,35 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           if (!isMountedRef.current) {
             return;
           }
-          setSettingsState((prev) => ({
-            ...prev,
-            selectedVideoDeviceId:
+          setSettingsState((prev) => {
+            const selectedVideoDeviceId =
               !isDualSpecificSelectionRequest &&
               shouldClearVideoSelection &&
               requestedVideoDeviceId &&
               prev.selectedVideoDeviceId === requestedVideoDeviceId
                 ? null
-                : prev.selectedVideoDeviceId,
-            selectedAudioDeviceId:
+                : prev.selectedVideoDeviceId;
+            const selectedAudioDeviceId =
               !isDualSpecificSelectionRequest &&
               shouldClearAudioSelection &&
               requestedAudioDeviceId &&
               prev.selectedAudioDeviceId === requestedAudioDeviceId
                 ? null
-                : prev.selectedAudioDeviceId,
-          }));
+                : prev.selectedAudioDeviceId;
+
+            if (
+              selectedVideoDeviceId === prev.selectedVideoDeviceId &&
+              selectedAudioDeviceId === prev.selectedAudioDeviceId
+            ) {
+              return prev;
+            }
+
+            return {
+              ...prev,
+              selectedVideoDeviceId,
+              selectedAudioDeviceId,
+            };
+          });
         },
       );
       if (!isMountedRef.current) {
@@ -736,13 +748,21 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
             if (!isMountedRef.current) {
               return;
             }
-            setSettingsState((prev) => ({
-              ...prev,
-              selectedVideoDeviceId:
+            setSettingsState((prev) => {
+              const selectedVideoDeviceId =
                 prev.selectedVideoDeviceId === requestedVideoDeviceId
                   ? null
-                  : prev.selectedVideoDeviceId,
-            }));
+                  : prev.selectedVideoDeviceId;
+
+              if (selectedVideoDeviceId === prev.selectedVideoDeviceId) {
+                return prev;
+              }
+
+              return {
+                ...prev,
+                selectedVideoDeviceId,
+              };
+            });
           },
         );
         cameraStreamRef.current = cameraStream;
@@ -772,13 +792,21 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
             if (!isMountedRef.current) {
               return;
             }
-            setSettingsState((prev) => ({
-              ...prev,
-              selectedAudioDeviceId:
+            setSettingsState((prev) => {
+              const selectedAudioDeviceId =
                 prev.selectedAudioDeviceId === requestedAudioDeviceId
                   ? null
-                  : prev.selectedAudioDeviceId,
-            }));
+                  : prev.selectedAudioDeviceId;
+
+              if (selectedAudioDeviceId === prev.selectedAudioDeviceId) {
+                return prev;
+              }
+
+              return {
+                ...prev,
+                selectedAudioDeviceId,
+              };
+            });
           },
         );
         microphoneStreamRef.current = micStream;
