@@ -10,7 +10,9 @@ import { DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT } from "./videoRecorder.config";
 import {
   clampOverlayLayout,
   normalizeRecorderFps,
+  VIDEO_RECORDER_SUPPORTED_ASPECT_RATIOS,
   VIDEO_RECORDER_SUPPORTED_FPS,
+  VIDEO_RECORDER_SUPPORTED_RESOLUTIONS,
   VIDEO_RECORDER_RATIO_MAP,
 } from "./videoRecorder.utils";
 
@@ -181,16 +183,6 @@ export const VideoRecorderDialog = ({
     return null;
   }
 
-  const supportedAspectRatios: VideoRecorderSettings["aspectRatio"][] = [
-    "16:9",
-    "4:3",
-    "1:1",
-    "9:16",
-  ];
-  const supportedResolutions: VideoRecorderSettings["resolution"][] = [
-    "720p",
-    "1080p",
-  ];
   const supportedFpsValues = VIDEO_RECORDER_SUPPORTED_FPS;
   const selectedVideoDeviceValue =
     settings.selectedVideoDeviceId &&
@@ -206,17 +198,15 @@ export const VideoRecorderDialog = ({
     )
       ? settings.selectedAudioDeviceId
       : "";
-  const selectedAspectRatioValue = supportedAspectRatios.includes(
-    settings.aspectRatio,
-  )
-    ? settings.aspectRatio
-    : "16:9";
+  const selectedAspectRatioValue =
+    VIDEO_RECORDER_SUPPORTED_ASPECT_RATIOS.find(
+      (aspectRatio) => aspectRatio === settings.aspectRatio,
+    ) || "16:9";
   const aspectRatioValue = VIDEO_RECORDER_RATIO_MAP[selectedAspectRatioValue];
-  const selectedResolutionValue = supportedResolutions.includes(
-    settings.resolution,
-  )
-    ? settings.resolution
-    : "1080p";
+  const selectedResolutionValue =
+    VIDEO_RECORDER_SUPPORTED_RESOLUTIONS.find(
+      (resolution) => resolution === settings.resolution,
+    ) || "1080p";
   const selectedFpsValue = normalizeRecorderFps(settings.fps, 30);
   const selectedMimeTypeValue = capabilities.supportedMimeTypes.includes(
     settings.mimeType,
@@ -491,10 +481,11 @@ export const VideoRecorderDialog = ({
                   })
                 }
               >
-                <option value="16:9">16:9</option>
-                <option value="4:3">4:3</option>
-                <option value="1:1">1:1</option>
-                <option value="9:16">9:16</option>
+                {VIDEO_RECORDER_SUPPORTED_ASPECT_RATIOS.map((ratio) => (
+                  <option key={ratio} value={ratio}>
+                    {ratio}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="video-recorder-dialog__setting">
@@ -512,8 +503,11 @@ export const VideoRecorderDialog = ({
                   })
                 }
               >
-                <option value="720p">720p</option>
-                <option value="1080p">1080p</option>
+                {VIDEO_RECORDER_SUPPORTED_RESOLUTIONS.map((resolution) => (
+                  <option key={resolution} value={resolution}>
+                    {resolution}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="video-recorder-dialog__setting">

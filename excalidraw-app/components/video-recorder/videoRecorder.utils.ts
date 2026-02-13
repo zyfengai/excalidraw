@@ -5,6 +5,15 @@ import type {
   VideoRecorderSettings,
 } from "./videoRecorder.types";
 
+export const VIDEO_RECORDER_SUPPORTED_ASPECT_RATIOS = [
+  "16:9",
+  "4:3",
+  "1:1",
+  "9:16",
+] as const;
+export const VIDEO_RECORDER_SUPPORTED_RESOLUTIONS = ["720p", "1080p"] as const;
+export const VIDEO_RECORDER_SUPPORTED_FPS = [24, 30, 60] as const;
+
 export const VIDEO_RECORDER_RATIO_MAP: Record<
   VideoRecorderAspectRatio,
   number
@@ -19,7 +28,6 @@ const RESOLUTION_BASE: Record<VideoRecorderResolution, number> = {
   "720p": 720,
   "1080p": 1080,
 };
-export const VIDEO_RECORDER_SUPPORTED_FPS = [24, 30, 60] as const;
 const DEFAULT_VIDEO_RECORDER_ASPECT_RATIO: VideoRecorderAspectRatio = "16:9";
 const DEFAULT_VIDEO_RECORDER_RESOLUTION: VideoRecorderResolution = "1080p";
 
@@ -27,9 +35,8 @@ export const normalizeRecorderAspectRatio = (
   candidateAspectRatio: string,
   fallbackAspectRatio: VideoRecorderAspectRatio,
 ): VideoRecorderAspectRatio =>
-  Object.prototype.hasOwnProperty.call(
-    VIDEO_RECORDER_RATIO_MAP,
-    candidateAspectRatio,
+  VIDEO_RECORDER_SUPPORTED_ASPECT_RATIOS.some(
+    (aspectRatio) => aspectRatio === candidateAspectRatio,
   )
     ? (candidateAspectRatio as VideoRecorderAspectRatio)
     : fallbackAspectRatio;
@@ -38,7 +45,9 @@ export const normalizeRecorderResolution = (
   candidateResolution: string,
   fallbackResolution: VideoRecorderResolution,
 ): VideoRecorderResolution =>
-  Object.prototype.hasOwnProperty.call(RESOLUTION_BASE, candidateResolution)
+  VIDEO_RECORDER_SUPPORTED_RESOLUTIONS.some(
+    (resolution) => resolution === candidateResolution,
+  )
     ? (candidateResolution as VideoRecorderResolution)
     : fallbackResolution;
 
