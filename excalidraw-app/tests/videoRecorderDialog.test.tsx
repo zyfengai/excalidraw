@@ -590,6 +590,60 @@ describe("VideoRecorderDialog", () => {
     expect(onCameraLayoutChange).toHaveBeenCalledTimes(0);
   });
 
+  it("clears drag interaction when mouse buttons are released before move", () => {
+    const { onCameraLayoutChange } = renderDialog({
+      settings: {
+        ...getDefaultVideoRecorderSettings(),
+        cameraEnabled: true,
+      },
+    });
+
+    const preview = document.querySelector(
+      ".video-recorder-dialog__preview",
+    ) as HTMLDivElement;
+    expect(preview).not.toBeNull();
+    vi.spyOn(preview, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 1000,
+      bottom: 500,
+      width: 1000,
+      height: 500,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    const overlay = document.querySelector(
+      ".video-recorder-dialog__camera-overlay",
+    ) as HTMLDivElement;
+    expect(overlay).not.toBeNull();
+
+    fireEvent.pointerDown(overlay, {
+      pointerType: "mouse",
+      pointerId: 1,
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+    });
+    fireEvent.pointerMove(window, {
+      pointerType: "mouse",
+      pointerId: 1,
+      buttons: 0,
+      clientX: 220,
+      clientY: 160,
+    });
+    fireEvent.pointerMove(window, {
+      pointerType: "mouse",
+      pointerId: 1,
+      buttons: 1,
+      clientX: 240,
+      clientY: 180,
+    });
+
+    expect(onCameraLayoutChange).toHaveBeenCalledTimes(0);
+  });
+
   it("ignores overlay drag on non-primary pointer button", () => {
     const { onCameraLayoutChange } = renderDialog({
       settings: {

@@ -113,6 +113,10 @@ export const VideoRecorderDialog = ({
       if (!Number.isFinite(event.clientX) || !Number.isFinite(event.clientY)) {
         return;
       }
+      if (event.pointerType === "mouse" && event.buttons === 0) {
+        interactionRef.current = null;
+        return;
+      }
 
       const deltaX =
         (event.clientX - interaction.startX) / interaction.containerWidth;
