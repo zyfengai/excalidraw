@@ -1094,6 +1094,55 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("finalizes paused recording duration without counting trailing paused time", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1_200);
+    });
+    const elapsedBeforePause = recorder.latest.elapsedMs;
+    expect(elapsedBeforePause).toBeGreaterThanOrEqual(1_000);
+
+    act(() => {
+      recorder.latest.pauseRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("paused");
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(2_000);
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result).toBeTruthy();
+    });
+
+    const finalizedDuration = recorder.latest.result?.durationMs || 0;
+    expect(finalizedDuration).toBeGreaterThanOrEqual(elapsedBeforePause - 120);
+    expect(finalizedDuration).toBeLessThan(elapsedBeforePause + 120);
+
+    setup.cleanupCanvases();
+  });
+
   it("treats control actions as no-op when recorder is not active", async () => {
     setMediaRecorderSupport(["video/webm"]);
     setMediaDevicesMock({
