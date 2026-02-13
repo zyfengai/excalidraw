@@ -369,7 +369,7 @@ describe("useVideoRecorder", () => {
 
     act(() => {
       recorder.latest.setSettings({
-        mimeType: "video / webm; codecs = vp9,opus",
+        mimeType: "video / webm; codecs = opus, vp9",
       });
     });
 

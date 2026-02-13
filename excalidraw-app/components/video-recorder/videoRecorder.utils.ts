@@ -163,14 +163,48 @@ export const getFileExtensionFromMimeType = (mimeType: string) => {
   return "webm";
 };
 
-const canonicalizeMimeType = (mimeType: string) =>
-  mimeType
+const canonicalizeMimeType = (mimeType: string) => {
+  const normalizedMimeType = mimeType
     .trim()
     .toLowerCase()
     .replace(/\s*\/\s*/g, "/")
     .replace(/\s*;\s*/g, ";")
     .replace(/\s*=\s*/g, "=")
     .replace(/\s*,\s*/g, ",");
+
+  const [typeToken, ...rawParams] = normalizedMimeType.split(";");
+  if (!rawParams.length) {
+    return typeToken;
+  }
+
+  const canonicalParams = rawParams
+    .map((rawParam) => {
+      const separatorIndex = rawParam.indexOf("=");
+      if (separatorIndex === -1) {
+        return rawParam;
+      }
+
+      const key = rawParam.slice(0, separatorIndex).trim();
+      const value = rawParam.slice(separatorIndex + 1).trim();
+      if (key !== "codecs") {
+        return `${key}=${value}`;
+      }
+
+      const normalizedCodecs = value
+        .split(",")
+        .map((codec) => codec.trim())
+        .filter(Boolean)
+        .sort()
+        .join(",");
+      return `${key}=${normalizedCodecs}`;
+    })
+    .filter(Boolean)
+    .sort();
+
+  return canonicalParams.length
+    ? `${typeToken};${canonicalParams.join(";")}`
+    : typeToken;
+};
 
 export const normalizeRecorderMimeType = (
   candidateMimeType: string,

@@ -120,6 +120,12 @@ describe("video recorder utils", () => {
         supportedMimeTypes,
       ),
     ).toBe("video/webm;codecs=vp9,opus");
+    expect(
+      normalizeRecorderMimeType(
+        "video/webm; codecs = opus, vp9",
+        supportedMimeTypes,
+      ),
+    ).toBe("video/webm;codecs=vp9,opus");
     expect(normalizeRecorderMimeType("video/unknown", ["video/webm"])).toBe(
       "video/webm",
     );
