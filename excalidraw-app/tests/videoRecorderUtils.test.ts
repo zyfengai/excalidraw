@@ -244,6 +244,58 @@ describe("video recorder settings storage", () => {
     expect(loaded.resolution).toBe(defaults.resolution);
   });
 
+  it("coerces malformed persisted field types back to safe defaults", () => {
+    const defaults = getDefaultVideoRecorderSettings();
+    localStorage.setItem(
+      STORAGE_KEYS.LOCAL_STORAGE_VIDEO_RECORDER,
+      JSON.stringify({
+        version: 1,
+        settings: {
+          ...defaults,
+          cameraEnabled: "yes",
+          microphoneEnabled: 1,
+          selectedVideoDeviceId: 123,
+          selectedAudioDeviceId: "",
+          mimeType: 42,
+          camera: {
+            x: "left",
+            y: 0.25,
+            width: "wide",
+            height: 0.3,
+            shape: "triangle",
+          },
+          teleprompter: {
+            enabled: "true",
+            text: 999,
+            opacity: "opaque",
+            speed: null,
+          },
+        },
+      }),
+    );
+
+    const loaded = loadVideoRecorderSettings();
+    expect(loaded.cameraEnabled).toBe(defaults.cameraEnabled);
+    expect(loaded.microphoneEnabled).toBe(defaults.microphoneEnabled);
+    expect(loaded.selectedVideoDeviceId).toBeNull();
+    expect(loaded.selectedAudioDeviceId).toBeNull();
+    expect(loaded.mimeType).toBe(defaults.mimeType);
+    expect(loaded.camera).toEqual({
+      x: defaults.camera.x,
+      y: 0.25,
+      width: defaults.camera.width,
+      height: 0.3,
+      shape: defaults.camera.shape,
+    });
+    expect(loaded.teleprompter).toEqual({
+      ...defaults.teleprompter,
+      enabled: defaults.teleprompter.enabled,
+      text: defaults.teleprompter.text,
+      opacity: defaults.teleprompter.opacity,
+      speed: defaults.teleprompter.speed,
+    });
+  });
+
   it("returns defaults and logs when persisted json is malformed", () => {
     const defaults = getDefaultVideoRecorderSettings();
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});

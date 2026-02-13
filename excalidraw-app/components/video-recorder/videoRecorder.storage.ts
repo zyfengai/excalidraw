@@ -18,41 +18,81 @@ type PersistedVideoRecorderSettings = {
   settings: VideoRecorderSettings;
 };
 
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === "object";
+
+const asBoolean = (value: unknown, fallback: boolean) =>
+  typeof value === "boolean" ? value : fallback;
+
+const asString = (value: unknown, fallback: string) =>
+  typeof value === "string" ? value : fallback;
+
+const asNumber = (value: unknown, fallback: number) =>
+  typeof value === "number" ? value : fallback;
+
+const asNullableDeviceId = (value: unknown) =>
+  typeof value === "string" && value.trim().length ? value : null;
+
+const asCameraShape = (
+  value: unknown,
+  fallback: VideoRecorderSettings["camera"]["shape"],
+) =>
+  value === "rectangle" || value === "rounded" || value === "circle"
+    ? value
+    : fallback;
+
 const coerceSettings = (value: unknown): VideoRecorderSettings | null => {
-  if (!value || typeof value !== "object") {
+  if (!isObject(value)) {
     return null;
   }
 
-  const next = value as Partial<VideoRecorderSettings>;
+  const next = value as Record<string, unknown>;
   const defaults = getDefaultVideoRecorderSettings();
+  const cameraInput = isObject(next.camera) ? next.camera : {};
+  const teleprompterInput = isObject(next.teleprompter)
+    ? next.teleprompter
+    : {};
 
   return {
-    ...defaults,
-    ...next,
+    cameraEnabled: asBoolean(next.cameraEnabled, defaults.cameraEnabled),
+    microphoneEnabled: asBoolean(
+      next.microphoneEnabled,
+      defaults.microphoneEnabled,
+    ),
+    selectedVideoDeviceId: asNullableDeviceId(next.selectedVideoDeviceId),
+    selectedAudioDeviceId: asNullableDeviceId(next.selectedAudioDeviceId),
     aspectRatio: normalizeRecorderAspectRatio(
-      next.aspectRatio ?? defaults.aspectRatio,
+      asString(next.aspectRatio, defaults.aspectRatio),
       defaults.aspectRatio,
     ),
     resolution: normalizeRecorderResolution(
-      next.resolution ?? defaults.resolution,
+      asString(next.resolution, defaults.resolution),
       defaults.resolution,
     ),
-    mimeType: next.mimeType || defaults.mimeType,
-    fps: normalizeRecorderFps(next.fps ?? defaults.fps, defaults.fps),
+    mimeType: asString(next.mimeType, defaults.mimeType),
+    fps: normalizeRecorderFps(asNumber(next.fps, defaults.fps), defaults.fps),
     camera: clampOverlayLayout({
       ...defaults.camera,
-      ...(next.camera || {}),
+      x: asNumber(cameraInput.x, defaults.camera.x),
+      y: asNumber(cameraInput.y, defaults.camera.y),
+      width: asNumber(cameraInput.width, defaults.camera.width),
+      height: asNumber(cameraInput.height, defaults.camera.height),
+      shape: asCameraShape(cameraInput.shape, defaults.camera.shape),
     }),
     teleprompter: {
       ...defaults.teleprompter,
-      ...(next.teleprompter || {}),
+      enabled: asBoolean(
+        teleprompterInput.enabled,
+        defaults.teleprompter.enabled,
+      ),
+      text: asString(teleprompterInput.text, defaults.teleprompter.text),
       opacity: clamp(
-        next.teleprompter?.opacity ?? defaults.teleprompter.opacity,
+        asNumber(teleprompterInput.opacity, defaults.teleprompter.opacity),
         0.05,
         1,
       ),
       speed: clamp(
-        next.teleprompter?.speed ?? defaults.teleprompter.speed,
+        asNumber(teleprompterInput.speed, defaults.teleprompter.speed),
         5,
         250,
       ),
