@@ -2210,12 +2210,46 @@ describe("useVideoRecorder", () => {
     });
 
     act(() => {
-      recorder.latest.downloadRecording("  demo/name  ");
+      recorder.latest.downloadRecording("  demo///name??  ");
     });
 
     expect(setup.createObjectURLSpy).toHaveBeenCalledTimes(1);
     expect(setup.clickSpy).toHaveBeenCalledTimes(1);
     expect(setup.getDownloadedFileNames()).toEqual(["demo-name.webm"]);
+    expect(setup.revokeObjectURLSpy).toHaveBeenCalledWith("blob:mock-url");
+
+    setup.cleanupCanvases();
+  });
+
+  it("falls back to default filename when sanitized value becomes empty", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result).toBeTruthy();
+    });
+
+    act(() => {
+      recorder.latest.downloadRecording(' /\\:*?"<>| . ');
+    });
+
+    expect(setup.createObjectURLSpy).toHaveBeenCalledTimes(1);
+    expect(setup.clickSpy).toHaveBeenCalledTimes(1);
+    expect(setup.getDownloadedFileNames()).toEqual([
+      "excalidraw-recording.webm",
+    ]);
     expect(setup.revokeObjectURLSpy).toHaveBeenCalledWith("blob:mock-url");
 
     setup.cleanupCanvases();

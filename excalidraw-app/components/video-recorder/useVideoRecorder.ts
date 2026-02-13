@@ -208,6 +208,17 @@ export const mapVideoRecorderErrorMessage = (error: unknown) => {
   return t("videoRecorder.errors.recordingFailed");
 };
 
+const sanitizeRecordingFileName = (name: string) => {
+  const sanitized = name
+    .trim()
+    .replace(INVALID_FILE_NAME_CHARS, "-")
+    .replace(/\s+/g, " ")
+    .replace(/-+/g, "-")
+    .replace(/^[-.\s]+|[-.\s]+$/g, "");
+
+  return sanitized || "excalidraw-recording";
+};
+
 type UseVideoRecorderReturn = {
   capabilities: VideoRecorderCapabilities;
   settings: VideoRecorderSettings;
@@ -814,9 +825,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         return;
       }
       const extension = getFileExtensionFromMimeType(result.mimeType);
-      const sanitizedName =
-        name.trim().replace(INVALID_FILE_NAME_CHARS, "-") ||
-        "excalidraw-recording";
+      const sanitizedName = sanitizeRecordingFileName(name);
       const url = URL.createObjectURL(result.blob);
       const anchor = document.createElement("a");
       anchor.href = url;
