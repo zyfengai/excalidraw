@@ -30,6 +30,7 @@ import type {
 } from "./videoRecorder.types";
 
 const MEDIA_RECORDER_TIMESLICE_MS = 1000;
+const STOP_RECORDING_TIMEOUT_MS = 3000;
 
 const getExcalidrawCanvases = () => {
   const staticCanvas = document.querySelector<HTMLCanvasElement>(
@@ -685,21 +686,40 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         resolve();
         return;
       }
-      const handleStop = () => {
-        recorder.removeEventListener("stop", handleStop);
+
+      let settled = false;
+      const finalize = () => {
+        if (settled) {
+          return;
+        }
+        settled = true;
         stopRecordingInFlightRef.current = false;
         resolve();
       };
+
+      const handleStop = () => {
+        recorder.removeEventListener("stop", handleStop);
+        window.clearTimeout(timeoutId);
+        finalize();
+      };
       recorder.addEventListener("stop", handleStop);
+      const timeoutId = window.setTimeout(() => {
+        recorder.removeEventListener("stop", handleStop);
+        setError(t("videoRecorder.errors.recordingFailed"));
+        setStatus("error");
+        cleanupStreams();
+        finalize();
+      }, STOP_RECORDING_TIMEOUT_MS);
+
       try {
         recorder.stop();
       } catch (stopError) {
+        window.clearTimeout(timeoutId);
         recorder.removeEventListener("stop", handleStop);
-        stopRecordingInFlightRef.current = false;
         setError(mapVideoRecorderErrorMessage(stopError));
         setStatus("error");
         cleanupStreams();
-        resolve();
+        finalize();
       }
     });
   }, [cleanupStreams, clearElapsedTimer, status]);

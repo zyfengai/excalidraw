@@ -860,9 +860,7 @@ describe("useVideoRecorder", () => {
     await act(async () => {
       await recorder.latest.startRecording();
     });
-    await waitFor(() => {
-      expect(recorder.latest.status).toBe("recording");
-    });
+    expect(recorder.latest.status).toBe("recording");
 
     act(() => {
       setup.emitRecorderError("runtime recorder failure");
@@ -1191,6 +1189,44 @@ describe("useVideoRecorder", () => {
       expect(recorder.latest.error).toBe("stop failed");
       expect(recorder.latest.isRecordingActive).toBe(false);
     });
+    expect(setup.getStopCallCount()).toBe(1);
+    expect(setup.videoTrackStop).toHaveBeenCalledTimes(1);
+
+    setup.cleanupCanvases();
+  });
+
+  it("falls back to error when recorder stop event never fires", async () => {
+    vi.useFakeTimers();
+    const setup = setupRecordingFlowMocks({ deferStop: true });
+    const recorder = renderUseVideoRecorder();
+    let stopPromise: Promise<void> | null = null;
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      stopPromise = recorder.latest.stopRecording();
+    });
+    expect(recorder.latest.status).toBe("stopping");
+
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+      await stopPromise;
+    });
+    expect(recorder.latest.status).toBe("error");
+    expect(recorder.latest.error).toBe("Recording failed. Please try again.");
+    expect(recorder.latest.isRecordingActive).toBe(false);
     expect(setup.getStopCallCount()).toBe(1);
     expect(setup.videoTrackStop).toHaveBeenCalledTimes(1);
 
