@@ -866,11 +866,12 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         | ((prev: VideoRecorderOverlayLayout) => VideoRecorderOverlayLayout),
     ) => {
       setSettingsState((prev) => {
-        const merged =
-          typeof next === "function"
-            ? next(prev.camera)
-            : { ...prev.camera, ...next };
-        const camera = clampOverlayLayout(merged);
+        const nextValue = typeof next === "function" ? next(prev.camera) : next;
+        const merged = {
+          ...prev.camera,
+          ...(isObject(nextValue) ? nextValue : {}),
+        };
+        const camera = normalizeOverlayLayoutInput(merged, prev.camera);
         if (areOverlayLayoutsEqual(camera, prev.camera)) {
           return prev;
         }

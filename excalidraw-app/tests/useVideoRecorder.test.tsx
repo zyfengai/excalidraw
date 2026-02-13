@@ -595,6 +595,32 @@ describe("useVideoRecorder", () => {
     });
   });
 
+  it("ignores malformed camera layout updates", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+    });
+
+    const recorder = renderUseVideoRecorder();
+    const previousSettings = recorder.latest.settings;
+
+    act(() => {
+      recorder.latest.updateCameraLayout(
+        () =>
+          ({
+            x: "left",
+            y: undefined,
+            width: Number.POSITIVE_INFINITY,
+            height: Number.NaN,
+            shape: "triangle",
+          } as unknown as VideoRecorderSettings["camera"]),
+      );
+    });
+
+    expect(recorder.latest.settings).toBe(previousSettings);
+    expect(recorder.latest.settings.camera).toEqual(previousSettings.camera);
+  });
+
   it("skips camera layout state updates when next layout is unchanged", async () => {
     setMediaRecorderSupport(["video/webm"]);
     setMediaDevicesMock({
