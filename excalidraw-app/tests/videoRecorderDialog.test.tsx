@@ -153,6 +153,47 @@ describe("VideoRecorderDialog", () => {
     expect(microphoneSelect.value).toBe("");
   });
 
+  it("falls back to supported video profile values when settings are invalid", () => {
+    const settings = {
+      ...getDefaultVideoRecorderSettings(),
+      cameraEnabled: true,
+      aspectRatio: "bad-ratio" as unknown as ReturnType<
+        typeof getDefaultVideoRecorderSettings
+      >["aspectRatio"],
+      resolution: "bad-resolution" as unknown as ReturnType<
+        typeof getDefaultVideoRecorderSettings
+      >["resolution"],
+      fps: 999,
+      mimeType: "video/unknown",
+    };
+
+    renderDialog({
+      settings,
+      capabilities: {
+        isSupported: true,
+        supportedMimeTypes: ["video/webm", "video/mp4"],
+      },
+    });
+
+    const ratioSelect = screen.getByLabelText(
+      "videoRecorder.video.aspectRatio",
+    ) as HTMLSelectElement;
+    const resolutionSelect = screen.getByLabelText(
+      "videoRecorder.video.resolution",
+    ) as HTMLSelectElement;
+    const fpsSelect = screen.getByLabelText(
+      "videoRecorder.video.fps",
+    ) as HTMLSelectElement;
+    const formatSelect = screen.getByLabelText(
+      "videoRecorder.video.format",
+    ) as HTMLSelectElement;
+
+    expect(ratioSelect.value).toBe("16:9");
+    expect(resolutionSelect.value).toBe("1080p");
+    expect(fpsSelect.value).toBe("30");
+    expect(formatSelect.value).toBe("video/webm");
+  });
+
   it("refreshes devices only on open transitions", () => {
     const initialRefresh = vi.fn(async () => undefined);
     const nextRefresh = vi.fn(async () => undefined);

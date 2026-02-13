@@ -179,7 +179,17 @@ export const VideoRecorderDialog = ({
     return null;
   }
 
-  const aspectRatioValue = VIDEO_RECORDER_RATIO_MAP[settings.aspectRatio];
+  const supportedAspectRatios: VideoRecorderSettings["aspectRatio"][] = [
+    "16:9",
+    "4:3",
+    "1:1",
+    "9:16",
+  ];
+  const supportedResolutions: VideoRecorderSettings["resolution"][] = [
+    "720p",
+    "1080p",
+  ];
+  const supportedFpsValues = [24, 30, 60];
   const selectedVideoDeviceValue =
     settings.selectedVideoDeviceId &&
     devices.videoInputs.some(
@@ -194,6 +204,25 @@ export const VideoRecorderDialog = ({
     )
       ? settings.selectedAudioDeviceId
       : "";
+  const selectedAspectRatioValue = supportedAspectRatios.includes(
+    settings.aspectRatio,
+  )
+    ? settings.aspectRatio
+    : "16:9";
+  const aspectRatioValue = VIDEO_RECORDER_RATIO_MAP[selectedAspectRatioValue];
+  const selectedResolutionValue = supportedResolutions.includes(
+    settings.resolution,
+  )
+    ? settings.resolution
+    : "1080p";
+  const selectedFpsValue = supportedFpsValues.includes(settings.fps)
+    ? settings.fps
+    : 30;
+  const selectedMimeTypeValue = capabilities.supportedMimeTypes.includes(
+    settings.mimeType,
+  )
+    ? settings.mimeType
+    : capabilities.supportedMimeTypes[0] || "";
   const hasActiveRecordingSession =
     status === "preparing" ||
     status === "recording" ||
@@ -454,7 +483,7 @@ export const VideoRecorderDialog = ({
               <select
                 id="video-recorder-aspect-ratio"
                 className="TextInput"
-                value={settings.aspectRatio}
+                value={selectedAspectRatioValue}
                 onChange={(event) =>
                   onSettingsChange({
                     aspectRatio: event.target
@@ -475,7 +504,7 @@ export const VideoRecorderDialog = ({
               <select
                 id="video-recorder-resolution"
                 className="TextInput"
-                value={settings.resolution}
+                value={selectedResolutionValue}
                 onChange={(event) =>
                   onSettingsChange({
                     resolution: event.target
@@ -494,7 +523,7 @@ export const VideoRecorderDialog = ({
               <select
                 id="video-recorder-fps"
                 className="TextInput"
-                value={settings.fps}
+                value={selectedFpsValue}
                 onChange={(event) =>
                   onSettingsChange({
                     fps: Number(event.target.value),
@@ -513,7 +542,7 @@ export const VideoRecorderDialog = ({
               <select
                 id="video-recorder-format"
                 className="TextInput"
-                value={settings.mimeType}
+                value={selectedMimeTypeValue}
                 onChange={(event) =>
                   onSettingsChange({
                     mimeType: event.target.value,
