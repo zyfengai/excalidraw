@@ -149,13 +149,12 @@ export const VideoRecorderDialog = ({
       if (!interaction) {
         return;
       }
-      if (interaction.pointerId !== null) {
-        if (
-          !Number.isFinite(event.pointerId) ||
-          event.pointerId !== interaction.pointerId
-        ) {
-          return;
-        }
+      if (
+        interaction.pointerId !== null &&
+        Number.isFinite(event.pointerId) &&
+        event.pointerId !== interaction.pointerId
+      ) {
+        return;
       }
       interactionRef.current = null;
     };
