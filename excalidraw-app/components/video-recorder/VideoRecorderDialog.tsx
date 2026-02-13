@@ -208,11 +208,17 @@ export const VideoRecorderDialog = ({
       (resolution) => resolution === settings.resolution,
     ) || "1080p";
   const selectedFpsValue = normalizeRecorderFps(settings.fps, 30);
-  const selectedMimeTypeValue = capabilities.supportedMimeTypes.includes(
-    settings.mimeType,
-  )
-    ? settings.mimeType
-    : capabilities.supportedMimeTypes[0] || "";
+  const normalizedSelectedMimeType = settings.mimeType.trim();
+  const selectedMimeTypeValue =
+    capabilities.supportedMimeTypes.find(
+      (mimeType) => mimeType === normalizedSelectedMimeType,
+    ) ||
+    capabilities.supportedMimeTypes.find(
+      (mimeType) =>
+        mimeType.toLowerCase() === normalizedSelectedMimeType.toLowerCase(),
+    ) ||
+    capabilities.supportedMimeTypes[0] ||
+    "";
   const hasActiveRecordingSession =
     status === "preparing" ||
     status === "recording" ||

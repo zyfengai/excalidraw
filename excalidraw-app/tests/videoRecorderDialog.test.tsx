@@ -194,6 +194,27 @@ describe("VideoRecorderDialog", () => {
     expect(formatSelect.value).toBe("video/webm");
   });
 
+  it("matches supported mimeType regardless of input casing", () => {
+    const settings = {
+      ...getDefaultVideoRecorderSettings(),
+      cameraEnabled: true,
+      mimeType: " VIDEO/MP4 ",
+    };
+
+    renderDialog({
+      settings,
+      capabilities: {
+        isSupported: true,
+        supportedMimeTypes: ["video/webm", "video/mp4"],
+      },
+    });
+
+    const formatSelect = screen.getByLabelText(
+      "videoRecorder.video.format",
+    ) as HTMLSelectElement;
+    expect(formatSelect.value).toBe("video/mp4");
+  });
+
   it("refreshes devices only on open transitions", () => {
     const initialRefresh = vi.fn(async () => undefined);
     const nextRefresh = vi.fn(async () => undefined);
