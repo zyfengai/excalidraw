@@ -1830,6 +1830,44 @@ describe("useVideoRecorder", () => {
     cleanup();
   });
 
+  it("ignores permission requests while recorder is active", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+    const getUserMedia = navigator.mediaDevices
+      .getUserMedia as unknown as ReturnType<typeof vi.fn>;
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    expect(recorder.latest.status).toBe("recording");
+    expect(recorder.latest.isRequestingPermissions).toBe(false);
+    expect(getUserMedia).toHaveBeenCalledTimes(0);
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("handles device enumeration failures without breaking recorder state", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const enumerateDevices = vi.fn(async () => {
