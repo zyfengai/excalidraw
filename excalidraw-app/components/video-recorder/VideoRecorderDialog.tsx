@@ -172,13 +172,17 @@ export const VideoRecorderDialog = ({
   }
 
   const aspectRatioValue = VIDEO_RECORDER_RATIO_MAP[settings.aspectRatio];
-  const isStartDisabled =
-    !capabilities.isSupported ||
-    isRequestingPermissions ||
+  const hasActiveRecordingSession =
     status === "preparing" ||
     status === "recording" ||
     status === "paused" ||
     status === "stopping";
+  const isPermissionActionDisabled =
+    isRequestingPermissions || hasActiveRecordingSession;
+  const isStartDisabled =
+    !capabilities.isSupported ||
+    isRequestingPermissions ||
+    hasActiveRecordingSession;
 
   const startInteraction = (
     mode: InteractionState["mode"],
@@ -239,7 +243,7 @@ export const VideoRecorderDialog = ({
                 onClick={() => {
                   void onRequestPermissions();
                 }}
-                disabled={isRequestingPermissions}
+                disabled={isPermissionActionDisabled}
               >
                 {t("videoRecorder.actions.requestPermissions")}
               </FilledButton>

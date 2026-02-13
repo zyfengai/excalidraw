@@ -702,6 +702,17 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
     if (permissionRequestInFlightRef.current) {
       return;
     }
+    if (startRecordingInFlightRef.current) {
+      return;
+    }
+    if (
+      status === "preparing" ||
+      status === "recording" ||
+      status === "paused" ||
+      status === "stopping"
+    ) {
+      return;
+    }
 
     if (!navigator.mediaDevices?.getUserMedia) {
       setError(t("videoRecorder.errors.notSupported"));
@@ -790,7 +801,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         setIsRequestingPermissions(false);
       }
     }
-  }, [refreshDevices, settings]);
+  }, [refreshDevices, settings, status]);
 
   useEffect(() => {
     refreshDevices();

@@ -1775,6 +1775,61 @@ describe("useVideoRecorder", () => {
     expect(stopTrack).toHaveBeenCalledTimes(1);
   });
 
+  it("ignores permission requests while start flow is in flight", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const { cleanup } = createExcalidrawCanvases();
+    const enumerateDevices = vi.fn(async () => []);
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    let rejectStart: ((reason?: unknown) => void) | null = null;
+    const getUserMedia = vi.fn(
+      () =>
+        new Promise<MediaStream>((_resolve, reject) => {
+          rejectStart = reject;
+        }),
+    );
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+      });
+    });
+
+    act(() => {
+      void recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("preparing");
+      expect(getUserMedia).toHaveBeenCalledTimes(1);
+    });
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    expect(recorder.latest.isRequestingPermissions).toBe(false);
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      rejectStart?.(new DOMException("", "NotAllowedError"));
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+    });
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(enumerateDevices).toHaveBeenCalledTimes(1);
+
+    cleanup();
+  });
+
   it("handles device enumeration failures without breaking recorder state", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const enumerateDevices = vi.fn(async () => {
