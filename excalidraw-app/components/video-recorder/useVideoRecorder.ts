@@ -386,6 +386,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   const permissionRequestInFlightRef = useRef(false);
   const startRecordingInFlightRef = useRef(false);
   const startRecordingRequestIdRef = useRef(0);
+  const refreshDevicesRequestIdRef = useRef(0);
   const stopRecordingInFlightRef = useRef(false);
   const stopRecordingTimeoutRef = useRef<number | null>(null);
   const stopRecordingFinalizeRef = useRef<(() => void) | null>(null);
@@ -447,9 +448,15 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   }, [clearElapsedTimer]);
 
   const refreshDevices = useCallback(async () => {
+    const requestId = refreshDevicesRequestIdRef.current + 1;
+    refreshDevicesRequestIdRef.current = requestId;
+
     try {
       const mediaDevices = await collectMediaDevices();
-      if (!isMountedRef.current) {
+      if (
+        !isMountedRef.current ||
+        requestId !== refreshDevicesRequestIdRef.current
+      ) {
         return;
       }
       setDevices(mediaDevices);
@@ -481,7 +488,10 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         };
       });
     } catch (deviceError) {
-      if (!isMountedRef.current) {
+      if (
+        !isMountedRef.current ||
+        requestId !== refreshDevicesRequestIdRef.current
+      ) {
         return;
       }
       console.error(deviceError);

@@ -355,6 +355,78 @@ describe("useVideoRecorder", () => {
     });
   });
 
+  it("keeps latest device refresh results when earlier requests resolve later", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    let resolveInitialRefresh: ((value: MediaDeviceInfo[]) => void) | null =
+      null;
+    let resolveManualRefresh: ((value: MediaDeviceInfo[]) => void) | null =
+      null;
+    const enumerateDevices = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<MediaDeviceInfo[]>((resolve) => {
+            resolveInitialRefresh = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<MediaDeviceInfo[]>((resolve) => {
+            resolveManualRefresh = resolve;
+          }),
+      );
+
+    setMediaDevicesMock({
+      enumerateDevices,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "camera-new",
+      });
+    });
+
+    act(() => {
+      void recorder.latest.refreshDevices();
+    });
+
+    expect(enumerateDevices).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      resolveManualRefresh?.([
+        createMockMediaDevice("videoinput", "camera-new", "Camera New"),
+      ]);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.devices).toEqual({
+        videoInputs: [{ deviceId: "camera-new", label: "Camera New" }],
+        audioInputs: [],
+      });
+      expect(recorder.latest.settings.selectedVideoDeviceId).toBe("camera-new");
+    });
+
+    await act(async () => {
+      resolveInitialRefresh?.([
+        createMockMediaDevice("videoinput", "camera-old", "Camera Old"),
+      ]);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.devices).toEqual({
+        videoInputs: [{ deviceId: "camera-new", label: "Camera New" }],
+        audioInputs: [],
+      });
+      expect(recorder.latest.settings.selectedVideoDeviceId).toBe("camera-new");
+    });
+  });
+
   it("requests media permissions with settings constraints and refreshes devices", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const trackStop = vi.fn();
