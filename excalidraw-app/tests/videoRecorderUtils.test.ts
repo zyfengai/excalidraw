@@ -9,6 +9,7 @@ import {
   clampOverlayLayout,
   getFileExtensionFromMimeType,
   getPermissionRequestConstraints,
+  normalizeRecorderFps,
   normalizeRecorderMimeType,
   getVideoDimensions,
 } from "../components/video-recorder/videoRecorder.utils";
@@ -80,6 +81,14 @@ describe("video recorder utils", () => {
       "video/webm",
     );
     expect(normalizeRecorderMimeType("video/unknown", [])).toBe("");
+  });
+
+  it("normalizes fps into a safe recording range", () => {
+    expect(normalizeRecorderFps(30, 24)).toBe(30);
+    expect(normalizeRecorderFps(0, 24)).toBe(1);
+    expect(normalizeRecorderFps(120, 24)).toBe(60);
+    expect(normalizeRecorderFps(29.6, 24)).toBe(30);
+    expect(normalizeRecorderFps(Number.NaN, 24)).toBe(24);
   });
 
   it("builds permission constraints from settings", () => {
@@ -204,6 +213,7 @@ describe("video recorder settings storage", () => {
             opacity: 999,
             speed: 0,
           },
+          fps: 999,
         },
       }),
     );
@@ -218,6 +228,7 @@ describe("video recorder settings storage", () => {
     });
     expect(loaded.teleprompter.opacity).toBe(1);
     expect(loaded.teleprompter.speed).toBe(5);
+    expect(loaded.fps).toBe(60);
   });
 
   it("returns defaults and logs when persisted json is malformed", () => {

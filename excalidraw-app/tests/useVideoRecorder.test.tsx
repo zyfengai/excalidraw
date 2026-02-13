@@ -365,7 +365,7 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.settings).toBe(previousSettings);
   });
 
-  it("coerces camera and teleprompter ranges when setSettings receives out-of-range values", async () => {
+  it("coerces camera, fps and teleprompter ranges when setSettings receives out-of-range values", async () => {
     setMediaRecorderSupport(["video/webm"]);
     setMediaDevicesMock({
       enumerateDevices: vi.fn(async () => []),
@@ -388,6 +388,7 @@ describe("useVideoRecorder", () => {
           opacity: 9,
           speed: 0,
         },
+        fps: 500,
       }));
     });
 
@@ -397,6 +398,7 @@ describe("useVideoRecorder", () => {
       expect(recorder.latest.settings.camera.y).toBeCloseTo(0.2);
       expect(recorder.latest.settings.camera.width).toBe(0.8);
       expect(recorder.latest.settings.camera.height).toBe(0.8);
+      expect(recorder.latest.settings.fps).toBe(60);
       expect(recorder.latest.settings.teleprompter.opacity).toBe(1);
       expect(recorder.latest.settings.teleprompter.speed).toBe(5);
     });

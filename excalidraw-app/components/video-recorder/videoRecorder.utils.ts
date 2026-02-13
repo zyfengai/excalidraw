@@ -44,6 +44,14 @@ export const clamp = (value: number, min: number, max: number) => {
   return Math.max(min, Math.min(max, value));
 };
 
+export const normalizeRecorderFps = (
+  candidateFps: number,
+  fallbackFps: number,
+) => {
+  const baseFps = Number.isFinite(candidateFps) ? candidateFps : fallbackFps;
+  return clamp(Math.round(baseFps), 1, 60);
+};
+
 export const clampOverlayLayout = (
   layout: VideoRecorderOverlayLayout,
 ): VideoRecorderOverlayLayout => {

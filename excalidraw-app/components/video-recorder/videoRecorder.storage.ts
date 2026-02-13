@@ -1,7 +1,11 @@
 import { STORAGE_KEYS } from "../../app_constants";
 
 import { getDefaultVideoRecorderSettings } from "./videoRecorder.config";
-import { clampOverlayLayout, clamp } from "./videoRecorder.utils";
+import {
+  clampOverlayLayout,
+  clamp,
+  normalizeRecorderFps,
+} from "./videoRecorder.utils";
 
 import type { VideoRecorderSettings } from "./videoRecorder.types";
 
@@ -24,6 +28,7 @@ const coerceSettings = (value: unknown): VideoRecorderSettings | null => {
     ...defaults,
     ...next,
     mimeType: next.mimeType || defaults.mimeType,
+    fps: normalizeRecorderFps(next.fps ?? defaults.fps, defaults.fps),
     camera: clampOverlayLayout({
       ...defaults.camera,
       ...(next.camera || {}),
