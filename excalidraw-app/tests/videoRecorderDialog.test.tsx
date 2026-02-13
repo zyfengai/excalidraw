@@ -583,6 +583,27 @@ describe("VideoRecorderDialog", () => {
     expect(onStart).toHaveBeenCalledTimes(0);
   });
 
+  it("keeps start action enabled when support probing list is unavailable", () => {
+    const { onStart } = renderDialog({
+      capabilities: {
+        isSupported: true,
+        supportedMimeTypes: [],
+      },
+      settings: {
+        ...getDefaultVideoRecorderSettings(),
+        cameraEnabled: true,
+        mimeType: "video/mp4",
+      },
+    });
+
+    const startButton = screen.getByRole("button", {
+      name: /Start recording/i,
+    });
+    expect(startButton).not.toBeDisabled();
+    fireEvent.click(startButton);
+    expect(onStart).toHaveBeenCalledTimes(1);
+  });
+
   it("updates camera width in non-circle mode", () => {
     const { onCameraLayoutChange } = renderDialog({
       settings: {
