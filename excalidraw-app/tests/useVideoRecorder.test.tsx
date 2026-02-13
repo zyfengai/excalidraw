@@ -437,6 +437,27 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.settings.selectedAudioDeviceId).toBe("mic-1");
   });
 
+  it("trims video profile values in setSettings", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        aspectRatio: " 4:3 " as unknown as VideoRecorderSettings["aspectRatio"],
+        resolution: " 720p " as unknown as VideoRecorderSettings["resolution"],
+      });
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.settings.aspectRatio).toBe("4:3");
+      expect(recorder.latest.settings.resolution).toBe("720p");
+    });
+  });
+
   it("coerces video profile, camera, fps and teleprompter ranges when setSettings receives out-of-range values", async () => {
     setMediaRecorderSupport(["video/webm"]);
     setMediaDevicesMock({

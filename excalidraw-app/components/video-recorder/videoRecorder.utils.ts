@@ -36,9 +36,9 @@ export const normalizeRecorderAspectRatio = (
   fallbackAspectRatio: VideoRecorderAspectRatio,
 ): VideoRecorderAspectRatio =>
   VIDEO_RECORDER_SUPPORTED_ASPECT_RATIOS.some(
-    (aspectRatio) => aspectRatio === candidateAspectRatio,
+    (aspectRatio) => aspectRatio === candidateAspectRatio.trim(),
   )
-    ? (candidateAspectRatio as VideoRecorderAspectRatio)
+    ? (candidateAspectRatio.trim() as VideoRecorderAspectRatio)
     : fallbackAspectRatio;
 
 export const normalizeRecorderResolution = (
@@ -46,9 +46,9 @@ export const normalizeRecorderResolution = (
   fallbackResolution: VideoRecorderResolution,
 ): VideoRecorderResolution =>
   VIDEO_RECORDER_SUPPORTED_RESOLUTIONS.some(
-    (resolution) => resolution === candidateResolution,
+    (resolution) => resolution === candidateResolution.trim(),
   )
-    ? (candidateResolution as VideoRecorderResolution)
+    ? (candidateResolution.trim() as VideoRecorderResolution)
     : fallbackResolution;
 
 export const getVideoDimensions = (
