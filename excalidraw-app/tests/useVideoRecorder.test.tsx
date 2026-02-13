@@ -3048,12 +3048,15 @@ describe("useVideoRecorder", () => {
     });
     const recorder = renderUseVideoRecorder();
 
+    expect(recorder.latest.settings.mimeType).toBe("video/webm");
+
     act(() => {
       recorder.latest.setSettings({
         cameraEnabled: false,
         microphoneEnabled: false,
       });
     });
+    expect(recorder.latest.settings.mimeType).toBe("video/webm");
 
     await act(async () => {
       await recorder.latest.startRecording();
@@ -3074,6 +3077,28 @@ describe("useVideoRecorder", () => {
       expect(recorder.latest.result?.mimeType).toBe("video/mp4");
     });
 
+    setup.cleanupCanvases();
+  });
+
+  it("keeps trimmed requested mimeType when probing support list is unavailable", async () => {
+    const setup = setupRecordingFlowMocks({
+      omitIsTypeSupported: true,
+    });
+    const recorder = renderUseVideoRecorder();
+
+    await waitFor(() => {
+      expect(recorder.latest.settings.mimeType).toBe("video/webm");
+    });
+
+    act(() => {
+      recorder.latest.setSettings({
+        mimeType: " video/mp4 ",
+      });
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.settings.mimeType).toBe("video/mp4");
+    });
     setup.cleanupCanvases();
   });
 

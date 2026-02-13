@@ -367,6 +367,22 @@ const normalizeString = (value: unknown, fallback: string) =>
 const normalizeNumber = (value: unknown, fallback: number) =>
   isFiniteNumber(value) ? value : fallback;
 
+const normalizeMimeTypeInput = (
+  value: unknown,
+  fallback: string,
+  supportedMimeTypes: string[],
+) => {
+  const requestedMimeType = normalizeString(value, fallback).trim();
+  const normalizedMimeType = normalizeRecorderMimeType(
+    requestedMimeType,
+    supportedMimeTypes,
+  );
+  if (normalizedMimeType) {
+    return normalizedMimeType;
+  }
+  return requestedMimeType || fallback;
+};
+
 const normalizeSettingsInput = (
   value: unknown,
   fallback: VideoRecorderSettings,
@@ -393,8 +409,9 @@ const normalizeSettingsInput = (
     normalizeNumber(input.fps, fallback.fps),
     fallback.fps,
   );
-  const mimeType = normalizeRecorderMimeType(
-    normalizeString(input.mimeType, fallback.mimeType),
+  const mimeType = normalizeMimeTypeInput(
+    input.mimeType,
+    fallback.mimeType,
     supportedMimeTypes,
   );
   const camera = normalizeOverlayLayoutInput(input.camera, fallback.camera);
@@ -726,8 +743,9 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   const [settings, setSettingsState] = useState<VideoRecorderSettings>(() => {
     const defaults = getDefaultVideoRecorderSettings();
     const loaded = loadVideoRecorderSettings();
-    const mimeType = normalizeRecorderMimeType(
+    const mimeType = normalizeMimeTypeInput(
       loaded.mimeType || defaults.mimeType || "",
+      defaults.mimeType || "",
       capabilities.supportedMimeTypes,
     );
 
