@@ -183,7 +183,9 @@ export const VideoRecorderDialog = ({
     status === "paused" ||
     status === "stopping";
   const isPermissionActionDisabled =
-    isRequestingPermissions || hasActiveRecordingSession;
+    !capabilities.isSupported ||
+    isRequestingPermissions ||
+    hasActiveRecordingSession;
   const isStartDisabled =
     !capabilities.isSupported ||
     isRequestingPermissions ||

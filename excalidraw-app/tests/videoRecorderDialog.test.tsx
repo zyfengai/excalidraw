@@ -276,6 +276,24 @@ describe("VideoRecorderDialog", () => {
     expect(onRequestPermissions).toHaveBeenCalledTimes(0);
   });
 
+  it("disables permission request when browser support is missing", () => {
+    const { onRequestPermissions } = renderDialog({
+      capabilities: {
+        isSupported: false,
+        supportedMimeTypes: [],
+      },
+      onRequestPermissions: vi.fn(async () => undefined),
+    });
+
+    const requestButton = screen.getByRole("button", {
+      name: /Enable camera & microphone access/i,
+    });
+    expect(requestButton).toBeDisabled();
+    fireEvent.click(requestButton);
+
+    expect(onRequestPermissions).toHaveBeenCalledTimes(0);
+  });
+
   it("disables start action while permissions are in-flight", () => {
     const { onStart } = renderDialog({
       isRequestingPermissions: true,
