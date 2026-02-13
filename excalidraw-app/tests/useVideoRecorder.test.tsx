@@ -491,6 +491,48 @@ describe("useVideoRecorder", () => {
     expect(stopTrack).toHaveBeenCalledTimes(1);
   });
 
+  it("ignores duplicate permission requests while one is in flight", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const stopTrack = vi.fn();
+    const permissionStream = {
+      getTracks: () => [{ stop: stopTrack }],
+    } as unknown as MediaStream;
+    let resolvePermission: ((value: MediaStream) => void) | null = null;
+    const getUserMedia = vi.fn(
+      () =>
+        new Promise<MediaStream>((resolve) => {
+          resolvePermission = resolve;
+        }),
+    );
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      void recorder.latest.requestMediaPermissions();
+      void recorder.latest.requestMediaPermissions();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.isRequestingPermissions).toBe(true);
+    });
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolvePermission?.(permissionStream);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.isRequestingPermissions).toBe(false);
+      expect(recorder.latest.error).toBeNull();
+    });
+    expect(stopTrack).toHaveBeenCalledTimes(1);
+  });
+
   it("handles device enumeration failures without breaking recorder state", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const enumerateDevices = vi.fn(async () => {

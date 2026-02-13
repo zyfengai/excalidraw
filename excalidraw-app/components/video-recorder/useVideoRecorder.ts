@@ -280,6 +280,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   const pausedAtRef = useRef<number | null>(null);
   const pausedAccumulatedRef = useRef<number>(0);
   const elapsedTimerRef = useRef<number | null>(null);
+  const permissionRequestInFlightRef = useRef(false);
 
   const clearElapsedTimer = useCallback(() => {
     if (elapsedTimerRef.current != null) {
@@ -325,12 +326,17 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   }, []);
 
   const requestMediaPermissions = useCallback(async () => {
+    if (permissionRequestInFlightRef.current) {
+      return;
+    }
+
     if (!navigator.mediaDevices?.getUserMedia) {
       setError(t("videoRecorder.errors.notSupported"));
       return;
     }
 
     setError(null);
+    permissionRequestInFlightRef.current = true;
     setIsRequestingPermissions(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia(
@@ -341,6 +347,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
     } catch (permissionError) {
       setError(mapVideoRecorderErrorMessage(permissionError));
     } finally {
+      permissionRequestInFlightRef.current = false;
       setIsRequestingPermissions(false);
     }
   }, [refreshDevices, settings]);
