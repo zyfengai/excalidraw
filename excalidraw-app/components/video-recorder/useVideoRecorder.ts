@@ -843,12 +843,19 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     currentTarget?: { error?: unknown } | null;
     srcElement?: { error?: unknown } | null;
     detail?: unknown;
+    data?: unknown;
   };
   const detailError =
     eventPayload.detail &&
     typeof eventPayload.detail === "object" &&
     "error" in eventPayload.detail
       ? (eventPayload.detail as { error?: unknown }).error
+      : undefined;
+  const dataError =
+    eventPayload.data &&
+    typeof eventPayload.data === "object" &&
+    "error" in eventPayload.data
+      ? (eventPayload.data as { error?: unknown }).error
       : undefined;
 
   return (
@@ -857,7 +864,9 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     eventPayload.currentTarget?.error ??
     eventPayload.srcElement?.error ??
     detailError ??
+    dataError ??
     eventPayload.detail ??
+    eventPayload.data ??
     event
   );
 };
