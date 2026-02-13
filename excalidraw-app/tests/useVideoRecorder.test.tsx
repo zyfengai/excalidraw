@@ -92,11 +92,16 @@ const setupRecordingFlowMocks = (opts?: {
   stopThrows?: boolean;
   pauseThrows?: boolean;
   resumeThrows?: boolean;
+  trackStopThrows?: boolean;
 }) => {
   const cleanupSpy = vi.fn();
   const pauseSpy = vi.fn();
   const resumeSpy = vi.fn();
-  const videoTrackStop = vi.fn();
+  const videoTrackStop = vi.fn(() => {
+    if (opts?.trackStopThrows) {
+      throw new Error("track stop failed");
+    }
+  });
   let latestRecorder: any = null;
   let stopCallCount = 0;
   let flushStop: (() => void) | null = null;
@@ -4102,6 +4107,40 @@ describe("useVideoRecorder", () => {
       expect(recorder.latest.error).toBeNull();
       expect(recorder.latest.elapsedMs).toBe(0);
     });
+
+    setup.cleanupCanvases();
+  });
+
+  it("keeps stop flow successful when track cleanup throws", async () => {
+    const setup = setupRecordingFlowMocks({ trackStopThrows: true });
+    const recorder = renderUseVideoRecorder();
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result).toBeTruthy();
+    });
+    expect(setup.videoTrackStop).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
 
     setup.cleanupCanvases();
   });

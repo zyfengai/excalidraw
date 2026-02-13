@@ -108,7 +108,13 @@ const stopMediaStreamsTracksOnce = (
   streams.forEach((stream) => {
     stream?.getTracks().forEach((track) => tracksToStop.add(track));
   });
-  tracksToStop.forEach((track) => track.stop());
+  tracksToStop.forEach((track) => {
+    try {
+      track.stop();
+    } catch (trackStopError) {
+      console.error(trackStopError);
+    }
+  });
 };
 
 const replaceControlCharacters = (value: string) =>
