@@ -424,6 +424,47 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.isRequestingPermissions).toBe(false);
   });
 
+  it("tracks requesting-permissions state during async permission flow", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const stopTrack = vi.fn();
+    const permissionStream = {
+      getTracks: () => [{ stop: stopTrack }],
+    } as unknown as MediaStream;
+    let resolvePermission: ((value: MediaStream) => void) | null = null;
+    const getUserMedia = vi.fn(
+      () =>
+        new Promise<MediaStream>((resolve) => {
+          resolvePermission = resolve;
+        }),
+    );
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      void recorder.latest.requestMediaPermissions();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.isRequestingPermissions).toBe(true);
+    });
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      resolvePermission?.(permissionStream);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.isRequestingPermissions).toBe(false);
+      expect(recorder.latest.error).toBeNull();
+    });
+    expect(stopTrack).toHaveBeenCalledTimes(1);
+  });
+
   it("sets error when starting recording without MediaRecorder support", async () => {
     delete (globalThis as any).MediaRecorder;
     setMediaDevicesMock({
