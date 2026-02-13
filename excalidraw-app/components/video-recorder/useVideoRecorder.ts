@@ -79,10 +79,23 @@ const isDeviceSelectionError = (error: unknown) =>
 
 const isMimeNotSupportedMessage = (error: unknown) => {
   const message = getErrorMessage(error).toLowerCase();
-  if (!message || !message.includes("mime")) {
+  if (!message) {
     return false;
   }
-  return message.includes("unsupported") || message.includes("not supported");
+  const hasUnsupportedToken =
+    message.includes("unsupported") ||
+    message.includes("not supported") ||
+    message.includes("cannot be used");
+  if (!hasUnsupportedToken) {
+    return false;
+  }
+  const hasMimeContext =
+    message.includes("mime") ||
+    message.includes("mediarecorder") ||
+    message.includes("type provided") ||
+    message.includes("video/") ||
+    message.includes("audio/");
+  return hasMimeContext;
 };
 
 const isRecoverableMediaRecorderMimeError = (error: unknown) =>
