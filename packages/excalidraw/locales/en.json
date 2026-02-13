@@ -727,7 +727,11 @@
       "shape": "Camera shape",
       "shapeRectangle": "Rectangle",
       "shapeRounded": "Rounded",
-      "shapeCircle": "Circle"
+      "shapeCircle": "Circle",
+      "sizeWidth": "Camera width",
+      "sizeHeight": "Camera height",
+      "layout": "Camera layout",
+      "resetLayout": "Reset camera position & size"
     },
     "microphone": {
       "enabled": "Enable microphone",

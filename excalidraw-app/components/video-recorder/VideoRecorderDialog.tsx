@@ -242,6 +242,70 @@ export const VideoRecorderDialog = ({
               </select>
             </div>
             <div className="video-recorder-dialog__setting">
+              <label htmlFor="video-recorder-camera-width">
+                {t("videoRecorder.camera.sizeWidth")} (
+                {Math.round(settings.camera.width * 100)}%)
+              </label>
+              <input
+                id="video-recorder-camera-width"
+                type="range"
+                min={10}
+                max={80}
+                step={1}
+                value={Math.round(settings.camera.width * 100)}
+                onChange={(event) => {
+                  const width = Number(event.target.value) / 100;
+                  if (settings.camera.shape === "circle") {
+                    onCameraLayoutChange({ width, height: width });
+                  } else {
+                    onCameraLayoutChange({ width });
+                  }
+                }}
+                disabled={!settings.cameraEnabled}
+              />
+            </div>
+            <div className="video-recorder-dialog__setting">
+              <label htmlFor="video-recorder-camera-height">
+                {t("videoRecorder.camera.sizeHeight")} (
+                {Math.round(settings.camera.height * 100)}%)
+              </label>
+              <input
+                id="video-recorder-camera-height"
+                type="range"
+                min={10}
+                max={80}
+                step={1}
+                value={Math.round(settings.camera.height * 100)}
+                onChange={(event) => {
+                  const height = Number(event.target.value) / 100;
+                  if (settings.camera.shape === "circle") {
+                    onCameraLayoutChange({ width: height, height });
+                  } else {
+                    onCameraLayoutChange({ height });
+                  }
+                }}
+                disabled={!settings.cameraEnabled}
+              />
+            </div>
+            <div className="video-recorder-dialog__setting">
+              <label>{t("videoRecorder.camera.layout")}</label>
+              <FilledButton
+                variant="outlined"
+                label={t("videoRecorder.camera.resetLayout")}
+                onClick={() =>
+                  onCameraLayoutChange({
+                    x: 0.72,
+                    y: 0.67,
+                    width: 0.24,
+                    height: 0.24,
+                  })
+                }
+                disabled={!settings.cameraEnabled}
+              >
+                {t("videoRecorder.camera.resetLayout")}
+              </FilledButton>
+            </div>
+            <div className="video-recorder-dialog__setting">
               <label htmlFor="video-recorder-mic-enabled">
                 {t("videoRecorder.microphone.enabled")}
               </label>
