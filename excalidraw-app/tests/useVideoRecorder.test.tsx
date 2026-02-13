@@ -544,6 +544,43 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.isRequestingPermissions).toBe(false);
   });
 
+  it("clears stale selected microphone when permission fallback also fails", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const notFound = new DOMException("", "NotFoundError");
+    const getUserMedia = vi.fn().mockRejectedValue(notFound);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: true,
+        selectedAudioDeviceId: "stale-mic",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+    expect(getUserMedia).toHaveBeenNthCalledWith(1, {
+      video: false,
+      audio: { deviceId: { exact: "stale-mic" } },
+    });
+    expect(getUserMedia).toHaveBeenNthCalledWith(2, {
+      video: false,
+      audio: true,
+    });
+    expect(recorder.latest.error).toBe(mapVideoRecorderErrorMessage(notFound));
+    expect(recorder.latest.settings.selectedAudioDeviceId).toBeNull();
+    expect(recorder.latest.isRequestingPermissions).toBe(false);
+  });
+
   it("clears both selected devices when permission fallback downgrades to defaults", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const trackStop = vi.fn();
@@ -1582,6 +1619,54 @@ describe("useVideoRecorder", () => {
     expect(getUserMedia).toHaveBeenNthCalledWith(2, {
       video: true,
       audio: false,
+    });
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+    setup.cleanupCanvases();
+  });
+
+  it("clears stale selected microphone when start fallback also fails", async () => {
+    const setup = setupRecordingFlowMocks();
+    const enumerateDevices = vi.fn(async () => []);
+    const notFound = new DOMException("", "NotFoundError");
+    const getUserMedia = vi.fn().mockRejectedValue(notFound);
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: true,
+        selectedAudioDeviceId: "stale-mic",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        mapVideoRecorderErrorMessage(notFound),
+      );
+      expect(recorder.latest.settings.selectedAudioDeviceId).toBeNull();
+    });
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+    expect(getUserMedia).toHaveBeenNthCalledWith(1, {
+      audio: { deviceId: { exact: "stale-mic" } },
+      video: false,
+    });
+    expect(getUserMedia).toHaveBeenNthCalledWith(2, {
+      audio: true,
+      video: false,
     });
     expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
 
