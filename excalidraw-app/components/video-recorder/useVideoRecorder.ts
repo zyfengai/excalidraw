@@ -1079,6 +1079,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       if (!result) {
         return;
       }
+      setError(null);
       const extension = getFileExtensionFromMimeType(result.mimeType);
       const sanitizedName = sanitizeRecordingFileName(name);
       let url: string | null = null;
