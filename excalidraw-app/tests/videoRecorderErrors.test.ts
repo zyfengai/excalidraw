@@ -52,6 +52,21 @@ describe("video recorder error mapping", () => {
     );
   });
 
+  it("maps media not-supported messages without explicit error names", () => {
+    expect(
+      mapVideoRecorderErrorMessage(
+        new Error("MediaRecorder is not supported in this browser."),
+      ),
+    ).toBe("This browser does not support video recording.");
+    expect(
+      mapVideoRecorderErrorMessage(
+        new Error(
+          "The MIME type provided is not supported by this user agent.",
+        ),
+      ),
+    ).toBe("This browser does not support video recording.");
+  });
+
   it("maps legacy browser alias error names", () => {
     const permissionDeniedError = new Error("");
     permissionDeniedError.name = "PermissionDeniedError";

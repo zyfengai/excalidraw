@@ -163,10 +163,12 @@ const isMimeNotSupportedMessage = (error: unknown) => {
   return hasMimeContext;
 };
 
-const isRecoverableMediaRecorderMimeError = (error: unknown) =>
-  error instanceof TypeError ||
+const isNotSupportedError = (error: unknown) =>
   getNormalizedErrorName(error) === "notsupportederror" ||
   isMimeNotSupportedMessage(error);
+
+const isRecoverableMediaRecorderMimeError = (error: unknown) =>
+  error instanceof TypeError || isNotSupportedError(error);
 
 const getUserMediaWithDeviceFallback = async (
   primaryConstraints: MediaStreamConstraints,
@@ -601,12 +603,10 @@ const collectMediaDevices = async () => {
 };
 
 export const mapVideoRecorderErrorMessage = (error: unknown) => {
-  const errorName = getNormalizedErrorName(error);
-
   if (isPermissionDeniedError(error)) {
     return t("videoRecorder.errors.permissionDenied");
   }
-  if (errorName === "notsupportederror") {
+  if (isNotSupportedError(error)) {
     return t("videoRecorder.errors.notSupported");
   }
   if (isDeviceSelectionError(error)) {
