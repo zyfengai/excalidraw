@@ -213,6 +213,9 @@ const setupRecordingFlowMocks = (opts?: { deferStop?: boolean }) => {
         error: message ? new Error(message) : undefined,
       });
     },
+    emitRecorderStop: () => {
+      latestRecorder?.onstop?.();
+    },
     createObjectURLSpy,
     revokeObjectURLSpy,
     clickSpy,
@@ -1217,6 +1220,11 @@ describe("useVideoRecorder", () => {
       expect(recorder.latest.status).toBe("error");
       expect(recorder.latest.error).toBe("fatal recorder error");
     });
+    act(() => {
+      setup.emitRecorderStop();
+    });
+    expect(recorder.latest.status).toBe("error");
+    expect(recorder.latest.result).toBeNull();
 
     await act(async () => {
       await recorder.latest.stopRecording();

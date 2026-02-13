@@ -543,6 +543,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
 
       const recorder = new MediaRecorder(composedStream, { mimeType });
       recorderRef.current = recorder;
+      let didRecorderFail = false;
 
       recorder.ondataavailable = (event) => {
         if (event.data?.size) {
@@ -551,6 +552,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       };
 
       recorder.onerror = (event) => {
+        didRecorderFail = true;
         setError(
           event.error?.message || t("videoRecorder.errors.recordingFailed"),
         );
@@ -559,6 +561,11 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       };
 
       recorder.onstop = () => {
+        if (didRecorderFail) {
+          cleanupStreams();
+          return;
+        }
+
         const finalizedMimeType = mimeType || settings.mimeType;
         const blob = new Blob(chunksRef.current, {
           type: finalizedMimeType,
