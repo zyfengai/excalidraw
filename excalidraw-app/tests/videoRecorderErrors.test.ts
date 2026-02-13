@@ -195,6 +195,11 @@ describe("video recorder error mapping", () => {
         "Could not satisfy constraints for selected device.",
       ),
     ).toBe("Selected camera or microphone is not available.");
+    expect(
+      mapVideoRecorderErrorMessage(
+        "Could not be satisfied constraints for selected device.",
+      ),
+    ).toBe("Selected camera or microphone is not available.");
     expect(mapVideoRecorderErrorMessage("NotSupportedError")).toBe(
       "This browser does not support video recording.",
     );

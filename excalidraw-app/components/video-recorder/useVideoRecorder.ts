@@ -151,6 +151,7 @@ const isDeviceSelectionError = (error: unknown) => {
     (message.includes("overconstrained") || message.includes("constraint")) &&
     (message.includes("not satisfied") ||
       message.includes("cannot be satisfied") ||
+      message.includes("could not be satisfied") ||
       message.includes("could not satisfy") ||
       message.includes("unsatisfied") ||
       message.includes("constraint failed") ||
