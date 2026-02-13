@@ -475,6 +475,63 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
   });
 
+  it("does not clear a newly selected device if permission fallback resolves later", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const trackStop = vi.fn();
+    const permissionStream = {
+      getTracks: () => [{ stop: trackStop }],
+    } as unknown as MediaStream;
+    let resolveFallbackRequest: ((value: MediaStream) => void) | null = null;
+    const getUserMedia = vi
+      .fn()
+      .mockRejectedValueOnce(new DOMException("", "NotFoundError"))
+      .mockImplementationOnce(
+        () =>
+          new Promise<MediaStream>((resolve) => {
+            resolveFallbackRequest = resolve;
+          }),
+      );
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "stale-camera",
+      });
+    });
+
+    act(() => {
+      void recorder.latest.requestMediaPermissions();
+    });
+    await waitFor(() => {
+      expect(getUserMedia).toHaveBeenCalledTimes(2);
+    });
+
+    act(() => {
+      recorder.latest.setSettings({
+        selectedVideoDeviceId: "new-camera",
+      });
+    });
+
+    await act(async () => {
+      resolveFallbackRequest?.(permissionStream);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.error).toBeNull();
+      expect(recorder.latest.isRequestingPermissions).toBe(false);
+      expect(recorder.latest.settings.selectedVideoDeviceId).toBe("new-camera");
+    });
+    expect(trackStop).toHaveBeenCalledTimes(1);
+  });
+
   it("does not retry permission request when no specific device constraints were requested", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const notFound = new DOMException("", "NotFoundError");
@@ -1253,6 +1310,74 @@ describe("useVideoRecorder", () => {
     expect(getUserMedia).toHaveBeenNthCalledWith(2, {
       video: true,
       audio: false,
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+    });
+    expect(cameraTrackStop).toHaveBeenCalledTimes(1);
+
+    setup.cleanupCanvases();
+  });
+
+  it("does not clear a newly selected camera if start fallback resolves later", async () => {
+    const setup = setupRecordingFlowMocks();
+    const enumerateDevices = vi.fn(async () => []);
+    const cameraTrackStop = vi.fn();
+    const cameraStream = {
+      getTracks: () => [{ stop: cameraTrackStop }],
+    } as unknown as MediaStream;
+    let resolveFallbackRequest: ((value: MediaStream) => void) | null = null;
+    const getUserMedia = vi
+      .fn()
+      .mockRejectedValueOnce(new DOMException("", "NotFoundError"))
+      .mockImplementationOnce(
+        () =>
+          new Promise<MediaStream>((resolve) => {
+            resolveFallbackRequest = resolve;
+          }),
+      );
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
+    vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "stale-camera",
+      });
+    });
+
+    act(() => {
+      void recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(getUserMedia).toHaveBeenCalledTimes(2);
+    });
+
+    act(() => {
+      recorder.latest.setSettings({
+        selectedVideoDeviceId: "new-camera",
+      });
+    });
+
+    await act(async () => {
+      resolveFallbackRequest?.(cameraStream);
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+      expect(recorder.latest.error).toBeNull();
+      expect(recorder.latest.settings.selectedVideoDeviceId).toBe("new-camera");
     });
 
     await act(async () => {

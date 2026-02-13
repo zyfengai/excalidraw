@@ -501,6 +501,8 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
     permissionRequestInFlightRef.current = true;
     setIsRequestingPermissions(true);
     try {
+      const requestedVideoDeviceId = settings.selectedVideoDeviceId;
+      const requestedAudioDeviceId = settings.selectedAudioDeviceId;
       const primaryConstraints = getPermissionRequestConstraints(settings);
       const shouldFallbackToDefaultDevices =
         hasSpecificDeviceConstraint(primaryConstraints.video) ||
@@ -521,16 +523,16 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       if (usedFallback) {
         setSettingsState((prev) => ({
           ...prev,
-          selectedVideoDeviceId: hasSpecificDeviceConstraint(
-            primaryConstraints.video,
-          )
-            ? null
-            : prev.selectedVideoDeviceId,
-          selectedAudioDeviceId: hasSpecificDeviceConstraint(
-            primaryConstraints.audio,
-          )
-            ? null
-            : prev.selectedAudioDeviceId,
+          selectedVideoDeviceId:
+            requestedVideoDeviceId &&
+            prev.selectedVideoDeviceId === requestedVideoDeviceId
+              ? null
+              : prev.selectedVideoDeviceId,
+          selectedAudioDeviceId:
+            requestedAudioDeviceId &&
+            prev.selectedAudioDeviceId === requestedAudioDeviceId
+              ? null
+              : prev.selectedAudioDeviceId,
         }));
       }
       stream.getTracks().forEach((track) => track.stop());
@@ -702,24 +704,26 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       }
 
       if (settings.cameraEnabled) {
+        const requestedVideoDeviceId = settings.selectedVideoDeviceId;
         const { stream: cameraStream, usedFallback: usedCameraFallback } =
           await getUserMediaWithDeviceFallback(
             {
-              video: settings.selectedVideoDeviceId
-                ? { deviceId: { exact: settings.selectedVideoDeviceId } }
+              video: requestedVideoDeviceId
+                ? { deviceId: { exact: requestedVideoDeviceId } }
                 : true,
               audio: false,
             },
-            settings.selectedVideoDeviceId
-              ? { video: true, audio: false }
-              : undefined,
+            requestedVideoDeviceId ? { video: true, audio: false } : undefined,
           );
         cameraStreamRef.current = cameraStream;
         assertStartRequestActive();
-        if (usedCameraFallback && settings.selectedVideoDeviceId) {
+        if (usedCameraFallback && requestedVideoDeviceId) {
           setSettingsState((prev) => ({
             ...prev,
-            selectedVideoDeviceId: null,
+            selectedVideoDeviceId:
+              prev.selectedVideoDeviceId === requestedVideoDeviceId
+                ? null
+                : prev.selectedVideoDeviceId,
           }));
         }
 
@@ -734,24 +738,26 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       }
 
       if (settings.microphoneEnabled) {
+        const requestedAudioDeviceId = settings.selectedAudioDeviceId;
         const { stream: micStream, usedFallback: usedMicrophoneFallback } =
           await getUserMediaWithDeviceFallback(
             {
-              audio: settings.selectedAudioDeviceId
-                ? { deviceId: { exact: settings.selectedAudioDeviceId } }
+              audio: requestedAudioDeviceId
+                ? { deviceId: { exact: requestedAudioDeviceId } }
                 : true,
               video: false,
             },
-            settings.selectedAudioDeviceId
-              ? { audio: true, video: false }
-              : undefined,
+            requestedAudioDeviceId ? { audio: true, video: false } : undefined,
           );
         microphoneStreamRef.current = micStream;
         assertStartRequestActive();
-        if (usedMicrophoneFallback && settings.selectedAudioDeviceId) {
+        if (usedMicrophoneFallback && requestedAudioDeviceId) {
           setSettingsState((prev) => ({
             ...prev,
-            selectedAudioDeviceId: null,
+            selectedAudioDeviceId:
+              prev.selectedAudioDeviceId === requestedAudioDeviceId
+                ? null
+                : prev.selectedAudioDeviceId,
           }));
         }
       }
