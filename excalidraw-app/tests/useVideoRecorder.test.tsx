@@ -470,7 +470,7 @@ describe("useVideoRecorder", () => {
       recorder.latest.setSettings({
         aspectRatio:
           " 4 : 3 " as unknown as VideoRecorderSettings["aspectRatio"],
-        resolution: " 720P " as unknown as VideoRecorderSettings["resolution"],
+        resolution: " 720 p " as unknown as VideoRecorderSettings["resolution"],
       });
     });
 

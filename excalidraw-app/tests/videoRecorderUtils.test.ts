@@ -128,6 +128,7 @@ describe("video recorder utils", () => {
     expect(normalizeRecorderAspectRatio("weird", "16:9")).toBe("16:9");
     expect(normalizeRecorderResolution("720p", "1080p")).toBe("720p");
     expect(normalizeRecorderResolution(" 720p ", "1080p")).toBe("720p");
+    expect(normalizeRecorderResolution("720 p", "1080p")).toBe("720p");
     expect(normalizeRecorderResolution("720P", "1080p")).toBe("720p");
     expect(normalizeRecorderResolution("4k", "1080p")).toBe("1080p");
   });

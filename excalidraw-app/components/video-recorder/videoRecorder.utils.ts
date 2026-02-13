@@ -51,6 +51,7 @@ export const normalizeRecorderResolution = (
 ): VideoRecorderResolution => {
   const normalizedCandidateResolution = candidateResolution
     .trim()
+    .replace(/\s+/g, "")
     .toLowerCase();
   const matchedResolution = VIDEO_RECORDER_SUPPORTED_RESOLUTIONS.find(
     (resolution) => resolution.toLowerCase() === normalizedCandidateResolution,

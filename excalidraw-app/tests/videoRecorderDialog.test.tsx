@@ -270,7 +270,7 @@ describe("VideoRecorderDialog", () => {
       aspectRatio: " 4 : 3 " as unknown as ReturnType<
         typeof getDefaultVideoRecorderSettings
       >["aspectRatio"],
-      resolution: " 720P " as unknown as ReturnType<
+      resolution: " 720 p " as unknown as ReturnType<
         typeof getDefaultVideoRecorderSettings
       >["resolution"],
     };
