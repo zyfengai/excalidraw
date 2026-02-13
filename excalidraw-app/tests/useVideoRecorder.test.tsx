@@ -5256,7 +5256,32 @@ describe("useVideoRecorder", () => {
 
     await waitFor(() => {
       expect(recorder.latest.isRequestingPermissions).toBe(false);
-      expect(recorder.latest.error).toBeTruthy();
+      expect(recorder.latest.error).toBe(
+        "This browser does not support video recording.",
+      );
     });
+  });
+
+  it("sets error when requesting permissions without MediaRecorder support", async () => {
+    delete (globalThis as any).MediaRecorder;
+    const getUserMedia = vi.fn();
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.isRequestingPermissions).toBe(false);
+      expect(recorder.latest.error).toBe(
+        "This browser does not support video recording.",
+      );
+    });
+    expect(getUserMedia).not.toHaveBeenCalled();
   });
 });
