@@ -158,8 +158,18 @@ const areVideoRecorderSettingsEqual = (
 const isFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value);
 
-const normalizeSelectedDeviceId = (value: unknown) =>
-  typeof value === "string" && value.trim().length > 0 ? value : null;
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  !!value && typeof value === "object";
+
+const normalizeSelectedDeviceId = (value: unknown, fallback: string | null) => {
+  if (typeof value === "string") {
+    return value.trim().length > 0 ? value : null;
+  }
+  if (value === null) {
+    return null;
+  }
+  return fallback;
+};
 
 const normalizeCameraShape = (
   value: unknown,
@@ -170,35 +180,104 @@ const normalizeCameraShape = (
     : fallback;
 
 const normalizeOverlayLayoutInput = (
-  value: VideoRecorderOverlayLayout,
+  value: unknown,
   fallback: VideoRecorderOverlayLayout,
-) =>
-  clampOverlayLayout({
-    x: isFiniteNumber(value.x) ? value.x : fallback.x,
-    y: isFiniteNumber(value.y) ? value.y : fallback.y,
-    width: isFiniteNumber(value.width) ? value.width : fallback.width,
-    height: isFiniteNumber(value.height) ? value.height : fallback.height,
-    shape: normalizeCameraShape(value.shape, fallback.shape),
+) => {
+  const input = isObject(value) ? value : {};
+  return clampOverlayLayout({
+    x: isFiniteNumber(input.x) ? input.x : fallback.x,
+    y: isFiniteNumber(input.y) ? input.y : fallback.y,
+    width: isFiniteNumber(input.width) ? input.width : fallback.width,
+    height: isFiniteNumber(input.height) ? input.height : fallback.height,
+    shape: normalizeCameraShape(input.shape, fallback.shape),
   });
+};
 
 const normalizeTeleprompterInput = (
-  value: VideoRecorderSettings["teleprompter"],
+  value: unknown,
   fallback: VideoRecorderSettings["teleprompter"],
-) => ({
-  enabled:
-    typeof value.enabled === "boolean" ? value.enabled : fallback.enabled,
-  text: typeof value.text === "string" ? value.text : fallback.text,
-  opacity: clamp(
-    isFiniteNumber(value.opacity) ? value.opacity : fallback.opacity,
-    0.05,
-    1,
-  ),
-  speed: clamp(
-    isFiniteNumber(value.speed) ? value.speed : fallback.speed,
-    5,
-    250,
-  ),
-});
+) => {
+  const input = isObject(value) ? value : {};
+  return {
+    enabled:
+      typeof input.enabled === "boolean" ? input.enabled : fallback.enabled,
+    text: typeof input.text === "string" ? input.text : fallback.text,
+    opacity: clamp(
+      isFiniteNumber(input.opacity) ? input.opacity : fallback.opacity,
+      0.05,
+      1,
+    ),
+    speed: clamp(
+      isFiniteNumber(input.speed) ? input.speed : fallback.speed,
+      5,
+      250,
+    ),
+  };
+};
+
+const normalizeBoolean = (value: unknown, fallback: boolean) =>
+  typeof value === "boolean" ? value : fallback;
+
+const normalizeString = (value: unknown, fallback: string) =>
+  typeof value === "string" ? value : fallback;
+
+const normalizeNumber = (value: unknown, fallback: number) =>
+  isFiniteNumber(value) ? value : fallback;
+
+const normalizeSettingsInput = (
+  value: Partial<VideoRecorderSettings>,
+  fallback: VideoRecorderSettings,
+  supportedMimeTypes: string[],
+): VideoRecorderSettings => {
+  const cameraEnabled = normalizeBoolean(
+    value.cameraEnabled,
+    fallback.cameraEnabled,
+  );
+  const microphoneEnabled = normalizeBoolean(
+    value.microphoneEnabled,
+    fallback.microphoneEnabled,
+  );
+  const aspectRatio = normalizeRecorderAspectRatio(
+    normalizeString(value.aspectRatio, fallback.aspectRatio),
+    fallback.aspectRatio,
+  );
+  const resolution = normalizeRecorderResolution(
+    normalizeString(value.resolution, fallback.resolution),
+    fallback.resolution,
+  );
+  const fps = normalizeRecorderFps(
+    normalizeNumber(value.fps, fallback.fps),
+    fallback.fps,
+  );
+  const mimeType = normalizeRecorderMimeType(
+    normalizeString(value.mimeType, fallback.mimeType),
+    supportedMimeTypes,
+  );
+  const camera = normalizeOverlayLayoutInput(value.camera, fallback.camera);
+  const teleprompter = normalizeTeleprompterInput(
+    value.teleprompter,
+    fallback.teleprompter,
+  );
+
+  return {
+    cameraEnabled,
+    microphoneEnabled,
+    selectedVideoDeviceId: normalizeSelectedDeviceId(
+      value.selectedVideoDeviceId,
+      fallback.selectedVideoDeviceId,
+    ),
+    selectedAudioDeviceId: normalizeSelectedDeviceId(
+      value.selectedAudioDeviceId,
+      fallback.selectedAudioDeviceId,
+    ),
+    aspectRatio,
+    resolution,
+    fps,
+    mimeType,
+    camera,
+    teleprompter,
+  };
+};
 
 const areDeviceOptionListsEqual = (
   a: VideoRecorderDeviceOption[],
@@ -756,7 +835,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         | ((prev: VideoRecorderSettings) => VideoRecorderSettings),
     ) => {
       setSettingsState((prev) => {
-        const nextValue =
+        const nextValue: Partial<VideoRecorderSettings> =
           typeof next === "function"
             ? next(prev)
             : {
@@ -764,43 +843,11 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
                 ...next,
               };
 
-        const mimeType = normalizeRecorderMimeType(
-          nextValue.mimeType,
+        const normalizedSettings = normalizeSettingsInput(
+          nextValue,
+          prev,
           capabilities.supportedMimeTypes,
         );
-        const aspectRatio = normalizeRecorderAspectRatio(
-          nextValue.aspectRatio,
-          prev.aspectRatio,
-        );
-        const resolution = normalizeRecorderResolution(
-          nextValue.resolution,
-          prev.resolution,
-        );
-        const fps = normalizeRecorderFps(nextValue.fps, prev.fps);
-        const camera = normalizeOverlayLayoutInput(
-          nextValue.camera,
-          prev.camera,
-        );
-        const teleprompter = normalizeTeleprompterInput(
-          nextValue.teleprompter,
-          prev.teleprompter,
-        );
-
-        const normalizedSettings = {
-          ...nextValue,
-          mimeType,
-          aspectRatio,
-          resolution,
-          fps,
-          selectedVideoDeviceId: normalizeSelectedDeviceId(
-            nextValue.selectedVideoDeviceId,
-          ),
-          selectedAudioDeviceId: normalizeSelectedDeviceId(
-            nextValue.selectedAudioDeviceId,
-          ),
-          camera,
-          teleprompter,
-        };
 
         if (areVideoRecorderSettingsEqual(prev, normalizedSettings)) {
           return prev;

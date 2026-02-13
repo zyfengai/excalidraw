@@ -479,6 +479,65 @@ describe("useVideoRecorder", () => {
     });
   });
 
+  it("preserves previous settings when malformed top-level payload is provided", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings((settings) => ({
+        ...settings,
+        cameraEnabled: true,
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "camera-1",
+        selectedAudioDeviceId: "mic-1",
+        camera: {
+          x: 0.2,
+          y: 0.15,
+          width: 0.34,
+          height: 0.34,
+          shape: "circle",
+        },
+        teleprompter: {
+          ...settings.teleprompter,
+          enabled: true,
+          text: "hello",
+          opacity: 0.6,
+          speed: 45,
+        },
+      }));
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.settings.selectedVideoDeviceId).toBe("camera-1");
+      expect(recorder.latest.settings.selectedAudioDeviceId).toBe("mic-1");
+    });
+
+    const previousSettings = recorder.latest.settings;
+    const malformedSettings = {
+      cameraEnabled: "enabled",
+      microphoneEnabled: 1,
+      selectedVideoDeviceId: 123,
+      selectedAudioDeviceId: {},
+      aspectRatio: 42,
+      resolution: false,
+      fps: Number.NaN,
+      mimeType: 999,
+      camera: undefined,
+      teleprompter: undefined,
+    } as unknown as VideoRecorderSettings;
+
+    act(() => {
+      recorder.latest.setSettings(() => malformedSettings);
+    });
+
+    expect(recorder.latest.settings).toBe(previousSettings);
+    expect(recorder.latest.settings).toEqual(previousSettings);
+  });
+
   it("clamps camera layout updates to valid range", async () => {
     setMediaRecorderSupport(["video/webm"]);
     setMediaDevicesMock({
