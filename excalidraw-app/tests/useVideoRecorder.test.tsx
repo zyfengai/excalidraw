@@ -395,6 +395,31 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.settings.selectedAudioDeviceId).toBeNull();
   });
 
+  it("trims selected device ids in setSettings", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+    });
+
+    const recorder = renderUseVideoRecorder();
+    await waitFor(() => {
+      expect(recorder.latest.devices).toEqual({
+        videoInputs: [],
+        audioInputs: [],
+      });
+    });
+
+    act(() => {
+      recorder.latest.setSettings({
+        selectedVideoDeviceId: " camera-1 ",
+        selectedAudioDeviceId: " mic-1 ",
+      });
+    });
+
+    expect(recorder.latest.settings.selectedVideoDeviceId).toBe("camera-1");
+    expect(recorder.latest.settings.selectedAudioDeviceId).toBe("mic-1");
+  });
+
   it("coerces video profile, camera, fps and teleprompter ranges when setSettings receives out-of-range values", async () => {
     setMediaRecorderSupport(["video/webm"]);
     setMediaDevicesMock({

@@ -163,7 +163,8 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 
 const normalizeSelectedDeviceId = (value: unknown, fallback: string | null) => {
   if (typeof value === "string") {
-    return value.trim().length > 0 ? value : null;
+    const trimmedValue = value.trim();
+    return trimmedValue.length > 0 ? trimmedValue : null;
   }
   if (value === null) {
     return null;
