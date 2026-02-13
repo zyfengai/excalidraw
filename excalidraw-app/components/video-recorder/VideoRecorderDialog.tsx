@@ -9,7 +9,9 @@ import { VideoRecorderTeleprompter } from "./VideoRecorderTeleprompter";
 import { DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT } from "./videoRecorder.config";
 import {
   clampOverlayLayout,
+  normalizeRecorderAspectRatio,
   normalizeRecorderFps,
+  normalizeRecorderResolution,
   VIDEO_RECORDER_SUPPORTED_ASPECT_RATIOS,
   VIDEO_RECORDER_SUPPORTED_FPS,
   VIDEO_RECORDER_SUPPORTED_RESOLUTIONS,
@@ -198,15 +200,15 @@ export const VideoRecorderDialog = ({
     )
       ? settings.selectedAudioDeviceId
       : "";
-  const selectedAspectRatioValue =
-    VIDEO_RECORDER_SUPPORTED_ASPECT_RATIOS.find(
-      (aspectRatio) => aspectRatio === settings.aspectRatio,
-    ) || "16:9";
+  const selectedAspectRatioValue = normalizeRecorderAspectRatio(
+    settings.aspectRatio,
+    "16:9",
+  );
   const aspectRatioValue = VIDEO_RECORDER_RATIO_MAP[selectedAspectRatioValue];
-  const selectedResolutionValue =
-    VIDEO_RECORDER_SUPPORTED_RESOLUTIONS.find(
-      (resolution) => resolution === settings.resolution,
-    ) || "1080p";
+  const selectedResolutionValue = normalizeRecorderResolution(
+    settings.resolution,
+    "1080p",
+  );
   const selectedFpsValue = normalizeRecorderFps(settings.fps, 30);
   const normalizedSelectedMimeType = settings.mimeType.trim();
   const selectedMimeTypeValue =

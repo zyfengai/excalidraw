@@ -215,6 +215,33 @@ describe("VideoRecorderDialog", () => {
     expect(formatSelect.value).toBe("video/mp4");
   });
 
+  it("normalizes whitespace-wrapped video profile values for selects", () => {
+    const settings = {
+      ...getDefaultVideoRecorderSettings(),
+      cameraEnabled: true,
+      aspectRatio: " 4:3 " as unknown as ReturnType<
+        typeof getDefaultVideoRecorderSettings
+      >["aspectRatio"],
+      resolution: " 720p " as unknown as ReturnType<
+        typeof getDefaultVideoRecorderSettings
+      >["resolution"],
+    };
+
+    renderDialog({
+      settings,
+    });
+
+    const ratioSelect = screen.getByLabelText(
+      "videoRecorder.video.aspectRatio",
+    ) as HTMLSelectElement;
+    const resolutionSelect = screen.getByLabelText(
+      "videoRecorder.video.resolution",
+    ) as HTMLSelectElement;
+
+    expect(ratioSelect.value).toBe("4:3");
+    expect(resolutionSelect.value).toBe("720p");
+  });
+
   it("refreshes devices only on open transitions", () => {
     const initialRefresh = vi.fn(async () => undefined);
     const nextRefresh = vi.fn(async () => undefined);
