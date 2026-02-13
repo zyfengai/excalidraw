@@ -883,6 +883,58 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("ignores duplicate start requests in the same tick before preparing state flushes", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const { cleanup } = createExcalidrawCanvases();
+    const enumerateDevices = vi.fn(async () => []);
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    let rejectPermission: ((reason?: unknown) => void) | null = null;
+    const getUserMedia = vi.fn(
+      () =>
+        new Promise<MediaStream>((_resolve, reject) => {
+          rejectPermission = reject;
+        }),
+    );
+
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: false,
+      });
+    });
+
+    act(() => {
+      void recorder.latest.startRecording();
+      void recorder.latest.startRecording();
+    });
+
+    expect(getUserMedia).toHaveBeenCalledTimes(1);
+
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("preparing");
+    });
+
+    await act(async () => {
+      rejectPermission?.(new DOMException("", "NotAllowedError"));
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+    });
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(enumerateDevices).toHaveBeenCalledTimes(1);
+
+    cleanup();
+  });
+
   it("ignores start requests while paused", async () => {
     const setup = setupRecordingFlowMocks();
     const recorder = renderUseVideoRecorder();
