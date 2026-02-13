@@ -215,6 +215,64 @@ describe("useVideoRecorder", () => {
     expect(getUserMedia).toHaveBeenCalledTimes(1);
   });
 
+  it("sets error when starting recording without MediaRecorder support", async () => {
+    delete (globalThis as any).MediaRecorder;
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia: vi.fn(),
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        "This browser does not support video recording.",
+      );
+    });
+  });
+
+  it("reports canvas capture errors when excalidraw canvases are missing", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+    const getUserMedia = vi.fn();
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia,
+    });
+    document
+      .querySelectorAll(
+        ".excalidraw canvas.static, .excalidraw canvas.interactive",
+      )
+      .forEach((node) => node.remove());
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe("Unable to capture drawing canvas.");
+    });
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(getUserMedia).not.toHaveBeenCalled();
+  });
+
   it("sets error when requesting permissions without getUserMedia", async () => {
     setMediaRecorderSupport(["video/webm"]);
     setMediaDevicesMock({
