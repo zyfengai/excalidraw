@@ -76,3 +76,13 @@ export const getFileExtensionFromMimeType = (mimeType: string) => {
   }
   return "webm";
 };
+
+export const normalizeRecorderMimeType = (
+  candidateMimeType: string,
+  supportedMimeTypes: string[],
+) => {
+  if (supportedMimeTypes.includes(candidateMimeType)) {
+    return candidateMimeType;
+  }
+  return supportedMimeTypes[0] || "";
+};

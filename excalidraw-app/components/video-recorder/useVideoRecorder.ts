@@ -15,6 +15,7 @@ import {
   clampOverlayLayout,
   getFileExtensionFromMimeType,
   getVideoDimensions,
+  normalizeRecorderMimeType,
   normalizedRectToPixels,
 } from "./videoRecorder.utils";
 
@@ -241,10 +242,10 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   const [settings, setSettingsState] = useState<VideoRecorderSettings>(() => {
     const defaults = getDefaultVideoRecorderSettings();
     const loaded = loadVideoRecorderSettings();
-    const candidateMimeType = loaded.mimeType || defaults.mimeType || "";
-    const mimeType = capabilities.supportedMimeTypes.includes(candidateMimeType)
-      ? candidateMimeType
-      : capabilities.supportedMimeTypes[0] || "";
+    const mimeType = normalizeRecorderMimeType(
+      loaded.mimeType || defaults.mimeType || "",
+      capabilities.supportedMimeTypes,
+    );
 
     return {
       ...defaults,
@@ -387,11 +388,10 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
                 ...next,
               };
 
-        const mimeType = capabilities.supportedMimeTypes.includes(
+        const mimeType = normalizeRecorderMimeType(
           nextValue.mimeType,
-        )
-          ? nextValue.mimeType
-          : capabilities.supportedMimeTypes[0] || "";
+          capabilities.supportedMimeTypes,
+        );
 
         return {
           ...nextValue,

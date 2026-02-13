@@ -8,6 +8,7 @@ import {
 import {
   clampOverlayLayout,
   getFileExtensionFromMimeType,
+  normalizeRecorderMimeType,
   getVideoDimensions,
 } from "../components/video-recorder/videoRecorder.utils";
 
@@ -49,6 +50,16 @@ describe("video recorder utils", () => {
     expect(getFileExtensionFromMimeType("video/webm;codecs=vp9,opus")).toBe(
       "webm",
     );
+  });
+
+  it("normalizes mime type against browser support", () => {
+    expect(
+      normalizeRecorderMimeType("video/mp4", ["video/webm", "video/mp4"]),
+    ).toBe("video/mp4");
+    expect(normalizeRecorderMimeType("video/unknown", ["video/webm"])).toBe(
+      "video/webm",
+    );
+    expect(normalizeRecorderMimeType("video/unknown", [])).toBe("");
   });
 });
 
