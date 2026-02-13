@@ -163,6 +163,9 @@ export const VideoRecorderDialog = ({
       return;
     }
     const containerRect = container.getBoundingClientRect();
+    if (containerRect.width <= 0 || containerRect.height <= 0) {
+      return;
+    }
     interactionRef.current = {
       mode,
       startX: event.clientX,

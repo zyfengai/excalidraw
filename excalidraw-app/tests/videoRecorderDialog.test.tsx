@@ -23,6 +23,7 @@ vi.mock("@excalidraw/excalidraw/i18n", () => {
     "videoRecorder.camera.sizeWidth": "Camera width",
     "videoRecorder.camera.sizeHeight": "Camera height",
     "videoRecorder.camera.resetLayout": "Reset camera position & size",
+    "videoRecorder.preview.camera": "Camera overlay",
     "buttons.cancel": "Cancel",
   };
 
@@ -406,5 +407,47 @@ describe("VideoRecorderDialog", () => {
       width: DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT.width,
       height: DEFAULT_VIDEO_RECORDER_CAMERA_LAYOUT.height,
     });
+  });
+
+  it("ignores overlay drag when preview size is unavailable", () => {
+    const { onCameraLayoutChange } = renderDialog({
+      settings: {
+        ...getDefaultVideoRecorderSettings(),
+        cameraEnabled: true,
+      },
+    });
+
+    const preview = document.querySelector(
+      ".video-recorder-dialog__preview",
+    ) as HTMLDivElement;
+    expect(preview).not.toBeNull();
+    vi.spyOn(preview, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: 0,
+      height: 0,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    const overlay = document.querySelector(
+      ".video-recorder-dialog__camera-overlay",
+    ) as HTMLDivElement;
+    expect(overlay).not.toBeNull();
+
+    fireEvent.pointerDown(overlay, {
+      clientX: 100,
+      clientY: 100,
+    });
+    fireEvent.pointerMove(window, {
+      clientX: 220,
+      clientY: 260,
+    });
+    fireEvent.pointerUp(window);
+
+    expect(onCameraLayoutChange).toHaveBeenCalledTimes(0);
   });
 });
