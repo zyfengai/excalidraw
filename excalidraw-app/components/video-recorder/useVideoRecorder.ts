@@ -315,7 +315,13 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       renderFrameRef.current = null;
     }
 
+    const recorder = recorderRef.current;
     recorderRef.current = null;
+    if (recorder) {
+      recorder.ondataavailable = null;
+      recorder.onerror = null;
+      recorder.onstop = null;
+    }
 
     recordingStreamRef.current?.getTracks().forEach((track) => track.stop());
     recordingStreamRef.current = null;

@@ -222,6 +222,11 @@ const setupRecordingFlowMocks = (opts?: {
     emitRecorderStop: () => {
       latestRecorder?.onstop?.();
     },
+    getRecorderHandlers: () => ({
+      ondataavailable: latestRecorder?.ondataavailable,
+      onerror: latestRecorder?.onerror,
+      onstop: latestRecorder?.onstop,
+    }),
     createObjectURLSpy,
     revokeObjectURLSpy,
     clickSpy,
@@ -1358,6 +1363,40 @@ describe("useVideoRecorder", () => {
     });
     expect(setup.getStopCallCount()).toBe(1);
     expect(setup.videoTrackStop).toHaveBeenCalledTimes(1);
+
+    setup.cleanupCanvases();
+  });
+
+  it("detaches recorder callbacks on unmount", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    expect(recorder.latest.status).toBe("recording");
+    expect(setup.getRecorderHandlers()).toMatchObject({
+      ondataavailable: expect.any(Function),
+      onerror: expect.any(Function),
+      onstop: expect.any(Function),
+    });
+
+    act(() => {
+      recorder.unmount();
+    });
+
+    expect(setup.getRecorderHandlers()).toEqual({
+      ondataavailable: null,
+      onerror: null,
+      onstop: null,
+    });
 
     setup.cleanupCanvases();
   });
