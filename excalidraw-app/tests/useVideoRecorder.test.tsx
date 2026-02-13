@@ -599,6 +599,64 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("computes result duration excluding paused intervals", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1_100);
+    });
+    act(() => {
+      recorder.latest.pauseRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("paused");
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(2_000);
+    });
+    act(() => {
+      recorder.latest.resumeRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+    await act(async () => {
+      vi.advanceTimersByTime(900);
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result).toBeTruthy();
+    });
+
+    const durationMs = recorder.latest.result?.durationMs || 0;
+    expect(durationMs).toBeGreaterThanOrEqual(1_800);
+    expect(durationMs).toBeLessThan(2_400);
+
+    setup.cleanupCanvases();
+  });
+
   it("stops recording, downloads result and resets state", async () => {
     const setup = setupRecordingFlowMocks();
 
