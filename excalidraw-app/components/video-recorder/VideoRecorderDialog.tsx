@@ -87,6 +87,12 @@ export const VideoRecorderDialog = ({
   }, [isOpen, onRefreshDevices]);
 
   useEffect(() => {
+    if (!settings.cameraEnabled) {
+      interactionRef.current = null;
+    }
+  }, [settings.cameraEnabled]);
+
+  useEffect(() => {
     if (!isOpen) {
       return;
     }

@@ -521,4 +521,87 @@ describe("VideoRecorderDialog", () => {
 
     expect(onCameraLayoutChange).toHaveBeenCalledTimes(0);
   });
+
+  it("stops active drag when camera gets disabled", () => {
+    const onCameraLayoutChange = vi.fn();
+    const onRefreshDevices = vi.fn(async () => undefined);
+    const onRequestPermissions = vi.fn(async () => undefined);
+    const onStart = vi.fn(async () => undefined);
+    const onSettingsChange = vi.fn();
+    const enabledSettings = {
+      ...getDefaultVideoRecorderSettings(),
+      cameraEnabled: true,
+    };
+    const disabledSettings = {
+      ...enabledSettings,
+      cameraEnabled: false,
+    };
+
+    const { rerender } = renderDialog({
+      settings: enabledSettings,
+      onCameraLayoutChange,
+      onRefreshDevices,
+      onRequestPermissions,
+      onStart,
+    });
+
+    const preview = document.querySelector(
+      ".video-recorder-dialog__preview",
+    ) as HTMLDivElement;
+    expect(preview).not.toBeNull();
+    vi.spyOn(preview, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 1000,
+      bottom: 500,
+      width: 1000,
+      height: 500,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    const overlay = document.querySelector(
+      ".video-recorder-dialog__camera-overlay",
+    ) as HTMLDivElement;
+    expect(overlay).not.toBeNull();
+    fireEvent.pointerDown(overlay, {
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+    });
+
+    rerender(
+      <EditorJotaiProvider>
+        <UIAppStateContext.Provider value={getUIAppState()}>
+          <VideoRecorderDialog
+            isOpen={true}
+            capabilities={{
+              isSupported: true,
+              supportedMimeTypes: ["video/webm"],
+            }}
+            status="idle"
+            error={null}
+            settings={disabledSettings}
+            devices={{ videoInputs: [], audioInputs: [] }}
+            onClose={vi.fn()}
+            onRefreshDevices={onRefreshDevices}
+            onStart={onStart}
+            onRequestPermissions={onRequestPermissions}
+            isRequestingPermissions={false}
+            onSettingsChange={onSettingsChange}
+            onCameraLayoutChange={onCameraLayoutChange}
+          />
+        </UIAppStateContext.Provider>
+      </EditorJotaiProvider>,
+    );
+
+    fireEvent.pointerMove(window, {
+      clientX: 250,
+      clientY: 180,
+    });
+    fireEvent.pointerUp(window);
+
+    expect(onCameraLayoutChange).toHaveBeenCalledTimes(0);
+  });
 });
