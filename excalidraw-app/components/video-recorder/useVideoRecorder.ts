@@ -117,9 +117,17 @@ const isPermissionDeniedError = (error: unknown) => {
       message.includes("access") ||
       message.includes("camera") ||
       message.includes("microphone"));
+  const hasRequestNotAllowedSignal =
+    message.includes("not allowed by the user agent") ||
+    ((message.includes("request") || message.includes("operation")) &&
+      message.includes("not allowed") &&
+      (message.includes("user agent") ||
+        message.includes("platform") ||
+        message.includes("current context")));
   return (
     hasPermissionDeniedSignal ||
     hasPermissionBlockedSignal ||
+    hasRequestNotAllowedSignal ||
     message.includes("access denied") ||
     message.includes("permissiondismissederror") ||
     message.includes("notallowederror")

@@ -176,6 +176,11 @@ describe("video recorder error mapping", () => {
     ).toBe("Camera or microphone permission was denied.");
     expect(
       mapVideoRecorderErrorMessage(
+        "The request is not allowed by the user agent or the platform in the current context.",
+      ),
+    ).toBe("Camera or microphone permission was denied.");
+    expect(
+      mapVideoRecorderErrorMessage(
         "Requested device not found for selected input.",
       ),
     ).toBe("Selected camera or microphone is not available.");
