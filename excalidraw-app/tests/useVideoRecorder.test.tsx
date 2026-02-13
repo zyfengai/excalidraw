@@ -1868,6 +1868,98 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("ignores permission requests while recorder is paused", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+    const getUserMedia = navigator.mediaDevices
+      .getUserMedia as unknown as ReturnType<typeof vi.fn>;
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      recorder.latest.pauseRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("paused");
+    });
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    expect(recorder.latest.status).toBe("paused");
+    expect(recorder.latest.isRequestingPermissions).toBe(false);
+    expect(getUserMedia).toHaveBeenCalledTimes(0);
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+    });
+
+    setup.cleanupCanvases();
+  });
+
+  it("ignores permission requests while recorder is stopping", async () => {
+    const setup = setupRecordingFlowMocks({
+      deferStop: true,
+    });
+    const recorder = renderUseVideoRecorder();
+    const getUserMedia = navigator.mediaDevices
+      .getUserMedia as unknown as ReturnType<typeof vi.fn>;
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      void recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("stopping");
+    });
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    expect(recorder.latest.status).toBe("stopping");
+    expect(recorder.latest.isRequestingPermissions).toBe(false);
+    expect(getUserMedia).toHaveBeenCalledTimes(0);
+
+    act(() => {
+      setup.flushStop();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("handles device enumeration failures without breaking recorder state", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const enumerateDevices = vi.fn(async () => {
