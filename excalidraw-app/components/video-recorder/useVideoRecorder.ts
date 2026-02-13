@@ -131,6 +131,24 @@ const getNextNestedError = (error: unknown) => {
     }
   }
 
+  if ("causes" in error) {
+    const firstNestedCause = getFirstArrayEntry(
+      (error as { causes?: unknown }).causes,
+    );
+    if (firstNestedCause !== undefined) {
+      return firstNestedCause;
+    }
+  }
+
+  if ("reasons" in error) {
+    const firstNestedReason = getFirstArrayEntry(
+      (error as { reasons?: unknown }).reasons,
+    );
+    if (firstNestedReason !== undefined) {
+      return firstNestedReason;
+    }
+  }
+
   if (
     "detail" in error &&
     (error as { detail?: unknown }).detail !== undefined
