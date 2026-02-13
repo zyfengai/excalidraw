@@ -952,7 +952,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       setResult(null);
       setStatus("preparing");
       chunksRef.current = [];
-      startedAtRef.current = Date.now();
+      startedAtRef.current = null;
       pausedAtRef.current = null;
       pausedAccumulatedRef.current = 0;
       setElapsedMs(0);
@@ -1143,6 +1143,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         cleanupStreams();
       };
 
+      startedAtRef.current = Date.now();
       recorder.start(MEDIA_RECORDER_TIMESLICE_MS);
       setStatus("recording");
       setDialogOpen(false);

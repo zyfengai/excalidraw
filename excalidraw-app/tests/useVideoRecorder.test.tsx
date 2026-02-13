@@ -4439,6 +4439,74 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("excludes preparation delay from recorded duration", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+    const getUserMedia = navigator.mediaDevices
+      .getUserMedia as unknown as ReturnType<typeof vi.fn>;
+
+    const microphoneTrackStop = vi.fn();
+    const microphoneTrack = {
+      kind: "audio",
+      stop: microphoneTrackStop,
+    } as unknown as MediaStreamTrack;
+    const microphoneStream = {
+      getTracks: () => [microphoneTrack],
+      getAudioTracks: () => [microphoneTrack],
+    } as unknown as MediaStream;
+    let resolvePermission: ((value: MediaStream) => void) | null = null;
+    getUserMedia.mockImplementation(
+      () =>
+        new Promise<MediaStream>((resolve) => {
+          resolvePermission = resolve;
+        }),
+    );
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: true,
+      });
+    });
+
+    act(() => {
+      void recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("preparing");
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(5_000);
+      resolvePermission?.(microphoneStream);
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1_100);
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result).toBeTruthy();
+    });
+
+    const durationMs = recorder.latest.result?.durationMs || 0;
+    expect(durationMs).toBeGreaterThanOrEqual(900);
+    expect(durationMs).toBeLessThan(2_000);
+    expect(microphoneTrackStop).toHaveBeenCalledTimes(1);
+
+    setup.cleanupCanvases();
+  });
+
   it("finalizes paused recording duration without counting trailing paused time", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
