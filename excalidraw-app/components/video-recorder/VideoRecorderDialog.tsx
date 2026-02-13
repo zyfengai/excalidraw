@@ -215,10 +215,18 @@ export const VideoRecorderDialog = ({
     "1080p",
   );
   const selectedFpsValue = normalizeRecorderFps(settings.fps, 30);
-  const selectedMimeTypeValue = normalizeRecorderMimeType(
-    settings.mimeType,
-    capabilities.supportedMimeTypes,
-  );
+  const normalizedRequestedMimeType = settings.mimeType.trim();
+  const selectedMimeTypeValue =
+    normalizeRecorderMimeType(
+      settings.mimeType,
+      capabilities.supportedMimeTypes,
+    ) || normalizedRequestedMimeType;
+  const formatMimeTypeOptions =
+    capabilities.supportedMimeTypes.length > 0
+      ? capabilities.supportedMimeTypes
+      : selectedMimeTypeValue
+      ? [selectedMimeTypeValue]
+      : [];
   const isFormatDisabled =
     !capabilities.isSupported || capabilities.supportedMimeTypes.length === 0;
   const hasActiveRecordingSession =
@@ -557,7 +565,7 @@ export const VideoRecorderDialog = ({
                 }
                 disabled={isFormatDisabled}
               >
-                {capabilities.supportedMimeTypes.map((mimeType) => (
+                {formatMimeTypeOptions.map((mimeType) => (
                   <option key={mimeType} value={mimeType}>
                     {mimeType}
                   </option>

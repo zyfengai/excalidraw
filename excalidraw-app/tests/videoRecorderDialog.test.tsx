@@ -263,6 +263,31 @@ describe("VideoRecorderDialog", () => {
     expect(formatSelect.value).toBe("video/webm;codecs=vp9,opus");
   });
 
+  it("preserves trimmed mimeType when support list is unavailable", () => {
+    const settings = {
+      ...getDefaultVideoRecorderSettings(),
+      cameraEnabled: true,
+      mimeType: " video/mp4 ",
+    };
+
+    renderDialog({
+      settings,
+      capabilities: {
+        isSupported: true,
+        supportedMimeTypes: [],
+      },
+    });
+
+    const formatSelect = screen.getByLabelText(
+      "videoRecorder.video.format",
+    ) as HTMLSelectElement;
+    expect(formatSelect).toBeDisabled();
+    expect(formatSelect.value).toBe("video/mp4");
+    expect(
+      screen.getByRole("option", { name: "video/mp4" }),
+    ).toBeInTheDocument();
+  });
+
   it("normalizes whitespace-wrapped video profile values for selects", () => {
     const settings = {
       ...getDefaultVideoRecorderSettings(),
