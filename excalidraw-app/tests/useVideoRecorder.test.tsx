@@ -2672,6 +2672,7 @@ describe("useVideoRecorder", () => {
     await waitFor(() => {
       expect(recorder.latest.status).toBe("recording");
       expect(recorder.latest.error).toBeNull();
+      expect(recorder.latest.settings.mimeType).toBe("video/webm");
     });
 
     await act(async () => {

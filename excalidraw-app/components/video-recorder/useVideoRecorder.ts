@@ -1164,6 +1164,21 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       }
 
       recorderRef.current = recorder;
+      const normalizedSelectedMimeType = normalizeRecorderMimeType(
+        selectedMimeType,
+        capabilities.supportedMimeTypes,
+      );
+      setSettingsState((prev) => {
+        if (prev.mimeType === normalizedSelectedMimeType) {
+          return prev;
+        }
+        const next = {
+          ...prev,
+          mimeType: normalizedSelectedMimeType,
+        };
+        saveVideoRecorderSettings(next);
+        return next;
+      });
       let didRecorderFail = false;
 
       recorder.ondataavailable = (event) => {
