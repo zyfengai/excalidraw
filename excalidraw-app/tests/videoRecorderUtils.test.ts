@@ -85,9 +85,15 @@ describe("video recorder utils", () => {
   it("derives extension from mime type", () => {
     expect(getFileExtensionFromMimeType("video/mp4")).toBe("mp4");
     expect(getFileExtensionFromMimeType("VIDEO/MP4;CODECS=AVC1")).toBe("mp4");
+    expect(getFileExtensionFromMimeType(" video/mp4 ; codecs=avc1 ")).toBe(
+      "mp4",
+    );
     expect(getFileExtensionFromMimeType("video/webm;codecs=vp9,opus")).toBe(
       "webm",
     );
+    expect(
+      getFileExtensionFromMimeType("video/webm;codecs=vp9,mp4a.40.2"),
+    ).toBe("webm");
   });
 
   it("normalizes mime type against browser support", () => {
