@@ -550,6 +550,48 @@ describe("useVideoRecorder", () => {
     expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
+  it("ignores permission rejection after unmount without polluting logs", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    let rejectPermission: ((reason?: unknown) => void) | null = null;
+    const getUserMedia = vi.fn(
+      () =>
+        new Promise<MediaStream>((_resolve, reject) => {
+          rejectPermission = reject;
+        }),
+    );
+    const enumerateDevices = vi.fn(async () => []);
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      void recorder.latest.requestMediaPermissions();
+    });
+    await waitFor(() => {
+      expect(getUserMedia).toHaveBeenCalledTimes(1);
+      expect(recorder.latest.isRequestingPermissions).toBe(true);
+    });
+
+    act(() => {
+      recorder.unmount();
+    });
+
+    await act(async () => {
+      rejectPermission?.(new DOMException("", "NotAllowedError"));
+      await Promise.resolve();
+    });
+
+    expect(enumerateDevices).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
   it("ignores duplicate permission requests while one is in flight", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const stopTrack = vi.fn();
