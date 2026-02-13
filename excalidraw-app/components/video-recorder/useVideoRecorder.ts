@@ -77,8 +77,18 @@ const getErrorMessage = (error: unknown) => {
 const isDeviceSelectionError = (error: unknown) =>
   DEVICE_SELECTION_ERROR_NAMES.has(getErrorName(error));
 
+const isMimeNotSupportedMessage = (error: unknown) => {
+  const message = getErrorMessage(error).toLowerCase();
+  if (!message || !message.includes("mime")) {
+    return false;
+  }
+  return message.includes("unsupported") || message.includes("not supported");
+};
+
 const isRecoverableMediaRecorderMimeError = (error: unknown) =>
-  error instanceof TypeError || getErrorName(error) === "NotSupportedError";
+  error instanceof TypeError ||
+  getErrorName(error) === "NotSupportedError" ||
+  isMimeNotSupportedMessage(error);
 
 const getUserMediaWithDeviceFallback = async (
   primaryConstraints: MediaStreamConstraints,

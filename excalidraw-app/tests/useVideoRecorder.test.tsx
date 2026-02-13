@@ -99,6 +99,7 @@ const setupRecordingFlowMocks = (opts?: {
   unsupportedConstructorMimeTypes?: string[];
   typeErrorConstructorMimeTypes?: string[];
   namedNotSupportedConstructorMimeTypes?: string[];
+  messageNotSupportedConstructorMimeTypes?: string[];
   defaultConstructorMimeType?: string;
 }) => {
   const cleanupSpy = vi.fn();
@@ -172,6 +173,16 @@ const setupRecordingFlowMocks = (opts?: {
         const notSupportedError = new Error("mime type not supported");
         notSupportedError.name = "NotSupportedError";
         throw notSupportedError;
+      }
+      if (
+        options?.mimeType &&
+        opts?.messageNotSupportedConstructorMimeTypes?.includes(
+          requestedMimeType,
+        )
+      ) {
+        throw new Error(
+          "The MIME type provided is not supported by this user agent.",
+        );
       }
       if (
         options?.mimeType &&
@@ -2874,6 +2885,47 @@ describe("useVideoRecorder", () => {
     const setup = setupRecordingFlowMocks({
       supportedMimeTypes: ["video/webm;codecs=vp9,opus", "video/webm"],
       namedNotSupportedConstructorMimeTypes: [
+        "video / webm; codecs = opus, vp9",
+      ],
+    });
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+        mimeType: "video / webm; codecs = opus, vp9",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+      expect(recorder.latest.error).toBeNull();
+      expect(recorder.latest.settings.mimeType).toBe(
+        "video/webm;codecs=vp9,opus",
+      );
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result?.mimeType).toBe(
+        "video/webm;codecs=vp9,opus",
+      );
+    });
+
+    setup.cleanupCanvases();
+  });
+
+  it("falls back when raw mime option only reports unsupported mime in message", async () => {
+    const setup = setupRecordingFlowMocks({
+      supportedMimeTypes: ["video/webm;codecs=vp9,opus", "video/webm"],
+      messageNotSupportedConstructorMimeTypes: [
         "video / webm; codecs = opus, vp9",
       ],
     });
