@@ -10,6 +10,8 @@ import {
   useVideoRecorder,
 } from "../components/video-recorder/useVideoRecorder";
 
+import type { VideoRecorderSettings } from "../components/video-recorder/videoRecorder.types";
+
 const OriginalMediaRecorder = globalThis.MediaRecorder;
 const OriginalMediaStream = globalThis.MediaStream;
 const OriginalMediaDevices = navigator.mediaDevices;
@@ -365,7 +367,7 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.settings).toBe(previousSettings);
   });
 
-  it("coerces camera, fps and teleprompter ranges when setSettings receives out-of-range values", async () => {
+  it("coerces video profile, camera, fps and teleprompter ranges when setSettings receives out-of-range values", async () => {
     setMediaRecorderSupport(["video/webm"]);
     setMediaDevicesMock({
       enumerateDevices: vi.fn(async () => []),
@@ -389,6 +391,10 @@ describe("useVideoRecorder", () => {
           speed: 0,
         },
         fps: 500,
+        aspectRatio:
+          "unsupported-ratio" as unknown as VideoRecorderSettings["aspectRatio"],
+        resolution:
+          "bad-resolution" as unknown as VideoRecorderSettings["resolution"],
       }));
     });
 
@@ -398,6 +404,8 @@ describe("useVideoRecorder", () => {
       expect(recorder.latest.settings.camera.y).toBeCloseTo(0.2);
       expect(recorder.latest.settings.camera.width).toBe(0.8);
       expect(recorder.latest.settings.camera.height).toBe(0.8);
+      expect(recorder.latest.settings.aspectRatio).toBe("16:9");
+      expect(recorder.latest.settings.resolution).toBe("1080p");
       expect(recorder.latest.settings.fps).toBe(60);
       expect(recorder.latest.settings.teleprompter.opacity).toBe(1);
       expect(recorder.latest.settings.teleprompter.speed).toBe(5);

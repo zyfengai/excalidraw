@@ -17,8 +17,10 @@ import {
   getFileExtensionFromMimeType,
   getPermissionRequestConstraints,
   getVideoDimensions,
+  normalizeRecorderAspectRatio,
   normalizeRecorderMimeType,
   normalizeRecorderFps,
+  normalizeRecorderResolution,
   normalizedRectToPixels,
 } from "./videoRecorder.utils";
 
@@ -721,6 +723,14 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           nextValue.mimeType,
           capabilities.supportedMimeTypes,
         );
+        const aspectRatio = normalizeRecorderAspectRatio(
+          nextValue.aspectRatio,
+          prev.aspectRatio,
+        );
+        const resolution = normalizeRecorderResolution(
+          nextValue.resolution,
+          prev.resolution,
+        );
         const fps = normalizeRecorderFps(nextValue.fps, prev.fps);
         const camera = clampOverlayLayout(nextValue.camera);
         const teleprompter = {
@@ -732,6 +742,8 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         const normalizedSettings = {
           ...nextValue,
           mimeType,
+          aspectRatio,
+          resolution,
           fps,
           camera,
           teleprompter,

@@ -9,8 +9,10 @@ import {
   clampOverlayLayout,
   getFileExtensionFromMimeType,
   getPermissionRequestConstraints,
+  normalizeRecorderAspectRatio,
   normalizeRecorderFps,
   normalizeRecorderMimeType,
+  normalizeRecorderResolution,
   getVideoDimensions,
 } from "../components/video-recorder/videoRecorder.utils";
 import { getDefaultVideoRecorderSettings } from "../components/video-recorder/videoRecorder.config";
@@ -89,6 +91,13 @@ describe("video recorder utils", () => {
     expect(normalizeRecorderFps(120, 24)).toBe(60);
     expect(normalizeRecorderFps(29.6, 24)).toBe(30);
     expect(normalizeRecorderFps(Number.NaN, 24)).toBe(24);
+  });
+
+  it("normalizes video profile options against known values", () => {
+    expect(normalizeRecorderAspectRatio("4:3", "16:9")).toBe("4:3");
+    expect(normalizeRecorderAspectRatio("weird", "16:9")).toBe("16:9");
+    expect(normalizeRecorderResolution("720p", "1080p")).toBe("720p");
+    expect(normalizeRecorderResolution("4k", "1080p")).toBe("1080p");
   });
 
   it("builds permission constraints from settings", () => {
@@ -214,6 +223,8 @@ describe("video recorder settings storage", () => {
             speed: 0,
           },
           fps: 999,
+          aspectRatio: "invalid-ratio",
+          resolution: "invalid-resolution",
         },
       }),
     );
@@ -229,6 +240,8 @@ describe("video recorder settings storage", () => {
     expect(loaded.teleprompter.opacity).toBe(1);
     expect(loaded.teleprompter.speed).toBe(5);
     expect(loaded.fps).toBe(60);
+    expect(loaded.aspectRatio).toBe(defaults.aspectRatio);
+    expect(loaded.resolution).toBe(defaults.resolution);
   });
 
   it("returns defaults and logs when persisted json is malformed", () => {

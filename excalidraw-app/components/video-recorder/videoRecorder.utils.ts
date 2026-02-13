@@ -20,6 +20,25 @@ const RESOLUTION_BASE: Record<VideoRecorderResolution, number> = {
   "1080p": 1080,
 };
 
+export const normalizeRecorderAspectRatio = (
+  candidateAspectRatio: string,
+  fallbackAspectRatio: VideoRecorderAspectRatio,
+): VideoRecorderAspectRatio =>
+  Object.prototype.hasOwnProperty.call(
+    VIDEO_RECORDER_RATIO_MAP,
+    candidateAspectRatio,
+  )
+    ? (candidateAspectRatio as VideoRecorderAspectRatio)
+    : fallbackAspectRatio;
+
+export const normalizeRecorderResolution = (
+  candidateResolution: string,
+  fallbackResolution: VideoRecorderResolution,
+): VideoRecorderResolution =>
+  Object.prototype.hasOwnProperty.call(RESOLUTION_BASE, candidateResolution)
+    ? (candidateResolution as VideoRecorderResolution)
+    : fallbackResolution;
+
 export const getVideoDimensions = (
   aspectRatio: VideoRecorderAspectRatio,
   resolution: VideoRecorderResolution,

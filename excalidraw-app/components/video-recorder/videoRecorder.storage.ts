@@ -5,6 +5,8 @@ import {
   clampOverlayLayout,
   clamp,
   normalizeRecorderFps,
+  normalizeRecorderAspectRatio,
+  normalizeRecorderResolution,
 } from "./videoRecorder.utils";
 
 import type { VideoRecorderSettings } from "./videoRecorder.types";
@@ -27,6 +29,14 @@ const coerceSettings = (value: unknown): VideoRecorderSettings | null => {
   return {
     ...defaults,
     ...next,
+    aspectRatio: normalizeRecorderAspectRatio(
+      next.aspectRatio ?? defaults.aspectRatio,
+      defaults.aspectRatio,
+    ),
+    resolution: normalizeRecorderResolution(
+      next.resolution ?? defaults.resolution,
+      defaults.resolution,
+    ),
     mimeType: next.mimeType || defaults.mimeType,
     fps: normalizeRecorderFps(next.fps ?? defaults.fps, defaults.fps),
     camera: clampOverlayLayout({
