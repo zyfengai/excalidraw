@@ -335,6 +335,31 @@ describe("useVideoRecorder", () => {
     });
   });
 
+  it("skips settings state updates when normalized values are unchanged", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+    });
+
+    const recorder = renderUseVideoRecorder();
+    await waitFor(() => {
+      expect(recorder.latest.devices).toEqual({
+        videoInputs: [],
+        audioInputs: [],
+      });
+    });
+
+    const previousSettings = recorder.latest.settings;
+
+    act(() => {
+      recorder.latest.setSettings((settings) => ({
+        ...settings,
+      }));
+    });
+
+    expect(recorder.latest.settings).toBe(previousSettings);
+  });
+
   it("clamps camera layout updates to valid range", async () => {
     setMediaRecorderSupport(["video/webm"]);
     setMediaDevicesMock({

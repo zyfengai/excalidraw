@@ -111,6 +111,34 @@ const stopMediaStreamsTracksOnce = (
   tracksToStop.forEach((track) => track.stop());
 };
 
+const areOverlayLayoutsEqual = (
+  a: VideoRecorderOverlayLayout,
+  b: VideoRecorderOverlayLayout,
+) =>
+  a.x === b.x &&
+  a.y === b.y &&
+  a.width === b.width &&
+  a.height === b.height &&
+  a.shape === b.shape;
+
+const areVideoRecorderSettingsEqual = (
+  a: VideoRecorderSettings,
+  b: VideoRecorderSettings,
+) =>
+  a.cameraEnabled === b.cameraEnabled &&
+  a.microphoneEnabled === b.microphoneEnabled &&
+  a.selectedVideoDeviceId === b.selectedVideoDeviceId &&
+  a.selectedAudioDeviceId === b.selectedAudioDeviceId &&
+  a.aspectRatio === b.aspectRatio &&
+  a.resolution === b.resolution &&
+  a.fps === b.fps &&
+  a.mimeType === b.mimeType &&
+  a.teleprompter.enabled === b.teleprompter.enabled &&
+  a.teleprompter.text === b.teleprompter.text &&
+  a.teleprompter.opacity === b.teleprompter.opacity &&
+  a.teleprompter.speed === b.teleprompter.speed &&
+  areOverlayLayoutsEqual(a.camera, b.camera);
+
 const getExcalidrawCanvases = () => {
   const staticCanvas = document.querySelector<HTMLCanvasElement>(
     ".excalidraw canvas.static",
@@ -653,10 +681,16 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           capabilities.supportedMimeTypes,
         );
 
-        return {
+        const normalizedSettings = {
           ...nextValue,
           mimeType,
         };
+
+        if (areVideoRecorderSettingsEqual(prev, normalizedSettings)) {
+          return prev;
+        }
+
+        return normalizedSettings;
       });
     },
     [capabilities.supportedMimeTypes],
@@ -674,13 +708,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
             ? next(prev.camera)
             : { ...prev.camera, ...next };
         const camera = clampOverlayLayout(merged);
-        if (
-          camera.x === prev.camera.x &&
-          camera.y === prev.camera.y &&
-          camera.width === prev.camera.width &&
-          camera.height === prev.camera.height &&
-          camera.shape === prev.camera.shape
-        ) {
+        if (areOverlayLayoutsEqual(camera, prev.camera)) {
           return prev;
         }
         return {
