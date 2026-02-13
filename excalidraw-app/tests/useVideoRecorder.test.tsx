@@ -503,6 +503,53 @@ describe("useVideoRecorder", () => {
     expect(stopTrack).toHaveBeenCalledTimes(1);
   });
 
+  it("stops pending permission stream when request resolves after unmount", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const stopTrack = vi.fn();
+    const permissionStream = {
+      getTracks: () => [{ stop: stopTrack }],
+    } as unknown as MediaStream;
+    let resolvePermission: ((value: MediaStream) => void) | null = null;
+    const getUserMedia = vi.fn(
+      () =>
+        new Promise<MediaStream>((resolve) => {
+          resolvePermission = resolve;
+        }),
+    );
+    const enumerateDevices = vi.fn(async () => []);
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      void recorder.latest.requestMediaPermissions();
+    });
+    await waitFor(() => {
+      expect(getUserMedia).toHaveBeenCalledTimes(1);
+      expect(recorder.latest.isRequestingPermissions).toBe(true);
+    });
+
+    act(() => {
+      recorder.unmount();
+    });
+
+    await act(async () => {
+      resolvePermission?.(permissionStream);
+      await Promise.resolve();
+    });
+
+    expect(stopTrack).toHaveBeenCalledTimes(1);
+    expect(enumerateDevices).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
+
   it("ignores duplicate permission requests while one is in flight", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const stopTrack = vi.fn();
