@@ -99,6 +99,15 @@ describe("VideoRecorderControlBar", () => {
     expect(rendered.container.firstChild).toBeNull();
   });
 
+  it("renders nothing for completed status without result payload", () => {
+    const { rendered } = renderControlBar({
+      status: "completed",
+      result: null,
+    });
+
+    expect(rendered.container.firstChild).toBeNull();
+  });
+
   it("renders recording controls and supports pause/stop", () => {
     const { onPause, onStop } = renderControlBar({
       status: "recording",
@@ -133,6 +142,19 @@ describe("VideoRecorderControlBar", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Resume recording/i }));
     expect(onResume).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not render teleprompter overlay for empty prompt text", () => {
+    renderControlBar({
+      status: "paused",
+      teleprompterEnabled: true,
+      teleprompterText: "   ",
+    });
+
+    expect(screen.queryByText("line one")).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /Resume recording/i }),
+    ).toBeVisible();
   });
 
   it("renders completed actions with duration and supports reset flow", () => {
