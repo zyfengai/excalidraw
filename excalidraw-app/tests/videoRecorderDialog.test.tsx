@@ -153,6 +153,33 @@ describe("VideoRecorderDialog", () => {
     expect(microphoneSelect.value).toBe("");
   });
 
+  it("normalizes whitespace-wrapped selected device ids in selectors", () => {
+    const settings = {
+      ...getDefaultVideoRecorderSettings(),
+      cameraEnabled: true,
+      selectedVideoDeviceId: " camera-1 ",
+      selectedAudioDeviceId: " mic-1 ",
+    };
+
+    renderDialog({
+      settings,
+      devices: {
+        videoInputs: [{ deviceId: "camera-1", label: "Camera 1" }],
+        audioInputs: [{ deviceId: "mic-1", label: "Mic 1" }],
+      },
+    });
+
+    const cameraSelect = screen.getByLabelText(
+      "videoRecorder.camera.device",
+    ) as HTMLSelectElement;
+    const microphoneSelect = screen.getByLabelText(
+      "videoRecorder.microphone.device",
+    ) as HTMLSelectElement;
+
+    expect(cameraSelect.value).toBe("camera-1");
+    expect(microphoneSelect.value).toBe("mic-1");
+  });
+
   it("falls back to supported video profile values when settings are invalid", () => {
     const settings = {
       ...getDefaultVideoRecorderSettings(),

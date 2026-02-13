@@ -186,20 +186,24 @@ export const VideoRecorderDialog = ({
     return null;
   }
 
+  const normalizedSelectedVideoDeviceId =
+    settings.selectedVideoDeviceId?.trim() || null;
+  const normalizedSelectedAudioDeviceId =
+    settings.selectedAudioDeviceId?.trim() || null;
   const supportedFpsValues = VIDEO_RECORDER_SUPPORTED_FPS;
   const selectedVideoDeviceValue =
-    settings.selectedVideoDeviceId &&
+    normalizedSelectedVideoDeviceId &&
     devices.videoInputs.some(
-      (device) => device.deviceId === settings.selectedVideoDeviceId,
+      (device) => device.deviceId === normalizedSelectedVideoDeviceId,
     )
-      ? settings.selectedVideoDeviceId
+      ? normalizedSelectedVideoDeviceId
       : "";
   const selectedAudioDeviceValue =
-    settings.selectedAudioDeviceId &&
+    normalizedSelectedAudioDeviceId &&
     devices.audioInputs.some(
-      (device) => device.deviceId === settings.selectedAudioDeviceId,
+      (device) => device.deviceId === normalizedSelectedAudioDeviceId,
     )
-      ? settings.selectedAudioDeviceId
+      ? normalizedSelectedAudioDeviceId
       : "";
   const selectedAspectRatioValue = normalizeRecorderAspectRatio(
     settings.aspectRatio,
