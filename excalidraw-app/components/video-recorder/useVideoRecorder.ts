@@ -223,14 +223,15 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   const [settings, setSettingsState] = useState<VideoRecorderSettings>(() => {
     const defaults = getDefaultVideoRecorderSettings();
     const loaded = loadVideoRecorderSettings();
+    const candidateMimeType = loaded.mimeType || defaults.mimeType || "";
+    const mimeType = capabilities.supportedMimeTypes.includes(candidateMimeType)
+      ? candidateMimeType
+      : capabilities.supportedMimeTypes[0] || "";
+
     return {
       ...defaults,
       ...loaded,
-      mimeType:
-        loaded.mimeType ||
-        defaults.mimeType ||
-        capabilities.supportedMimeTypes[0] ||
-        "",
+      mimeType,
     };
   });
   const [status, setStatus] = useState<VideoRecorderStatus>("idle");
@@ -337,16 +338,27 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         | ((prev: VideoRecorderSettings) => VideoRecorderSettings),
     ) => {
       setSettingsState((prev) => {
-        if (typeof next === "function") {
-          return next(prev);
-        }
+        const nextValue =
+          typeof next === "function"
+            ? next(prev)
+            : {
+                ...prev,
+                ...next,
+              };
+
+        const mimeType = capabilities.supportedMimeTypes.includes(
+          nextValue.mimeType,
+        )
+          ? nextValue.mimeType
+          : capabilities.supportedMimeTypes[0] || "";
+
         return {
-          ...prev,
-          ...next,
+          ...nextValue,
+          mimeType,
         };
       });
     },
-    [],
+    [capabilities.supportedMimeTypes],
   );
 
   const updateCameraLayout = useCallback(
