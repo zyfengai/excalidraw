@@ -117,8 +117,13 @@ const isDeviceSelectionError = (error: unknown) => {
     return false;
   }
 
+  const hasNoSuchDeviceSignal =
+    message.includes("no such device") ||
+    (message.includes("device id") &&
+      (message.includes("not found") || message.includes("invalid")));
   const hasNotFoundSignal =
     message.includes("notfounderror") ||
+    hasNoSuchDeviceSignal ||
     ((message.includes("device") || message.includes("input")) &&
       (message.includes("not found") ||
         message.includes("cannot find") ||
