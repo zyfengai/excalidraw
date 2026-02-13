@@ -614,17 +614,24 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   useEffect(() => {
     const onVisibilityChange = () => {
       if (document.hidden && recorderRef.current?.state === "recording") {
-        recorderRef.current.pause();
-        setStatus("paused");
-        pausedAtRef.current = Date.now();
-        clearElapsedTimer();
+        try {
+          recorderRef.current.pause();
+          setStatus("paused");
+          pausedAtRef.current = Date.now();
+          clearElapsedTimer();
+        } catch (pauseError) {
+          console.error(pauseError);
+          setError(mapVideoRecorderErrorMessage(pauseError));
+          setStatus("error");
+          cleanupStreams();
+        }
       }
     };
 
     document.addEventListener(EVENT.VISIBILITY_CHANGE, onVisibilityChange);
     return () =>
       document.removeEventListener(EVENT.VISIBILITY_CHANGE, onVisibilityChange);
-  }, [clearElapsedTimer]);
+  }, [cleanupStreams, clearElapsedTimer]);
 
   const setSettings = useCallback(
     (

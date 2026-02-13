@@ -3603,6 +3603,47 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("switches to error when visibility auto-pause throws", async () => {
+    const setup = setupRecordingFlowMocks({ pauseThrows: true });
+    const recorder = renderUseVideoRecorder();
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    Object.defineProperty(document, "hidden", {
+      configurable: true,
+      value: true,
+    });
+    act(() => {
+      document.dispatchEvent(new Event(EVENT.VISIBILITY_CHANGE));
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe("pause failed");
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+    expect(setup.videoTrackStop).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(setup.pauseSpy).toHaveBeenCalledTimes(0);
+
+    setup.cleanupCanvases();
+  });
+
   it("freezes elapsed time when auto-paused by page visibility change", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
