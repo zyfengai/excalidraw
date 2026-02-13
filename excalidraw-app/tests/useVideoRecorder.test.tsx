@@ -475,6 +475,50 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
   });
 
+  it("clears both selected devices when permission fallback downgrades to defaults", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const trackStop = vi.fn();
+    const permissionStream = {
+      getTracks: () => [{ stop: trackStop }],
+    } as unknown as MediaStream;
+    const getUserMedia = vi
+      .fn()
+      .mockRejectedValueOnce(new DOMException("", "NotFoundError"))
+      .mockResolvedValueOnce(permissionStream);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: true,
+        selectedVideoDeviceId: "missing-camera",
+        selectedAudioDeviceId: "missing-mic",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    expect(getUserMedia).toHaveBeenNthCalledWith(1, {
+      video: { deviceId: { exact: "missing-camera" } },
+      audio: { deviceId: { exact: "missing-mic" } },
+    });
+    expect(getUserMedia).toHaveBeenNthCalledWith(2, {
+      video: true,
+      audio: true,
+    });
+    expect(trackStop).toHaveBeenCalledTimes(1);
+    expect(recorder.latest.error).toBeNull();
+    expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
+    expect(recorder.latest.settings.selectedAudioDeviceId).toBeNull();
+  });
+
   it("does not clear a newly selected device if permission fallback resolves later", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const trackStop = vi.fn();
@@ -1387,6 +1431,77 @@ describe("useVideoRecorder", () => {
       expect(recorder.latest.status).toBe("completed");
     });
     expect(cameraTrackStop).toHaveBeenCalledTimes(1);
+
+    setup.cleanupCanvases();
+  });
+
+  it("does not clear a newly selected microphone if start fallback resolves later", async () => {
+    const setup = setupRecordingFlowMocks();
+    const enumerateDevices = vi.fn(async () => []);
+    const microphoneTrackStop = vi.fn();
+    const microphoneTrack = {
+      kind: "audio",
+      stop: microphoneTrackStop,
+    } as unknown as MediaStreamTrack;
+    const microphoneStream = {
+      getTracks: () => [microphoneTrack],
+      getAudioTracks: () => [microphoneTrack],
+    } as unknown as MediaStream;
+    let resolveFallbackRequest: ((value: MediaStream) => void) | null = null;
+    const getUserMedia = vi
+      .fn()
+      .mockRejectedValueOnce(new DOMException("", "NotFoundError"))
+      .mockImplementationOnce(
+        () =>
+          new Promise<MediaStream>((resolve) => {
+            resolveFallbackRequest = resolve;
+          }),
+      );
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: true,
+        selectedAudioDeviceId: "stale-mic",
+      });
+    });
+
+    act(() => {
+      void recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(getUserMedia).toHaveBeenCalledTimes(2);
+    });
+
+    act(() => {
+      recorder.latest.setSettings({
+        selectedAudioDeviceId: "new-mic",
+      });
+    });
+
+    await act(async () => {
+      resolveFallbackRequest?.(microphoneStream);
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+      expect(recorder.latest.error).toBeNull();
+      expect(recorder.latest.settings.selectedAudioDeviceId).toBe("new-mic");
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+    });
+    expect(microphoneTrackStop).toHaveBeenCalledTimes(1);
 
     setup.cleanupCanvases();
   });
