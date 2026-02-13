@@ -4089,6 +4089,36 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("maps string event payload permission-dismissed messages to permission copy", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    expect(recorder.latest.status).toBe("recording");
+
+    act(() => {
+      setup.emitRecorderErrorEvent("Camera permission was dismissed by user.");
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        "Camera or microphone permission was denied.",
+      );
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("maps string event payload blocked-permission messages to permission copy", async () => {
     const setup = setupRecordingFlowMocks();
     const recorder = renderUseVideoRecorder();
