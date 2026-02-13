@@ -1081,14 +1081,27 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       }
       const extension = getFileExtensionFromMimeType(result.mimeType);
       const sanitizedName = sanitizeRecordingFileName(name);
-      const url = URL.createObjectURL(result.blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = `${sanitizedName}.${extension}`;
-      document.body.appendChild(anchor);
-      anchor.click();
-      document.body.removeChild(anchor);
-      URL.revokeObjectURL(url);
+      let url: string | null = null;
+      let anchor: HTMLAnchorElement | null = null;
+
+      try {
+        url = URL.createObjectURL(result.blob);
+        anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `${sanitizedName}.${extension}`;
+        document.body.appendChild(anchor);
+        anchor.click();
+      } catch (downloadError) {
+        console.error(downloadError);
+        setError(mapVideoRecorderErrorMessage(downloadError));
+      } finally {
+        if (anchor && anchor.parentNode) {
+          anchor.parentNode.removeChild(anchor);
+        }
+        if (url) {
+          URL.revokeObjectURL(url);
+        }
+      }
     },
     [result],
   );

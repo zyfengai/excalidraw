@@ -4055,6 +4055,90 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("sets error when object URL creation fails during download", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result).toBeTruthy();
+    });
+
+    setup.createObjectURLSpy.mockImplementationOnce(() => {
+      throw new Error("blob creation failed");
+    });
+
+    act(() => {
+      recorder.latest.downloadRecording("demo");
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.error).toBe("blob creation failed");
+    });
+    expect(setup.clickSpy).not.toHaveBeenCalled();
+    expect(setup.revokeObjectURLSpy).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+    setup.cleanupCanvases();
+  });
+
+  it("cleans up anchor and object URL when download click throws", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result).toBeTruthy();
+    });
+
+    const anchorCountBefore = document.querySelectorAll("a").length;
+    setup.clickSpy.mockImplementationOnce(() => {
+      throw new Error("click failed");
+    });
+
+    act(() => {
+      recorder.latest.downloadRecording("demo");
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.error).toBe("click failed");
+    });
+    expect(setup.createObjectURLSpy).toHaveBeenCalledTimes(1);
+    expect(setup.revokeObjectURLSpy).toHaveBeenCalledWith("blob:mock-url");
+    expect(document.querySelectorAll("a").length).toBe(anchorCountBefore);
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+    setup.cleanupCanvases();
+  });
+
   it("falls back to default filename when download name is blank", async () => {
     const setup = setupRecordingFlowMocks();
     const recorder = renderUseVideoRecorder();
