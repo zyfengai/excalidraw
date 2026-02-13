@@ -1233,6 +1233,47 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("does not overwrite recorder error with stop-timeout fallback", async () => {
+    vi.useFakeTimers();
+    const setup = setupRecordingFlowMocks({ deferStop: true });
+    const recorder = renderUseVideoRecorder();
+    let stopPromise: Promise<void> | null = null;
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    expect(recorder.latest.status).toBe("recording");
+
+    act(() => {
+      stopPromise = recorder.latest.stopRecording();
+    });
+    expect(recorder.latest.status).toBe("stopping");
+
+    act(() => {
+      setup.emitRecorderError("fatal recorder error");
+    });
+    expect(recorder.latest.status).toBe("error");
+    expect(recorder.latest.error).toBe("fatal recorder error");
+
+    await act(async () => {
+      vi.advanceTimersByTime(3000);
+      await stopPromise;
+    });
+    expect(recorder.latest.status).toBe("error");
+    expect(recorder.latest.error).toBe("fatal recorder error");
+    expect(recorder.latest.isRecordingActive).toBe(false);
+    expect(setup.videoTrackStop).toHaveBeenCalledTimes(1);
+
+    setup.cleanupCanvases();
+  });
+
   it("keeps completed state after successful stop even past timeout window", async () => {
     vi.useFakeTimers();
     const setup = setupRecordingFlowMocks();

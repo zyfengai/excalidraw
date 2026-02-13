@@ -284,6 +284,8 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   const permissionRequestInFlightRef = useRef(false);
   const startRecordingInFlightRef = useRef(false);
   const stopRecordingInFlightRef = useRef(false);
+  const stopRecordingTimeoutRef = useRef<number | null>(null);
+  const stopRecordingFinalizeRef = useRef<(() => void) | null>(null);
 
   const clearElapsedTimer = useCallback(() => {
     if (elapsedTimerRef.current != null) {
@@ -293,6 +295,17 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   }, []);
 
   const cleanupStreams = useCallback(() => {
+    if (stopRecordingTimeoutRef.current != null) {
+      window.clearTimeout(stopRecordingTimeoutRef.current);
+      stopRecordingTimeoutRef.current = null;
+    }
+
+    if (stopRecordingFinalizeRef.current) {
+      const finalizeStop = stopRecordingFinalizeRef.current;
+      stopRecordingFinalizeRef.current = null;
+      finalizeStop();
+    }
+
     if (renderFrameRef.current != null) {
       cancelAnimationFrame(renderFrameRef.current);
       renderFrameRef.current = null;
@@ -317,6 +330,9 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
 
     compositionCanvasRef.current = null;
     clearElapsedTimer();
+    stopRecordingInFlightRef.current = false;
+    startRecordingInFlightRef.current = false;
+    permissionRequestInFlightRef.current = false;
   }, [clearElapsedTimer]);
 
   const refreshDevices = useCallback(async () => {
@@ -693,17 +709,22 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           return;
         }
         settled = true;
+        if (stopRecordingTimeoutRef.current != null) {
+          window.clearTimeout(stopRecordingTimeoutRef.current);
+          stopRecordingTimeoutRef.current = null;
+        }
         stopRecordingInFlightRef.current = false;
+        stopRecordingFinalizeRef.current = null;
         resolve();
       };
+      stopRecordingFinalizeRef.current = finalize;
 
       const handleStop = () => {
         recorder.removeEventListener("stop", handleStop);
-        window.clearTimeout(timeoutId);
         finalize();
       };
       recorder.addEventListener("stop", handleStop);
-      const timeoutId = window.setTimeout(() => {
+      stopRecordingTimeoutRef.current = window.setTimeout(() => {
         recorder.removeEventListener("stop", handleStop);
         setError(t("videoRecorder.errors.recordingFailed"));
         setStatus("error");
@@ -714,7 +735,6 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       try {
         recorder.stop();
       } catch (stopError) {
-        window.clearTimeout(timeoutId);
         recorder.removeEventListener("stop", handleStop);
         setError(mapVideoRecorderErrorMessage(stopError));
         setStatus("error");
