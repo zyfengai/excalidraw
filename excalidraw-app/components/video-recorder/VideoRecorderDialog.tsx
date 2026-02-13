@@ -93,7 +93,7 @@ export const VideoRecorderDialog = ({
   }, [settings.cameraEnabled]);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!isOpen || !settings.cameraEnabled) {
       return;
     }
 
@@ -170,7 +170,7 @@ export const VideoRecorderDialog = ({
       window.removeEventListener("pointercancel", onPointerUp);
       interactionRef.current = null;
     };
-  }, [isOpen, onCameraLayoutChange]);
+  }, [isOpen, onCameraLayoutChange, settings.cameraEnabled]);
 
   if (!isOpen) {
     return null;
