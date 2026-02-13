@@ -61,6 +61,7 @@ const DEVICE_BUSY_ERROR_NAMES = new Set([
   "trackstarterror",
   "sourceunavailableerror",
 ]);
+const GENERIC_ERROR_NAMES = new Set(["error", "exception"]);
 const ERROR_NAME_PREFIX_REGEX = /^([a-z][a-z0-9]*error)\b/i;
 const ERROR_NAME_ANYWHERE_REGEX = /\b([a-z][a-z0-9]*error)\b/i;
 
@@ -143,7 +144,13 @@ const getErrorName = (error: unknown) => {
     visited.add(currentError);
 
     if ("name" in currentError && typeof currentError.name === "string") {
-      return currentError.name;
+      const normalizedErrorName = currentError.name.trim().toLowerCase();
+      if (
+        normalizedErrorName &&
+        !GENERIC_ERROR_NAMES.has(normalizedErrorName)
+      ) {
+        return currentError.name;
+      }
     }
 
     const nextError = getNextNestedError(currentError);
