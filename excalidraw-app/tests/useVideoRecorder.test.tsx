@@ -2311,11 +2311,13 @@ describe("useVideoRecorder", () => {
 
     act(() => {
       recorder.latest.downloadRecording("con");
+      recorder.latest.downloadRecording("con.txt");
     });
 
-    expect(setup.createObjectURLSpy).toHaveBeenCalledTimes(1);
-    expect(setup.clickSpy).toHaveBeenCalledTimes(1);
+    expect(setup.createObjectURLSpy).toHaveBeenCalledTimes(2);
+    expect(setup.clickSpy).toHaveBeenCalledTimes(2);
     expect(setup.getDownloadedFileNames()).toEqual([
+      "excalidraw-recording.webm",
       "excalidraw-recording.webm",
     ]);
     expect(setup.revokeObjectURLSpy).toHaveBeenCalledWith("blob:mock-url");
