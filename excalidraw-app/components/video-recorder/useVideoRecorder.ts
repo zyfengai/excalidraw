@@ -651,12 +651,14 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     error?: unknown;
     target?: { error?: unknown } | null;
     currentTarget?: { error?: unknown } | null;
+    srcElement?: { error?: unknown } | null;
   };
 
   return (
     eventPayload.error ??
     eventPayload.target?.error ??
     eventPayload.currentTarget?.error ??
+    eventPayload.srcElement?.error ??
     event
   );
 };

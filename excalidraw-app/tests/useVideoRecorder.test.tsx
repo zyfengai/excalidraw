@@ -3628,6 +3628,74 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("falls back to MediaRecorder currentTarget.error when target.error is missing", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      setup.emitRecorderErrorEvent({
+        currentTarget: { error: { name: "NotSupportedError" } },
+      });
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        "This browser does not support video recording.",
+      );
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
+  it("falls back to MediaRecorder srcElement.error when modern event fields are missing", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      setup.emitRecorderErrorEvent({
+        srcElement: { error: { name: "NotSupportedError" } },
+      });
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        "This browser does not support video recording.",
+      );
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("ignores duplicate start requests while recording", async () => {
     const setup = setupRecordingFlowMocks();
     const recorder = renderUseVideoRecorder();
