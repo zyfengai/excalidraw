@@ -177,7 +177,7 @@ const collectMediaDevices = async () => {
   };
 };
 
-const getErrorMessage = (error: unknown) => {
+export const mapVideoRecorderErrorMessage = (error: unknown) => {
   if (error instanceof DOMException) {
     switch (error.name) {
       case "NotAllowedError":
@@ -338,7 +338,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       stream.getTracks().forEach((track) => track.stop());
       await refreshDevices();
     } catch (permissionError) {
-      setError(getErrorMessage(permissionError));
+      setError(mapVideoRecorderErrorMessage(permissionError));
     } finally {
       setIsRequestingPermissions(false);
     }
@@ -591,7 +591,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
       await refreshDevices();
     } catch (startError) {
       console.error(startError);
-      setError(getErrorMessage(startError));
+      setError(mapVideoRecorderErrorMessage(startError));
       setStatus("error");
       cleanupStreams();
     }
