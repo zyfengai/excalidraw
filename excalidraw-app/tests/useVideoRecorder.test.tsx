@@ -393,6 +393,35 @@ describe("useVideoRecorder", () => {
     });
   });
 
+  it("keeps circle camera layout square after updates", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.updateCameraLayout({
+        shape: "circle",
+        x: 0.92,
+        y: 0.9,
+        width: 0.2,
+        height: 0.45,
+      });
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.settings.camera).toEqual({
+        x: 0.55,
+        y: 0.55,
+        width: 0.45,
+        height: 0.45,
+        shape: "circle",
+      });
+    });
+  });
+
   it("skips camera layout state updates when next layout is unchanged", async () => {
     setMediaRecorderSupport(["video/webm"]);
     setMediaDevicesMock({

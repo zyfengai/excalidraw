@@ -47,6 +47,24 @@ describe("video recorder utils", () => {
     });
   });
 
+  it("normalizes circle camera overlay layout to square bounds", () => {
+    expect(
+      clampOverlayLayout({
+        x: 0.95,
+        y: 0.92,
+        width: 0.2,
+        height: 0.45,
+        shape: "circle",
+      }),
+    ).toEqual({
+      x: 0.55,
+      y: 0.55,
+      width: 0.45,
+      height: 0.45,
+      shape: "circle",
+    });
+  });
+
   it("derives extension from mime type", () => {
     expect(getFileExtensionFromMimeType("video/mp4")).toBe("mp4");
     expect(getFileExtensionFromMimeType("video/webm;codecs=vp9,opus")).toBe(

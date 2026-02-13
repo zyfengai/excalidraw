@@ -47,8 +47,13 @@ export const clamp = (value: number, min: number, max: number) => {
 export const clampOverlayLayout = (
   layout: VideoRecorderOverlayLayout,
 ): VideoRecorderOverlayLayout => {
-  const width = clamp(layout.width, 0.1, 0.8);
-  const height = clamp(layout.height, 0.1, 0.8);
+  const normalizedWidth = clamp(layout.width, 0.1, 0.8);
+  const normalizedHeight = clamp(layout.height, 0.1, 0.8);
+  const width =
+    layout.shape === "circle"
+      ? Math.max(normalizedWidth, normalizedHeight)
+      : normalizedWidth;
+  const height = layout.shape === "circle" ? width : normalizedHeight;
   return {
     ...layout,
     width,
