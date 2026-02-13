@@ -133,6 +133,16 @@ describe("video recorder error mapping", () => {
         "Failed to construct 'MediaRecorder': The type provided is not supported.",
       ),
     ).toBe("This browser does not support video recording.");
+    expect(
+      mapVideoRecorderErrorMessage(
+        "Permission denied while accessing media input.",
+      ),
+    ).toBe("Camera or microphone permission was denied.");
+    expect(
+      mapVideoRecorderErrorMessage(
+        "Requested device not found for selected input.",
+      ),
+    ).toBe("Selected camera or microphone is not available.");
   });
 
   it("maps busy-device DOMException names", () => {
