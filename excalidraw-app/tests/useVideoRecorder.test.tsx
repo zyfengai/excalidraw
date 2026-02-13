@@ -454,6 +454,7 @@ describe("useVideoRecorder", () => {
         cameraEnabled: true,
         microphoneEnabled: false,
         selectedVideoDeviceId: "missing-camera",
+        selectedAudioDeviceId: "keep-mic",
       });
     });
 
@@ -1593,6 +1594,7 @@ describe("useVideoRecorder", () => {
         cameraEnabled: true,
         microphoneEnabled: false,
         selectedVideoDeviceId: "missing-camera",
+        selectedAudioDeviceId: "keep-mic",
       });
     });
 
@@ -1602,7 +1604,7 @@ describe("useVideoRecorder", () => {
     await waitFor(() => {
       expect(recorder.latest.status).toBe("recording");
       expect(recorder.latest.error).toBeNull();
-      expect(recorder.latest.settings.selectedAudioDeviceId).toBeNull();
+      expect(recorder.latest.settings.selectedAudioDeviceId).toBe("keep-mic");
     });
 
     expect(getUserMedia).toHaveBeenNthCalledWith(1, {
@@ -1687,6 +1689,7 @@ describe("useVideoRecorder", () => {
         cameraEnabled: true,
         microphoneEnabled: false,
         selectedVideoDeviceId: "stale-camera",
+        selectedAudioDeviceId: "keep-mic",
       });
     });
 
@@ -1700,6 +1703,7 @@ describe("useVideoRecorder", () => {
         mapVideoRecorderErrorMessage(notFound),
       );
       expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
+      expect(recorder.latest.settings.selectedAudioDeviceId).toBe("keep-mic");
     });
     expect(getUserMedia).toHaveBeenCalledTimes(2);
     expect(getUserMedia).toHaveBeenNthCalledWith(1, {
@@ -1735,6 +1739,7 @@ describe("useVideoRecorder", () => {
         cameraEnabled: false,
         microphoneEnabled: true,
         selectedAudioDeviceId: "stale-mic",
+        selectedVideoDeviceId: "keep-camera",
       });
     });
 
@@ -1748,6 +1753,9 @@ describe("useVideoRecorder", () => {
         mapVideoRecorderErrorMessage(notFound),
       );
       expect(recorder.latest.settings.selectedAudioDeviceId).toBeNull();
+      expect(recorder.latest.settings.selectedVideoDeviceId).toBe(
+        "keep-camera",
+      );
     });
     expect(getUserMedia).toHaveBeenCalledTimes(2);
     expect(getUserMedia).toHaveBeenNthCalledWith(1, {
@@ -1930,6 +1938,7 @@ describe("useVideoRecorder", () => {
         cameraEnabled: false,
         microphoneEnabled: true,
         selectedAudioDeviceId: "missing-mic",
+        selectedVideoDeviceId: "keep-camera",
       });
     });
 
@@ -1939,6 +1948,9 @@ describe("useVideoRecorder", () => {
     await waitFor(() => {
       expect(recorder.latest.status).toBe("recording");
       expect(recorder.latest.error).toBeNull();
+      expect(recorder.latest.settings.selectedVideoDeviceId).toBe(
+        "keep-camera",
+      );
     });
 
     expect(getUserMedia).toHaveBeenNthCalledWith(1, {
