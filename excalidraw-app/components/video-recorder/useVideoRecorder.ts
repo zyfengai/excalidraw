@@ -43,6 +43,23 @@ const WINDOWS_RESERVED_FILE_NAME =
 
 class StartRecordingCancelledError extends Error {}
 
+const DEVICE_SELECTION_ERROR_NAMES = new Set([
+  "NotFoundError",
+  "OverconstrainedError",
+  "ConstraintNotSatisfiedError",
+  "DevicesNotFoundError",
+]);
+const PERMISSION_DENIED_ERROR_NAMES = new Set([
+  "NotAllowedError",
+  "SecurityError",
+  "PermissionDeniedError",
+]);
+const DEVICE_BUSY_ERROR_NAMES = new Set([
+  "NotReadableError",
+  "AbortError",
+  "TrackStartError",
+]);
+
 const getErrorName = (error: unknown) => {
   if (!error || typeof error !== "object" || !("name" in error)) {
     return "";
@@ -58,8 +75,7 @@ const getErrorMessage = (error: unknown) => {
 };
 
 const isDeviceSelectionError = (error: unknown) =>
-  getErrorName(error) === "NotFoundError" ||
-  getErrorName(error) === "OverconstrainedError";
+  DEVICE_SELECTION_ERROR_NAMES.has(getErrorName(error));
 
 const isRecoverableMediaRecorderMimeError = (error: unknown) =>
   error instanceof TypeError || getErrorName(error) === "NotSupportedError";
@@ -497,20 +513,19 @@ const collectMediaDevices = async () => {
 };
 
 export const mapVideoRecorderErrorMessage = (error: unknown) => {
-  switch (getErrorName(error)) {
-    case "NotAllowedError":
-    case "SecurityError":
-      return t("videoRecorder.errors.permissionDenied");
-    case "NotSupportedError":
-      return t("videoRecorder.errors.notSupported");
-    case "NotFoundError":
-    case "OverconstrainedError":
-      return t("videoRecorder.errors.deviceNotFound");
-    case "NotReadableError":
-    case "AbortError":
-      return t("videoRecorder.errors.deviceBusy");
-    default:
-      break;
+  const errorName = getErrorName(error);
+
+  if (PERMISSION_DENIED_ERROR_NAMES.has(errorName)) {
+    return t("videoRecorder.errors.permissionDenied");
+  }
+  if (errorName === "NotSupportedError") {
+    return t("videoRecorder.errors.notSupported");
+  }
+  if (DEVICE_SELECTION_ERROR_NAMES.has(errorName)) {
+    return t("videoRecorder.errors.deviceNotFound");
+  }
+  if (DEVICE_BUSY_ERROR_NAMES.has(errorName)) {
+    return t("videoRecorder.errors.deviceBusy");
   }
 
   if (error instanceof Error) {

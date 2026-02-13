@@ -40,6 +40,26 @@ describe("video recorder error mapping", () => {
     );
   });
 
+  it("maps legacy browser alias error names", () => {
+    const permissionDeniedError = new Error("");
+    permissionDeniedError.name = "PermissionDeniedError";
+    expect(mapVideoRecorderErrorMessage(permissionDeniedError)).toBe(
+      "Camera or microphone permission was denied.",
+    );
+
+    const constraintError = new Error("");
+    constraintError.name = "ConstraintNotSatisfiedError";
+    expect(mapVideoRecorderErrorMessage(constraintError)).toBe(
+      "Selected camera or microphone is not available.",
+    );
+
+    const trackStartError = new Error("");
+    trackStartError.name = "TrackStartError";
+    expect(mapVideoRecorderErrorMessage(trackStartError)).toBe(
+      "Camera or microphone is currently busy.",
+    );
+  });
+
   it("maps busy-device DOMException names", () => {
     expect(
       mapVideoRecorderErrorMessage(new DOMException("", "NotReadableError")),
@@ -65,5 +85,10 @@ describe("video recorder error mapping", () => {
     expect(mapVideoRecorderErrorMessage("oops")).toBe(
       "Recording failed. Please try again.",
     );
+    expect(
+      mapVideoRecorderErrorMessage({
+        message: "runtime disconnected",
+      }),
+    ).toBe("runtime disconnected");
   });
 });
