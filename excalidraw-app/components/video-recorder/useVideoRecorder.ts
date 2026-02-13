@@ -207,6 +207,7 @@ const isMimeNotSupportedMessage = (error: unknown) => {
 
 const isNotSupportedError = (error: unknown) =>
   getNormalizedErrorName(error) === "notsupportederror" ||
+  getNormalizedErrorMessage(error).includes("notsupportederror") ||
   isMimeNotSupportedMessage(error);
 
 const isMimeRelatedTypeError = (error: unknown) => {

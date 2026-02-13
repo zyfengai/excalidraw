@@ -149,6 +149,9 @@ describe("video recorder error mapping", () => {
       ),
     ).toBe("This browser does not support video recording.");
     expect(
+      mapVideoRecorderErrorMessage("DOMException: NotSupportedError"),
+    ).toBe("This browser does not support video recording.");
+    expect(
       mapVideoRecorderErrorMessage(
         "Permission denied while accessing media input.",
       ),
