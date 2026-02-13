@@ -33,6 +33,7 @@ const MEDIA_RECORDER_TIMESLICE_MS = 1000;
 const STOP_RECORDING_TIMEOUT_MS = 3000;
 const INVALID_FILE_NAME_CHARS = /[\\/:*?"<>|]/g;
 const MAX_RECORDING_FILE_NAME_LENGTH = 120;
+const WINDOWS_RESERVED_FILE_NAME = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
 
 class StartRecordingCancelledError extends Error {}
 
@@ -218,6 +219,10 @@ const sanitizeRecordingFileName = (name: string) => {
     .replace(/^[-.\s]+|[-.\s]+$/g, "")
     .slice(0, MAX_RECORDING_FILE_NAME_LENGTH)
     .replace(/^[-.\s]+|[-.\s]+$/g, "");
+
+  if (WINDOWS_RESERVED_FILE_NAME.test(sanitized)) {
+    return "excalidraw-recording";
+  }
 
   return sanitized || "excalidraw-recording";
 };
