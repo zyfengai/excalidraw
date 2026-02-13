@@ -575,6 +575,9 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         return;
       }
       setError(mapVideoRecorderErrorMessage(permissionError));
+      if (isDeviceSelectionError(permissionError)) {
+        await refreshDevices();
+      }
     } finally {
       permissionRequestInFlightRef.current = false;
       if (isMountedRef.current) {

@@ -757,6 +757,45 @@ describe("useVideoRecorder", () => {
     expect(recorder.latest.isRequestingPermissions).toBe(false);
   });
 
+  it("reconciles dual-device stale selections after fallback failure when devices can be enumerated", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const notFound = new DOMException("", "NotFoundError");
+    const getUserMedia = vi.fn().mockRejectedValue(notFound);
+    const enumerateDevices = vi
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        createMockMediaDevice("videoinput", "camera-1", "Camera One"),
+        createMockMediaDevice("audioinput", "mic-1", "Microphone One"),
+      ]);
+    setMediaDevicesMock({
+      enumerateDevices,
+      getUserMedia,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: true,
+        microphoneEnabled: true,
+        selectedVideoDeviceId: "missing-camera",
+        selectedAudioDeviceId: "missing-mic",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.requestMediaPermissions();
+    });
+
+    expect(getUserMedia).toHaveBeenCalledTimes(2);
+    expect(recorder.latest.error).toBe(mapVideoRecorderErrorMessage(notFound));
+    expect(enumerateDevices).toHaveBeenCalledTimes(2);
+    expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
+    expect(recorder.latest.settings.selectedAudioDeviceId).toBeNull();
+    expect(recorder.latest.isRequestingPermissions).toBe(false);
+  });
+
   it("does not clear a newly selected device if permission fallback resolves later", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const trackStop = vi.fn();
