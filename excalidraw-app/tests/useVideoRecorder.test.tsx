@@ -657,6 +657,55 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("treats control actions as no-op when recorder is not active", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    setMediaDevicesMock({
+      enumerateDevices: vi.fn(async () => []),
+    });
+    const idleRecorder = renderUseVideoRecorder();
+
+    await act(async () => {
+      await idleRecorder.latest.stopRecording();
+    });
+    act(() => {
+      idleRecorder.latest.pauseRecording();
+      idleRecorder.latest.resumeRecording();
+    });
+    expect(idleRecorder.latest.status).toBe("idle");
+    expect(idleRecorder.latest.result).toBeNull();
+
+    const setup = setupRecordingFlowMocks();
+    const completedRecorder = renderUseVideoRecorder();
+    act(() => {
+      completedRecorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+    await act(async () => {
+      await completedRecorder.latest.startRecording();
+      await completedRecorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(completedRecorder.latest.status).toBe("completed");
+      expect(completedRecorder.latest.result).toBeTruthy();
+    });
+    const resultBefore = completedRecorder.latest.result;
+
+    await act(async () => {
+      await completedRecorder.latest.stopRecording();
+    });
+    act(() => {
+      completedRecorder.latest.pauseRecording();
+      completedRecorder.latest.resumeRecording();
+    });
+
+    expect(completedRecorder.latest.status).toBe("completed");
+    expect(completedRecorder.latest.result).toBe(resultBefore);
+
+    setup.cleanupCanvases();
+  });
+
   it("stops recording, downloads result and resets state", async () => {
     const setup = setupRecordingFlowMocks();
 
