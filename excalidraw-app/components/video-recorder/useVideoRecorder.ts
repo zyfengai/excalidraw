@@ -459,12 +459,12 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         const selectedVideoDeviceId = reconcileSelectedDeviceId(
           prev.selectedVideoDeviceId,
           mediaDevices.videoInputs,
-          !hasAudioInputs,
+          !hasAudioInputs || !prev.cameraEnabled,
         );
         const selectedAudioDeviceId = reconcileSelectedDeviceId(
           prev.selectedAudioDeviceId,
           mediaDevices.audioInputs,
-          !hasVideoInputs,
+          !hasVideoInputs || !prev.microphoneEnabled,
         );
 
         if (

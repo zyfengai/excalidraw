@@ -1137,6 +1137,40 @@ describe("useVideoRecorder", () => {
     });
   });
 
+  it("preserves selected microphone when microphone is disabled and only camera devices are available", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const enumerateDevices = vi
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        createMockMediaDevice("videoinput", "camera-1", "Camera One"),
+      ]);
+    setMediaDevicesMock({
+      enumerateDevices,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        microphoneEnabled: false,
+        selectedVideoDeviceId: "camera-1",
+        selectedAudioDeviceId: "preferred-mic",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.refreshDevices();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.settings.selectedVideoDeviceId).toBe("camera-1");
+      expect(recorder.latest.settings.selectedAudioDeviceId).toBe(
+        "preferred-mic",
+      );
+    });
+  });
+
   it("clears stale camera selection when only microphone devices are available", async () => {
     setMediaRecorderSupport(["video/webm"]);
     const enumerateDevices = vi
@@ -1153,6 +1187,7 @@ describe("useVideoRecorder", () => {
 
     act(() => {
       recorder.latest.setSettings({
+        cameraEnabled: true,
         selectedVideoDeviceId: "stale-camera",
         selectedAudioDeviceId: "mic-1",
       });
@@ -1164,6 +1199,40 @@ describe("useVideoRecorder", () => {
 
     await waitFor(() => {
       expect(recorder.latest.settings.selectedVideoDeviceId).toBeNull();
+      expect(recorder.latest.settings.selectedAudioDeviceId).toBe("mic-1");
+    });
+  });
+
+  it("preserves selected camera when camera is disabled and only microphone devices are available", async () => {
+    setMediaRecorderSupport(["video/webm"]);
+    const enumerateDevices = vi
+      .fn()
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        createMockMediaDevice("audioinput", "mic-1", "Microphone One"),
+      ]);
+    setMediaDevicesMock({
+      enumerateDevices,
+    });
+
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        selectedVideoDeviceId: "preferred-camera",
+        selectedAudioDeviceId: "mic-1",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.refreshDevices();
+    });
+
+    await waitFor(() => {
+      expect(recorder.latest.settings.selectedVideoDeviceId).toBe(
+        "preferred-camera",
+      );
       expect(recorder.latest.settings.selectedAudioDeviceId).toBe("mic-1");
     });
   });
