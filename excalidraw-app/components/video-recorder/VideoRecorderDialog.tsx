@@ -51,6 +51,7 @@ type VideoRecorderDialogProps = {
 
 type InteractionState = {
   mode: "drag" | "resize";
+  pointerId: number | null;
   startX: number;
   startY: number;
   startLayout: VideoRecorderOverlayLayout;
@@ -95,6 +96,13 @@ export const VideoRecorderDialog = ({
       if (!interaction) {
         return;
       }
+      if (
+        interaction.pointerId !== null &&
+        Number.isFinite(event.pointerId) &&
+        event.pointerId !== interaction.pointerId
+      ) {
+        return;
+      }
 
       const deltaX =
         (event.clientX - interaction.startX) / interaction.containerWidth;
@@ -126,7 +134,18 @@ export const VideoRecorderDialog = ({
       onCameraLayoutChange(clampOverlayLayout(nextLayout));
     };
 
-    const onPointerUp = () => {
+    const onPointerUp = (event: PointerEvent) => {
+      const interaction = interactionRef.current;
+      if (!interaction) {
+        return;
+      }
+      if (
+        interaction.pointerId !== null &&
+        Number.isFinite(event.pointerId) &&
+        event.pointerId !== interaction.pointerId
+      ) {
+        return;
+      }
       interactionRef.current = null;
     };
 
@@ -158,7 +177,7 @@ export const VideoRecorderDialog = ({
     mode: InteractionState["mode"],
     event: ReactPointerEvent,
   ) => {
-    if (event.button !== 0) {
+    if (event.pointerType === "mouse" && event.button !== 0) {
       return;
     }
     event.preventDefault();
@@ -173,6 +192,7 @@ export const VideoRecorderDialog = ({
     }
     interactionRef.current = {
       mode,
+      pointerId: Number.isFinite(event.pointerId) ? event.pointerId : null,
       startX: event.clientX,
       startY: event.clientY,
       startLayout: settings.camera,

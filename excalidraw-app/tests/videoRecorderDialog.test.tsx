@@ -466,6 +466,7 @@ describe("VideoRecorderDialog", () => {
 
     fireEvent.pointerDown(overlay, {
       button: 2,
+      pointerType: "mouse",
       clientX: 120,
       clientY: 80,
     });
