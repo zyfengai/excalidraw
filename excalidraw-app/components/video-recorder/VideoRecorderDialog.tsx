@@ -241,6 +241,9 @@ export const VideoRecorderDialog = ({
     if (event.pointerType === "mouse" && event.button !== 0) {
       return;
     }
+    if (!Number.isFinite(event.clientX) || !Number.isFinite(event.clientY)) {
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     const container = previewRef.current;

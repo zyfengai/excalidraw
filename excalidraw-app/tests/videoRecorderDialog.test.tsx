@@ -725,6 +725,55 @@ describe("VideoRecorderDialog", () => {
     expect(onCameraLayoutChange).toHaveBeenCalledTimes(0);
   });
 
+  it("ignores overlay drag when pointerdown coordinates are non-finite", () => {
+    const { onCameraLayoutChange } = renderDialog({
+      settings: {
+        ...getDefaultVideoRecorderSettings(),
+        cameraEnabled: true,
+      },
+    });
+
+    const preview = document.querySelector(
+      ".video-recorder-dialog__preview",
+    ) as HTMLDivElement;
+    expect(preview).not.toBeNull();
+    vi.spyOn(preview, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 1000,
+      bottom: 500,
+      width: 1000,
+      height: 500,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    const overlay = document.querySelector(
+      ".video-recorder-dialog__camera-overlay",
+    ) as HTMLDivElement;
+    expect(overlay).not.toBeNull();
+
+    fireEvent.pointerDown(overlay, {
+      button: 0,
+      pointerId: 1,
+      clientX: Number.NaN,
+      clientY: 100,
+    });
+    fireEvent.pointerMove(window, {
+      pointerId: 1,
+      clientX: 220,
+      clientY: 160,
+    });
+    fireEvent.pointerUp(window, {
+      pointerId: 1,
+      clientX: 220,
+      clientY: 160,
+    });
+
+    expect(onCameraLayoutChange).toHaveBeenCalledTimes(0);
+  });
+
   it("clears drag interaction when mouse buttons are released before move", () => {
     const { onCameraLayoutChange } = renderDialog({
       settings: {
