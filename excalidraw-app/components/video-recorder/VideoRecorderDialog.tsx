@@ -195,6 +195,9 @@ export const VideoRecorderDialog = ({
     mode: InteractionState["mode"],
     event: ReactPointerEvent,
   ) => {
+    if (!event.isPrimary) {
+      return;
+    }
     if (event.pointerType === "mouse" && event.button !== 0) {
       return;
     }

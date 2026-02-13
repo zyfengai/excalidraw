@@ -618,6 +618,58 @@ describe("VideoRecorderDialog", () => {
     expect(onCameraLayoutChange).toHaveBeenCalledTimes(0);
   });
 
+  it("ignores overlay drag on non-primary touch pointer", () => {
+    const { onCameraLayoutChange } = renderDialog({
+      settings: {
+        ...getDefaultVideoRecorderSettings(),
+        cameraEnabled: true,
+      },
+    });
+
+    const preview = document.querySelector(
+      ".video-recorder-dialog__preview",
+    ) as HTMLDivElement;
+    expect(preview).not.toBeNull();
+    vi.spyOn(preview, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 1000,
+      bottom: 500,
+      width: 1000,
+      height: 500,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    const overlay = document.querySelector(
+      ".video-recorder-dialog__camera-overlay",
+    ) as HTMLDivElement;
+    expect(overlay).not.toBeNull();
+
+    fireEvent.pointerDown(overlay, {
+      pointerType: "touch",
+      pointerId: 2,
+      isPrimary: false,
+      clientX: 100,
+      clientY: 90,
+    });
+    fireEvent.pointerMove(window, {
+      pointerType: "touch",
+      pointerId: 2,
+      clientX: 240,
+      clientY: 180,
+    });
+    fireEvent.pointerUp(window, {
+      pointerType: "touch",
+      pointerId: 2,
+      clientX: 240,
+      clientY: 180,
+    });
+
+    expect(onCameraLayoutChange).toHaveBeenCalledTimes(0);
+  });
+
   it("cancels overlay drag on pointercancel", () => {
     const { onCameraLayoutChange } = renderDialog({
       settings: {
