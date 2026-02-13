@@ -132,10 +132,12 @@ export const VideoRecorderDialog = ({
 
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", onPointerUp);
+    window.addEventListener("pointercancel", onPointerUp);
 
     return () => {
       window.removeEventListener("pointermove", onPointerMove);
       window.removeEventListener("pointerup", onPointerUp);
+      window.removeEventListener("pointercancel", onPointerUp);
       interactionRef.current = null;
     };
   }, [isOpen, onCameraLayoutChange]);

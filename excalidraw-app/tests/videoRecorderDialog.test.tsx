@@ -477,4 +477,47 @@ describe("VideoRecorderDialog", () => {
 
     expect(onCameraLayoutChange).toHaveBeenCalledTimes(0);
   });
+
+  it("cancels overlay drag on pointercancel", () => {
+    const { onCameraLayoutChange } = renderDialog({
+      settings: {
+        ...getDefaultVideoRecorderSettings(),
+        cameraEnabled: true,
+      },
+    });
+
+    const preview = document.querySelector(
+      ".video-recorder-dialog__preview",
+    ) as HTMLDivElement;
+    expect(preview).not.toBeNull();
+    vi.spyOn(preview, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 1000,
+      bottom: 500,
+      width: 1000,
+      height: 500,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    const overlay = document.querySelector(
+      ".video-recorder-dialog__camera-overlay",
+    ) as HTMLDivElement;
+    expect(overlay).not.toBeNull();
+
+    fireEvent.pointerDown(overlay, {
+      button: 0,
+      clientX: 100,
+      clientY: 100,
+    });
+    fireEvent.pointerCancel(window);
+    fireEvent.pointerMove(window, {
+      clientX: 230,
+      clientY: 180,
+    });
+
+    expect(onCameraLayoutChange).toHaveBeenCalledTimes(0);
+  });
 });
