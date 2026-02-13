@@ -3961,6 +3961,38 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("maps string event payload could-not-satisfy-constraint signals to device-not-found copy", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    expect(recorder.latest.status).toBe("recording");
+
+    act(() => {
+      setup.emitRecorderErrorEvent(
+        "Could not satisfy constraints for selected device.",
+      );
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        "Selected camera or microphone is not available.",
+      );
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("maps string event payload runtime permission denied messages to permission copy", async () => {
     const setup = setupRecordingFlowMocks();
     const recorder = renderUseVideoRecorder();
