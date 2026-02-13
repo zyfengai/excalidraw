@@ -555,6 +555,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           event.error?.message || t("videoRecorder.errors.recordingFailed"),
         );
         setStatus("error");
+        cleanupStreams();
       };
 
       recorder.onstop = () => {

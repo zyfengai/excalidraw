@@ -1192,6 +1192,47 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("keeps error state stable when control actions are invoked", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      setup.emitRecorderError("fatal recorder error");
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe("fatal recorder error");
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    act(() => {
+      recorder.latest.pauseRecording();
+      recorder.latest.resumeRecording();
+    });
+
+    expect(recorder.latest.status).toBe("error");
+    expect(recorder.latest.error).toBe("fatal recorder error");
+    expect(recorder.latest.isRecordingActive).toBe(false);
+
+    setup.cleanupCanvases();
+  });
+
   it("does not trigger download side effects when result is missing", async () => {
     setMediaRecorderSupport(["video/webm"]);
     setMediaDevicesMock({
