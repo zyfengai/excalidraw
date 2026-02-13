@@ -95,6 +95,8 @@ const setupRecordingFlowMocks = (opts?: {
   pauseThrows?: boolean;
   resumeThrows?: boolean;
   trackStopThrows?: boolean;
+  supportedMimeTypes?: string[];
+  unsupportedConstructorMimeTypes?: string[];
 }) => {
   const cleanupSpy = vi.fn();
   const pauseSpy = vi.fn();
@@ -146,7 +148,10 @@ const setupRecordingFlowMocks = (opts?: {
   globalThis.MediaStream = MockMediaStream as any;
 
   class FunctionalMediaRecorder {
-    static isTypeSupported = (mimeType: string) => mimeType.includes("webm");
+    static isTypeSupported = (mimeType: string) =>
+      opts?.supportedMimeTypes
+        ? opts.supportedMimeTypes.includes(mimeType)
+        : mimeType.includes("webm");
     state: RecordingState = "inactive";
     mimeType: string;
     ondataavailable: ((event: BlobEvent) => void) | null = null;
@@ -155,7 +160,11 @@ const setupRecordingFlowMocks = (opts?: {
     private stopListeners = new Set<() => void>();
 
     constructor(_stream: MediaStream, options?: MediaRecorderOptions) {
-      this.mimeType = options?.mimeType || "video/webm";
+      const requestedMimeType = options?.mimeType || "video/webm";
+      if (opts?.unsupportedConstructorMimeTypes?.includes(requestedMimeType)) {
+        throw new DOMException("mime type not supported", "NotSupportedError");
+      }
+      this.mimeType = requestedMimeType;
       latestRecorder = this;
     }
     start() {
@@ -2640,6 +2649,40 @@ describe("useVideoRecorder", () => {
         "This browser does not support video recording.",
       );
     });
+  });
+
+  it("falls back to another supported mimeType when constructor rejects preferred mime", async () => {
+    const setup = setupRecordingFlowMocks({
+      supportedMimeTypes: ["video/mp4", "video/webm"],
+      unsupportedConstructorMimeTypes: ["video/mp4"],
+    });
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+        mimeType: "video/mp4",
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+      expect(recorder.latest.error).toBeNull();
+    });
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result?.mimeType).toBe("video/webm");
+    });
+
+    setup.cleanupCanvases();
   });
 
   it("reports canvas capture errors when excalidraw canvases are missing", async () => {

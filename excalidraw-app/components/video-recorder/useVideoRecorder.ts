@@ -1119,12 +1119,50 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         .forEach((track) => composedStream.addTrack(track));
       recordingStreamRef.current = composedStream;
 
-      const mimeType =
-        capabilities.supportedMimeTypes.find(
-          (item) => item === settings.mimeType,
-        ) || capabilities.supportedMimeTypes[0];
+      const preferredMimeType = normalizeRecorderMimeType(
+        settings.mimeType,
+        capabilities.supportedMimeTypes,
+      );
+      const mimeTypeCandidates = [
+        preferredMimeType,
+        ...capabilities.supportedMimeTypes.filter(
+          (mimeType) => mimeType !== preferredMimeType,
+        ),
+      ];
 
-      const recorder = new MediaRecorder(composedStream, { mimeType });
+      let selectedMimeType = preferredMimeType;
+      let recorder: MediaRecorder | null = null;
+      let recorderCreationError: unknown = null;
+
+      for (const mimeType of mimeTypeCandidates) {
+        try {
+          recorder = new MediaRecorder(composedStream, { mimeType });
+          selectedMimeType = mimeType;
+          break;
+        } catch (error) {
+          recorderCreationError = error;
+          if (
+            !(
+              error instanceof DOMException &&
+              error.name === "NotSupportedError"
+            )
+          ) {
+            throw error;
+          }
+        }
+      }
+
+      if (!recorder) {
+        try {
+          recorder = new MediaRecorder(composedStream);
+        } catch {
+          throw (
+            recorderCreationError ||
+            new Error("Unable to initialize media recorder")
+          );
+        }
+      }
+
       recorderRef.current = recorder;
       let didRecorderFail = false;
 
@@ -1149,7 +1187,8 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           return;
         }
 
-        const finalizedMimeType = mimeType || settings.mimeType;
+        const finalizedMimeType =
+          recorder?.mimeType || selectedMimeType || settings.mimeType;
         const blob = new Blob(chunksRef.current, {
           type: finalizedMimeType,
         });
