@@ -166,6 +166,8 @@ const isDeviceBusyError = (error: unknown) => {
         message.includes("camera") ||
         message.includes("microphone") ||
         message.includes("source")));
+  const hasResourceBusySignal =
+    message.includes("resource busy") || message.includes("busy or locked");
 
   return (
     message.includes("notreadableerror") ||
@@ -173,7 +175,8 @@ const isDeviceBusyError = (error: unknown) => {
     message.includes("source unavailable") ||
     message.includes("device busy") ||
     hasCouldNotStartSourceSignal ||
-    hasDeviceInUseSignal
+    hasDeviceInUseSignal ||
+    hasResourceBusySignal
   );
 };
 
