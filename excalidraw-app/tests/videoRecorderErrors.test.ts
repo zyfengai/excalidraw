@@ -125,6 +125,11 @@ describe("video recorder error mapping", () => {
     ).toBe("Camera or microphone is currently busy.");
     expect(
       mapVideoRecorderErrorMessage(
+        new Error("Microphone is already in use by another application."),
+      ),
+    ).toBe("Camera or microphone is currently busy.");
+    expect(
+      mapVideoRecorderErrorMessage(
         "Could not start audio source due to another process.",
       ),
     ).toBe("Camera or microphone is currently busy.");

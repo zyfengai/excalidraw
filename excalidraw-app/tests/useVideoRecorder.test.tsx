@@ -3589,6 +3589,38 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("maps string event payload in-use messages to busy-device copy", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    expect(recorder.latest.status).toBe("recording");
+
+    act(() => {
+      setup.emitRecorderErrorEvent(
+        "Microphone is already in use by another application.",
+      );
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        "Camera or microphone is currently busy.",
+      );
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("maps string event payload runtime errors to not-supported copy", async () => {
     const setup = setupRecordingFlowMocks();
     const recorder = renderUseVideoRecorder();

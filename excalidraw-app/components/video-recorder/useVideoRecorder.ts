@@ -144,13 +144,21 @@ const isDeviceBusyError = (error: unknown) => {
     message.includes("could not start video source") ||
     message.includes("could not start audio source") ||
     (message.includes("could not start") && message.includes("source"));
+  const hasDeviceInUseSignal =
+    message.includes("already in use") ||
+    (message.includes("in use") &&
+      (message.includes("device") ||
+        message.includes("camera") ||
+        message.includes("microphone") ||
+        message.includes("source")));
 
   return (
     message.includes("notreadableerror") ||
     message.includes("trackstarterror") ||
     message.includes("source unavailable") ||
     message.includes("device busy") ||
-    hasCouldNotStartSourceSignal
+    hasCouldNotStartSourceSignal ||
+    hasDeviceInUseSignal
   );
 };
 
