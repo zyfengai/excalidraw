@@ -745,6 +745,8 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
           aspectRatio,
           resolution,
           fps,
+          selectedVideoDeviceId: nextValue.selectedVideoDeviceId || null,
+          selectedAudioDeviceId: nextValue.selectedAudioDeviceId || null,
           camera,
           teleprompter,
         };
