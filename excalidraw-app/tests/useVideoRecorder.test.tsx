@@ -4379,6 +4379,48 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("logs and preserves successful download when object URL revoke throws", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => {});
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
+      expect(recorder.latest.result).toBeTruthy();
+    });
+
+    setup.revokeObjectURLSpy.mockImplementationOnce(() => {
+      throw new Error("revoke failed");
+    });
+
+    expect(() => {
+      act(() => {
+        recorder.latest.downloadRecording("demo");
+      });
+    }).not.toThrow();
+
+    expect(setup.createObjectURLSpy).toHaveBeenCalledTimes(1);
+    expect(setup.clickSpy).toHaveBeenCalledTimes(1);
+    expect(setup.getDownloadedFileNames()).toEqual(["demo.webm"]);
+    expect(recorder.latest.error).toBeNull();
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+
+    setup.cleanupCanvases();
+  });
+
   it("falls back to default filename when download name is blank", async () => {
     const setup = setupRecordingFlowMocks();
     const recorder = renderUseVideoRecorder();

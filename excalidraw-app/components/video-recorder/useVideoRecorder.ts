@@ -1174,10 +1174,18 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         setError(mapVideoRecorderErrorMessage(downloadError));
       } finally {
         if (anchor && anchor.parentNode) {
-          anchor.parentNode.removeChild(anchor);
+          try {
+            anchor.parentNode.removeChild(anchor);
+          } catch (removeError) {
+            console.error(removeError);
+          }
         }
         if (url) {
-          URL.revokeObjectURL(url);
+          try {
+            URL.revokeObjectURL(url);
+          } catch (revokeError) {
+            console.error(revokeError);
+          }
         }
       }
     },
