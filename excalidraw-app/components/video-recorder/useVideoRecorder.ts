@@ -32,6 +32,7 @@ import type {
 const MEDIA_RECORDER_TIMESLICE_MS = 1000;
 const STOP_RECORDING_TIMEOUT_MS = 3000;
 const INVALID_FILE_NAME_CHARS = /[\\/:*?"<>|]/g;
+const MAX_RECORDING_FILE_NAME_LENGTH = 120;
 
 class StartRecordingCancelledError extends Error {}
 
@@ -214,6 +215,8 @@ const sanitizeRecordingFileName = (name: string) => {
     .replace(INVALID_FILE_NAME_CHARS, "-")
     .replace(/\s+/g, " ")
     .replace(/-+/g, "-")
+    .replace(/^[-.\s]+|[-.\s]+$/g, "")
+    .slice(0, MAX_RECORDING_FILE_NAME_LENGTH)
     .replace(/^[-.\s]+|[-.\s]+$/g, "");
 
   return sanitized || "excalidraw-recording";
