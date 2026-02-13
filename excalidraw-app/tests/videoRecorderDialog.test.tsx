@@ -451,6 +451,49 @@ describe("VideoRecorderDialog", () => {
     expect(onCameraLayoutChange).toHaveBeenCalledTimes(0);
   });
 
+  it("ignores overlay drag when preview size is non-finite", () => {
+    const { onCameraLayoutChange } = renderDialog({
+      settings: {
+        ...getDefaultVideoRecorderSettings(),
+        cameraEnabled: true,
+      },
+    });
+
+    const preview = document.querySelector(
+      ".video-recorder-dialog__preview",
+    ) as HTMLDivElement;
+    expect(preview).not.toBeNull();
+    vi.spyOn(preview, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: Number.NaN,
+      height: 400,
+      toJSON: () => ({}),
+    } as DOMRect);
+
+    const overlay = document.querySelector(
+      ".video-recorder-dialog__camera-overlay",
+    ) as HTMLDivElement;
+    expect(overlay).not.toBeNull();
+
+    fireEvent.pointerDown(overlay, {
+      button: 0,
+      clientX: 110,
+      clientY: 90,
+    });
+    fireEvent.pointerMove(window, {
+      clientX: 210,
+      clientY: 190,
+    });
+    fireEvent.pointerUp(window);
+
+    expect(onCameraLayoutChange).toHaveBeenCalledTimes(0);
+  });
+
   it("ignores overlay drag on non-primary pointer button", () => {
     const { onCameraLayoutChange } = renderDialog({
       settings: {
