@@ -113,4 +113,45 @@ describe("VideoRecorderTeleprompter", () => {
 
     expect(content().style.transform).toBe("translateY(0px)");
   });
+
+  it("stops scheduling frames when running becomes false", () => {
+    const { runNextFrame, requestAnimationFrameSpy, cancelAnimationFrameSpy } =
+      installRafMock();
+
+    const { container, rerender } = render(
+      <VideoRecorderTeleprompter
+        text="line"
+        speed={30}
+        opacity={0.7}
+        running={true}
+      />,
+    );
+
+    const content = () =>
+      container.querySelector(
+        ".video-recorder-teleprompter__content",
+      ) as HTMLDivElement;
+
+    act(() => runNextFrame(1000));
+    act(() => runNextFrame(2000));
+    const callCountBeforePause = requestAnimationFrameSpy.mock.calls.length;
+    const transformBeforePause = content().style.transform;
+
+    rerender(
+      <VideoRecorderTeleprompter
+        text="line"
+        speed={30}
+        opacity={0.7}
+        running={false}
+      />,
+    );
+
+    act(() => runNextFrame(3000));
+
+    expect(cancelAnimationFrameSpy).toHaveBeenCalledTimes(1);
+    expect(content().style.transform).toBe(transformBeforePause);
+    expect(requestAnimationFrameSpy.mock.calls.length).toBe(
+      callCountBeforePause,
+    );
+  });
 });
