@@ -93,8 +93,12 @@ const isPermissionDeniedError = (error: unknown) => {
   if (!message) {
     return false;
   }
-  return (
+  const hasPermissionDeniedSignal =
     message.includes("permission denied") ||
+    (message.includes("permission") && message.includes("denied"));
+  return (
+    hasPermissionDeniedSignal ||
+    message.includes("access denied") ||
     message.includes("permissiondismissederror") ||
     message.includes("notallowederror")
   );
