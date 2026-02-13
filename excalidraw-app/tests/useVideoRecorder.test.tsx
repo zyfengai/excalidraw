@@ -237,6 +237,7 @@ afterEach(() => {
   }
 
   localStorage.removeItem(STORAGE_KEYS.LOCAL_STORAGE_VIDEO_RECORDER);
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
@@ -480,6 +481,67 @@ describe("useVideoRecorder", () => {
     await waitFor(() => {
       expect(recorder.latest.status).toBe("completed");
       expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
+  it("freezes elapsed time while paused and continues after resume", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-01-01T00:00:00.000Z"));
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1_200);
+    });
+    const elapsedBeforePause = recorder.latest.elapsedMs;
+    expect(elapsedBeforePause).toBeGreaterThanOrEqual(1_000);
+
+    act(() => {
+      recorder.latest.pauseRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("paused");
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(2_000);
+    });
+    expect(recorder.latest.elapsedMs).toBe(elapsedBeforePause);
+
+    act(() => {
+      recorder.latest.resumeRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(1_000);
+    });
+    expect(recorder.latest.elapsedMs).toBeGreaterThan(elapsedBeforePause + 700);
+    expect(recorder.latest.elapsedMs).toBeLessThan(elapsedBeforePause + 1_300);
+
+    await act(async () => {
+      await recorder.latest.stopRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("completed");
     });
 
     setup.cleanupCanvases();
