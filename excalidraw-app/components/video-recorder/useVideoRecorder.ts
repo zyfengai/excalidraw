@@ -203,6 +203,38 @@ const getFirstArrayEntry = (value: unknown) => {
   return firstNonNullishEntry;
 };
 
+const getErrorPathPayload = (value: unknown) => {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  const directPathEntry = getFirstArrayEntry(
+    (value as { path?: unknown }).path,
+  );
+  if (directPathEntry !== undefined) {
+    return directPathEntry;
+  }
+
+  if (!("composedPath" in value)) {
+    return undefined;
+  }
+
+  const composedPathCandidate = (value as { composedPath?: unknown })
+    .composedPath;
+  if (typeof composedPathCandidate !== "function") {
+    return undefined;
+  }
+
+  let composedPathEntries: unknown;
+  try {
+    composedPathEntries = composedPathCandidate.call(value);
+  } catch {
+    return undefined;
+  }
+
+  return getFirstArrayEntry(composedPathEntries);
+};
+
 const getNextNestedError = (error: unknown) => {
   if (!error || typeof error !== "object") {
     return undefined;
@@ -249,6 +281,11 @@ const getNextNestedError = (error: unknown) => {
     nestedEventPayload.srcElement?.data;
   if (nestedEventTargetError !== undefined) {
     return nestedEventTargetError;
+  }
+
+  const pathError = getErrorPathPayload(error);
+  if (pathError !== undefined) {
+    return pathError;
   }
 
   if ("cause" in error && (error as { cause?: unknown }).cause !== undefined) {
@@ -1387,12 +1424,18 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     getLegacyPathPayload(event) ??
     getLegacyPathPayload(eventPayload.nativeEvent) ??
     getLegacyPathPayload(eventPayload.originalEvent);
+  const directWrappedErrorPayload =
+    getEventLikeErrorPayload(eventPayload.error) ??
+    getEventLikeErrorPayload(eventPayload.target?.error) ??
+    getEventLikeErrorPayload(eventPayload.currentTarget?.error) ??
+    getEventLikeErrorPayload(eventPayload.srcElement?.error);
   const nativeEventError = getEventLikeErrorPayload(eventPayload.nativeEvent);
   const originalEventError = getEventLikeErrorPayload(
     eventPayload.originalEvent,
   );
 
   return (
+    directWrappedErrorPayload ??
     eventPayload.error ??
     eventPayload.target?.error ??
     eventPayload.currentTarget?.error ??
