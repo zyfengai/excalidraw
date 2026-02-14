@@ -91,7 +91,48 @@ const hasNestedErrorCandidate = (value: unknown) => {
     return false;
   }
 
+  const nestedTargetPayload = value as {
+    target?: {
+      error?: unknown;
+      reason?: unknown;
+      detail?: unknown;
+      data?: unknown;
+      payload?: unknown;
+    } | null;
+    currentTarget?: {
+      error?: unknown;
+      reason?: unknown;
+      detail?: unknown;
+      data?: unknown;
+      payload?: unknown;
+    } | null;
+    srcElement?: {
+      error?: unknown;
+      reason?: unknown;
+      detail?: unknown;
+      data?: unknown;
+      payload?: unknown;
+    } | null;
+  };
+  const hasNestedEventTargetPayload =
+    nestedTargetPayload.target?.error !== undefined ||
+    nestedTargetPayload.target?.reason !== undefined ||
+    nestedTargetPayload.target?.detail !== undefined ||
+    nestedTargetPayload.target?.data !== undefined ||
+    nestedTargetPayload.target?.payload !== undefined ||
+    nestedTargetPayload.currentTarget?.error !== undefined ||
+    nestedTargetPayload.currentTarget?.reason !== undefined ||
+    nestedTargetPayload.currentTarget?.detail !== undefined ||
+    nestedTargetPayload.currentTarget?.data !== undefined ||
+    nestedTargetPayload.currentTarget?.payload !== undefined ||
+    nestedTargetPayload.srcElement?.error !== undefined ||
+    nestedTargetPayload.srcElement?.reason !== undefined ||
+    nestedTargetPayload.srcElement?.detail !== undefined ||
+    nestedTargetPayload.srcElement?.data !== undefined ||
+    nestedTargetPayload.srcElement?.payload !== undefined;
+
   return (
+    hasNestedEventTargetPayload ||
     ("cause" in value && (value as { cause?: unknown }).cause !== undefined) ||
     ("error" in value && (value as { error?: unknown }).error !== undefined) ||
     ("err" in value && (value as { err?: unknown }).err !== undefined) ||
@@ -165,6 +206,49 @@ const getFirstArrayEntry = (value: unknown) => {
 const getNextNestedError = (error: unknown) => {
   if (!error || typeof error !== "object") {
     return undefined;
+  }
+
+  const nestedEventPayload = error as {
+    target?: {
+      error?: unknown;
+      reason?: unknown;
+      detail?: unknown;
+      data?: unknown;
+      payload?: unknown;
+    } | null;
+    currentTarget?: {
+      error?: unknown;
+      reason?: unknown;
+      detail?: unknown;
+      data?: unknown;
+      payload?: unknown;
+    } | null;
+    srcElement?: {
+      error?: unknown;
+      reason?: unknown;
+      detail?: unknown;
+      data?: unknown;
+      payload?: unknown;
+    } | null;
+  };
+  const nestedEventTargetError =
+    nestedEventPayload.target?.error ??
+    nestedEventPayload.currentTarget?.error ??
+    nestedEventPayload.srcElement?.error ??
+    nestedEventPayload.target?.reason ??
+    nestedEventPayload.currentTarget?.reason ??
+    nestedEventPayload.srcElement?.reason ??
+    nestedEventPayload.target?.payload ??
+    nestedEventPayload.currentTarget?.payload ??
+    nestedEventPayload.srcElement?.payload ??
+    nestedEventPayload.target?.detail ??
+    nestedEventPayload.currentTarget?.detail ??
+    nestedEventPayload.srcElement?.detail ??
+    nestedEventPayload.target?.data ??
+    nestedEventPayload.currentTarget?.data ??
+    nestedEventPayload.srcElement?.data;
+  if (nestedEventTargetError !== undefined) {
+    return nestedEventTargetError;
   }
 
   if ("cause" in error && (error as { cause?: unknown }).cause !== undefined) {
