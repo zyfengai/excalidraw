@@ -996,10 +996,17 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     return event;
   }
 
-  const getEventLikeErrorPayload = (value: unknown) => {
+  const getEventLikeErrorPayload = (
+    value: unknown,
+    visited = new Set<unknown>(),
+  ): unknown => {
     if (!value || typeof value !== "object") {
       return undefined;
     }
+    if (visited.has(value)) {
+      return undefined;
+    }
+    visited.add(value);
 
     const getObjectErrorPayload = (candidate: unknown) => {
       if (
@@ -1018,6 +1025,8 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       detail?: unknown;
       data?: unknown;
       payload?: unknown;
+      nativeEvent?: unknown;
+      originalEvent?: unknown;
       target?: {
         error?: unknown;
         reason?: unknown;
@@ -1060,6 +1069,14 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       getObjectErrorPayload(nestedEventPayload.target?.data) ??
       getObjectErrorPayload(nestedEventPayload.currentTarget?.data) ??
       getObjectErrorPayload(nestedEventPayload.srcElement?.data);
+    const nestedNativeEventError: unknown = getEventLikeErrorPayload(
+      nestedEventPayload.nativeEvent,
+      visited,
+    );
+    const nestedOriginalEventError: unknown = getEventLikeErrorPayload(
+      nestedEventPayload.originalEvent,
+      visited,
+    );
 
     return (
       nestedEventPayload.error ??
@@ -1071,6 +1088,8 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       nestedPayloadError ??
       nestedDetailError ??
       nestedDataError ??
+      nestedNativeEventError ??
+      nestedOriginalEventError ??
       nestedEventPayload.reason ??
       nestedEventPayload.target?.reason ??
       nestedEventPayload.currentTarget?.reason ??
@@ -1086,7 +1105,9 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       nestedEventPayload.data ??
       nestedEventPayload.target?.data ??
       nestedEventPayload.currentTarget?.data ??
-      nestedEventPayload.srcElement?.data
+      nestedEventPayload.srcElement?.data ??
+      nestedEventPayload.nativeEvent ??
+      nestedEventPayload.originalEvent
     );
   };
 

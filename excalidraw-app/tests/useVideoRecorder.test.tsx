@@ -4789,6 +4789,42 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("falls back to MediaRecorder nativeEvent.nativeEvent.error when first-level wrapper has no direct payload", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      setup.emitRecorderErrorEvent({
+        nativeEvent: {
+          nativeEvent: { error: { name: "NotSupportedError" } },
+        },
+      });
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        "This browser does not support video recording.",
+      );
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("falls back to MediaRecorder originalEvent reason payload when top-level fields are missing", async () => {
     const setup = setupRecordingFlowMocks();
     const recorder = renderUseVideoRecorder();
@@ -4881,6 +4917,42 @@ describe("useVideoRecorder", () => {
       setup.emitRecorderErrorEvent({
         originalEvent: {
           currentTarget: { data: "No such device" },
+        },
+      });
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        "Selected camera or microphone is not available.",
+      );
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
+  it("falls back to MediaRecorder originalEvent.originalEvent currentTarget.data payload when wrappers are nested", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      setup.emitRecorderErrorEvent({
+        originalEvent: {
+          originalEvent: { currentTarget: { data: "No such device" } },
         },
       });
     });
