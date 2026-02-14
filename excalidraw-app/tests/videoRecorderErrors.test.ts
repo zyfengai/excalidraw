@@ -276,6 +276,11 @@ describe("video recorder error mapping", () => {
     ).toBe("Camera or microphone is currently busy.");
     expect(
       mapVideoRecorderErrorMessage(
+        new Error("NotReadableError: Failed to allocate videosource"),
+      ),
+    ).toBe("Camera or microphone is currently busy.");
+    expect(
+      mapVideoRecorderErrorMessage(
         "Could not start audio source due to another process.",
       ),
     ).toBe("Camera or microphone is currently busy.");
@@ -292,6 +297,16 @@ describe("video recorder error mapping", () => {
     expect(
       mapVideoRecorderErrorMessage(
         "Media Recorder API is unavailable in this browser.",
+      ),
+    ).toBe("This browser does not support video recording.");
+    expect(
+      mapVideoRecorderErrorMessage(
+        "ReferenceError: MediaRecorder is not defined",
+      ),
+    ).toBe("This browser does not support video recording.");
+    expect(
+      mapVideoRecorderErrorMessage(
+        "MediaRecorder is not implemented in this browser.",
       ),
     ).toBe("This browser does not support video recording.");
     expect(

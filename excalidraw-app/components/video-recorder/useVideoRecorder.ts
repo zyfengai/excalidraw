@@ -504,8 +504,11 @@ const isDeviceSelectionError = (error: unknown) => {
     (message.includes("overconstrained") || message.includes("constraint")) &&
     (message.includes("not satisfied") ||
       message.includes("cannot be satisfied") ||
+      message.includes("cannot satisfy") ||
       message.includes("could not be satisfied") ||
       message.includes("could not satisfy") ||
+      message.includes("unable to satisfy") ||
+      message.includes("could not be met") ||
       message.includes("unsatisfied") ||
       message.includes("constraint failed") ||
       message.includes("failed to satisfy"));
@@ -536,6 +539,16 @@ const isDeviceBusyError = (error: unknown) => {
         message.includes("source")));
   const hasResourceBusySignal =
     message.includes("resource busy") || message.includes("busy or locked");
+  const hasFailedAllocationSignal =
+    message.includes("failed to allocate videosource") ||
+    message.includes("failed to allocate video source") ||
+    message.includes("failed to allocate audiosource") ||
+    message.includes("failed to allocate audio source") ||
+    (message.includes("failed to allocate") &&
+      (message.includes("source") ||
+        message.includes("camera") ||
+        message.includes("microphone") ||
+        message.includes("device")));
 
   return (
     message.includes("notreadableerror") ||
@@ -544,7 +557,8 @@ const isDeviceBusyError = (error: unknown) => {
     message.includes("device busy") ||
     hasCouldNotStartSourceSignal ||
     hasDeviceInUseSignal ||
-    hasResourceBusySignal
+    hasResourceBusySignal ||
+    hasFailedAllocationSignal
   );
 };
 
@@ -556,7 +570,12 @@ const isMimeNotSupportedMessage = (error: unknown) => {
   const hasUnavailableMediaRecorderSignal =
     (message.includes("unavailable") || message.includes("not available")) &&
     (message.includes("mediarecorder") || message.includes("media recorder"));
-  if (hasUnavailableMediaRecorderSignal) {
+  const hasMissingMediaRecorderSignal =
+    (message.includes("mediarecorder") || message.includes("media recorder")) &&
+    (message.includes("is not defined") ||
+      message.includes("undefined") ||
+      message.includes("not implemented"));
+  if (hasUnavailableMediaRecorderSignal || hasMissingMediaRecorderSignal) {
     return true;
   }
   const hasUnsupportedToken =
