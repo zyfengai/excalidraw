@@ -307,153 +307,97 @@ const getNextNestedError = (error: unknown) => {
     nestedEventPayload.target?.data ??
     nestedEventPayload.currentTarget?.data ??
     nestedEventPayload.srcElement?.data;
-  if (nestedEventTargetError !== undefined) {
-    return nestedEventTargetError;
-  }
 
   const pathError = getErrorPathPayload(error);
-  if (pathError !== undefined) {
-    return pathError;
-  }
-
-  if ("cause" in error && (error as { cause?: unknown }).cause !== undefined) {
-    return (error as { cause?: unknown }).cause;
-  }
-
-  if ("error" in error && (error as { error?: unknown }).error !== undefined) {
-    return (error as { error?: unknown }).error;
-  }
-
-  if ("err" in error && (error as { err?: unknown }).err !== undefined) {
-    return (error as { err?: unknown }).err;
-  }
-
-  if (
-    "exception" in error &&
-    (error as { exception?: unknown }).exception !== undefined
-  ) {
-    return (error as { exception?: unknown }).exception;
-  }
-
-  if (
-    "innerError" in error &&
-    (error as { innerError?: unknown }).innerError !== undefined
-  ) {
-    return (error as { innerError?: unknown }).innerError;
-  }
-
-  if (
-    "originalError" in error &&
-    (error as { originalError?: unknown }).originalError !== undefined
-  ) {
-    return (error as { originalError?: unknown }).originalError;
-  }
-
-  if (
-    "rootCause" in error &&
-    (error as { rootCause?: unknown }).rootCause !== undefined
-  ) {
-    return (error as { rootCause?: unknown }).rootCause;
-  }
-
-  if (
-    "underlyingError" in error &&
-    (error as { underlyingError?: unknown }).underlyingError !== undefined
-  ) {
-    return (error as { underlyingError?: unknown }).underlyingError;
-  }
-
-  if (
-    "reason" in error &&
-    (error as { reason?: unknown }).reason !== undefined
-  ) {
-    return (error as { reason?: unknown }).reason;
-  }
-
-  if (
-    "payload" in error &&
-    (error as { payload?: unknown }).payload !== undefined
-  ) {
-    const payload = (error as { payload?: unknown }).payload;
-    if (payload && typeof payload === "object" && "error" in payload) {
-      return (payload as { error?: unknown }).error ?? payload;
-    }
-    return payload;
-  }
-
-  if ("errors" in error) {
-    const firstNestedError = getFirstArrayEntry(
-      (error as { errors?: unknown }).errors,
-    );
-    if (firstNestedError !== undefined) {
-      return firstNestedError;
-    }
-  }
-
-  if ("causes" in error) {
-    const firstNestedCause = getFirstArrayEntry(
-      (error as { causes?: unknown }).causes,
-    );
-    if (firstNestedCause !== undefined) {
-      return firstNestedCause;
-    }
-  }
-
-  if ("reasons" in error) {
-    const firstNestedReason = getFirstArrayEntry(
-      (error as { reasons?: unknown }).reasons,
-    );
-    if (firstNestedReason !== undefined) {
-      return firstNestedReason;
-    }
-  }
-
-  if (
-    "detail" in error &&
-    (error as { detail?: unknown }).detail !== undefined
-  ) {
-    const detail = (error as { detail?: unknown }).detail;
+  const getErrorPayloadOrSelf = (value: unknown) => {
     if (
-      detail &&
-      typeof detail === "object" &&
-      "error" in detail &&
-      (detail as { error?: unknown }).error !== undefined
+      value &&
+      typeof value === "object" &&
+      "error" in value &&
+      (value as { error?: unknown }).error !== undefined
     ) {
-      return (detail as { error?: unknown }).error;
+      return (value as { error?: unknown }).error;
     }
-    return detail;
-  }
+    return value;
+  };
 
-  if (
-    "details" in error &&
-    (error as { details?: unknown }).details !== undefined
-  ) {
-    const details = (error as { details?: unknown }).details;
-    if (
-      details &&
-      typeof details === "object" &&
-      "error" in details &&
-      (details as { error?: unknown }).error !== undefined
-    ) {
-      return (details as { error?: unknown }).error;
-    }
-    return details;
-  }
+  const causeError =
+    "cause" in error ? (error as { cause?: unknown }).cause : undefined;
+  const nestedError =
+    "error" in error ? (error as { error?: unknown }).error : undefined;
+  const errAlias =
+    "err" in error ? (error as { err?: unknown }).err : undefined;
+  const exceptionAlias =
+    "exception" in error
+      ? (error as { exception?: unknown }).exception
+      : undefined;
+  const innerErrorAlias =
+    "innerError" in error
+      ? (error as { innerError?: unknown }).innerError
+      : undefined;
+  const originalErrorAlias =
+    "originalError" in error
+      ? (error as { originalError?: unknown }).originalError
+      : undefined;
+  const rootCauseAlias =
+    "rootCause" in error
+      ? (error as { rootCause?: unknown }).rootCause
+      : undefined;
+  const underlyingErrorAlias =
+    "underlyingError" in error
+      ? (error as { underlyingError?: unknown }).underlyingError
+      : undefined;
+  const reasonValue =
+    "reason" in error ? (error as { reason?: unknown }).reason : undefined;
+  const payloadValue =
+    "payload" in error
+      ? getErrorPayloadOrSelf((error as { payload?: unknown }).payload)
+      : undefined;
+  const firstNestedError =
+    "errors" in error
+      ? getFirstArrayEntry((error as { errors?: unknown }).errors)
+      : undefined;
+  const firstNestedCause =
+    "causes" in error
+      ? getFirstArrayEntry((error as { causes?: unknown }).causes)
+      : undefined;
+  const firstNestedReason =
+    "reasons" in error
+      ? getFirstArrayEntry((error as { reasons?: unknown }).reasons)
+      : undefined;
+  const detailValue =
+    "detail" in error
+      ? getErrorPayloadOrSelf((error as { detail?: unknown }).detail)
+      : undefined;
+  const detailsValue =
+    "details" in error
+      ? getErrorPayloadOrSelf((error as { details?: unknown }).details)
+      : undefined;
+  const dataValue =
+    "data" in error
+      ? getErrorPayloadOrSelf((error as { data?: unknown }).data)
+      : undefined;
 
-  if ("data" in error && (error as { data?: unknown }).data !== undefined) {
-    const data = (error as { data?: unknown }).data;
-    if (
-      data &&
-      typeof data === "object" &&
-      "error" in data &&
-      (data as { error?: unknown }).error !== undefined
-    ) {
-      return (data as { error?: unknown }).error;
-    }
-    return data;
-  }
-
-  return undefined;
+  return getFirstArrayEntry([
+    nestedEventTargetError,
+    pathError,
+    causeError,
+    nestedError,
+    errAlias,
+    exceptionAlias,
+    innerErrorAlias,
+    originalErrorAlias,
+    rootCauseAlias,
+    underlyingErrorAlias,
+    reasonValue,
+    payloadValue,
+    firstNestedError,
+    firstNestedCause,
+    firstNestedReason,
+    detailValue,
+    detailsValue,
+    dataValue,
+  ]);
 };
 
 const getErrorName = (error: unknown) => {
@@ -517,10 +461,20 @@ const getErrorMessage = (error: unknown) => {
     visited.add(currentError);
 
     if ("message" in currentError && typeof currentError.message === "string") {
-      return currentError.message;
+      const normalizedMessageName = getErrorNameFromString(
+        currentError.message.trim(),
+      );
+      if (!isGenericErrorName(normalizedMessageName)) {
+        return currentError.message;
+      }
     }
     if ("reason" in currentError && typeof currentError.reason === "string") {
-      return currentError.reason;
+      const normalizedReasonName = getErrorNameFromString(
+        currentError.reason.trim(),
+      );
+      if (!isGenericErrorName(normalizedReasonName)) {
+        return currentError.reason;
+      }
     }
 
     const nextError = getNextNestedError(currentError);
@@ -1384,43 +1338,43 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       visited,
     );
 
-    return (
-      nestedEventPayload.error ??
-      nestedEventPayload.target?.error ??
-      nestedEventPayload.currentTarget?.error ??
-      nestedEventPayload.srcElement?.error ??
-      nestedReasonError ??
-      nestedTargetReasonError ??
-      nestedPayloadError ??
-      nestedDetailError ??
-      nestedDetailsError ??
-      nestedDataError ??
-      nestedPathError ??
-      nestedNativeEventError ??
-      nestedOriginalEventError ??
-      nestedEventPayload.reason ??
-      nestedEventPayload.target?.reason ??
-      nestedEventPayload.currentTarget?.reason ??
-      nestedEventPayload.srcElement?.reason ??
-      nestedEventPayload.payload ??
-      nestedEventPayload.target?.payload ??
-      nestedEventPayload.currentTarget?.payload ??
-      nestedEventPayload.srcElement?.payload ??
-      nestedEventPayload.detail ??
-      nestedEventPayload.target?.detail ??
-      nestedEventPayload.currentTarget?.detail ??
-      nestedEventPayload.srcElement?.detail ??
-      nestedEventPayload.details ??
-      nestedEventPayload.target?.details ??
-      nestedEventPayload.currentTarget?.details ??
-      nestedEventPayload.srcElement?.details ??
-      nestedEventPayload.data ??
-      nestedEventPayload.target?.data ??
-      nestedEventPayload.currentTarget?.data ??
-      nestedEventPayload.srcElement?.data ??
-      nestedEventPayload.nativeEvent ??
-      nestedEventPayload.originalEvent
-    );
+    return getFirstArrayEntry([
+      nestedEventPayload.error,
+      nestedEventPayload.target?.error,
+      nestedEventPayload.currentTarget?.error,
+      nestedEventPayload.srcElement?.error,
+      nestedReasonError,
+      nestedTargetReasonError,
+      nestedPayloadError,
+      nestedDetailError,
+      nestedDetailsError,
+      nestedDataError,
+      nestedPathError,
+      nestedNativeEventError,
+      nestedOriginalEventError,
+      nestedEventPayload.reason,
+      nestedEventPayload.target?.reason,
+      nestedEventPayload.currentTarget?.reason,
+      nestedEventPayload.srcElement?.reason,
+      nestedEventPayload.payload,
+      nestedEventPayload.target?.payload,
+      nestedEventPayload.currentTarget?.payload,
+      nestedEventPayload.srcElement?.payload,
+      nestedEventPayload.detail,
+      nestedEventPayload.target?.detail,
+      nestedEventPayload.currentTarget?.detail,
+      nestedEventPayload.srcElement?.detail,
+      nestedEventPayload.details,
+      nestedEventPayload.target?.details,
+      nestedEventPayload.currentTarget?.details,
+      nestedEventPayload.srcElement?.details,
+      nestedEventPayload.data,
+      nestedEventPayload.target?.data,
+      nestedEventPayload.currentTarget?.data,
+      nestedEventPayload.srcElement?.data,
+      nestedEventPayload.nativeEvent,
+      nestedEventPayload.originalEvent,
+    ]);
   };
 
   const getReasonErrorPayload = (value: unknown) => {
@@ -1537,44 +1491,46 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
   );
 
   return (
-    directWrappedErrorPayload ??
-    eventPayload.error ??
-    eventPayload.target?.error ??
-    eventPayload.currentTarget?.error ??
-    eventPayload.srcElement?.error ??
-    reasonError ??
-    payloadError ??
-    eventPayload.target?.reason ??
-    eventPayload.currentTarget?.reason ??
-    eventPayload.srcElement?.reason ??
-    eventPayload.target?.payload ??
-    eventPayload.currentTarget?.payload ??
-    eventPayload.srcElement?.payload ??
-    eventPayload.target?.detail ??
-    eventPayload.currentTarget?.detail ??
-    eventPayload.srcElement?.detail ??
-    eventPayload.target?.details ??
-    eventPayload.currentTarget?.details ??
-    eventPayload.srcElement?.details ??
-    eventPayload.target?.data ??
-    eventPayload.currentTarget?.data ??
-    eventPayload.srcElement?.data ??
-    detailError ??
-    detailsError ??
-    dataError ??
-    composedPathError ??
-    legacyPathError ??
-    nativeEventError ??
-    originalEventError ??
-    eventPayload.reason ??
-    eventPayload.payload ??
-    eventPayload.detail ??
-    eventPayload.details ??
-    eventPayload.data ??
-    eventPayload.path ??
-    eventPayload.nativeEvent ??
-    eventPayload.originalEvent ??
-    event
+    getFirstArrayEntry([
+      directWrappedErrorPayload,
+      eventPayload.error,
+      eventPayload.target?.error,
+      eventPayload.currentTarget?.error,
+      eventPayload.srcElement?.error,
+      reasonError,
+      payloadError,
+      eventPayload.target?.reason,
+      eventPayload.currentTarget?.reason,
+      eventPayload.srcElement?.reason,
+      eventPayload.target?.payload,
+      eventPayload.currentTarget?.payload,
+      eventPayload.srcElement?.payload,
+      eventPayload.target?.detail,
+      eventPayload.currentTarget?.detail,
+      eventPayload.srcElement?.detail,
+      eventPayload.target?.details,
+      eventPayload.currentTarget?.details,
+      eventPayload.srcElement?.details,
+      eventPayload.target?.data,
+      eventPayload.currentTarget?.data,
+      eventPayload.srcElement?.data,
+      detailError,
+      detailsError,
+      dataError,
+      composedPathError,
+      legacyPathError,
+      nativeEventError,
+      originalEventError,
+      eventPayload.reason,
+      eventPayload.payload,
+      eventPayload.detail,
+      eventPayload.details,
+      eventPayload.data,
+      eventPayload.path,
+      eventPayload.nativeEvent,
+      eventPayload.originalEvent,
+      event,
+    ]) ?? event
   );
 };
 
