@@ -1055,18 +1055,42 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     return (value as { error?: unknown }).error;
   };
 
+  const getDetailErrorPayload = (value: unknown) => {
+    if (!value || typeof value !== "object" || !("error" in value)) {
+      return undefined;
+    }
+    return (value as { error?: unknown }).error;
+  };
+
+  const getDataErrorPayload = (value: unknown) => {
+    if (!value || typeof value !== "object" || !("error" in value)) {
+      return undefined;
+    }
+    return (value as { error?: unknown }).error;
+  };
+
   const eventPayload = event as {
     error?: unknown;
-    target?: { error?: unknown; reason?: unknown; payload?: unknown } | null;
+    target?: {
+      error?: unknown;
+      reason?: unknown;
+      payload?: unknown;
+      detail?: unknown;
+      data?: unknown;
+    } | null;
     currentTarget?: {
       error?: unknown;
       reason?: unknown;
       payload?: unknown;
+      detail?: unknown;
+      data?: unknown;
     } | null;
     srcElement?: {
       error?: unknown;
       reason?: unknown;
       payload?: unknown;
+      detail?: unknown;
+      data?: unknown;
     } | null;
     reason?: unknown;
     detail?: unknown;
@@ -1086,17 +1110,15 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     getPayloadErrorPayload(eventPayload.currentTarget?.payload) ??
     getPayloadErrorPayload(eventPayload.srcElement?.payload);
   const detailError =
-    eventPayload.detail &&
-    typeof eventPayload.detail === "object" &&
-    "error" in eventPayload.detail
-      ? (eventPayload.detail as { error?: unknown }).error
-      : undefined;
+    getDetailErrorPayload(eventPayload.detail) ??
+    getDetailErrorPayload(eventPayload.target?.detail) ??
+    getDetailErrorPayload(eventPayload.currentTarget?.detail) ??
+    getDetailErrorPayload(eventPayload.srcElement?.detail);
   const dataError =
-    eventPayload.data &&
-    typeof eventPayload.data === "object" &&
-    "error" in eventPayload.data
-      ? (eventPayload.data as { error?: unknown }).error
-      : undefined;
+    getDataErrorPayload(eventPayload.data) ??
+    getDataErrorPayload(eventPayload.target?.data) ??
+    getDataErrorPayload(eventPayload.currentTarget?.data) ??
+    getDataErrorPayload(eventPayload.srcElement?.data);
   const nativeEventError = getEventLikeErrorPayload(eventPayload.nativeEvent);
   const originalEventError = getEventLikeErrorPayload(
     eventPayload.originalEvent,
@@ -1115,6 +1137,12 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     eventPayload.target?.payload ??
     eventPayload.currentTarget?.payload ??
     eventPayload.srcElement?.payload ??
+    eventPayload.target?.detail ??
+    eventPayload.currentTarget?.detail ??
+    eventPayload.srcElement?.detail ??
+    eventPayload.target?.data ??
+    eventPayload.currentTarget?.data ??
+    eventPayload.srcElement?.data ??
     detailError ??
     dataError ??
     nativeEventError ??

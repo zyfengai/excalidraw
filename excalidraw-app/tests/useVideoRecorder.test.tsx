@@ -4619,6 +4619,74 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("falls back to MediaRecorder target.detail.error when top-level detail is missing", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      setup.emitRecorderErrorEvent({
+        target: { detail: { error: { name: "NotSupportedError" } } },
+      });
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        "This browser does not support video recording.",
+      );
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
+  it("falls back to MediaRecorder currentTarget.data string payload when error fields are missing", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      setup.emitRecorderErrorEvent({
+        currentTarget: { data: "No such device" },
+      });
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        "Selected camera or microphone is not available.",
+      );
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("falls back to MediaRecorder target.reason.error when top-level reason is missing", async () => {
     const setup = setupRecordingFlowMocks();
     const recorder = renderUseVideoRecorder();
