@@ -83,6 +83,9 @@ const getErrorNameFromString = (value: string) => {
 
 const MAX_ERROR_CAUSE_TRAVERSAL_DEPTH = 5;
 
+const isGenericErrorName = (value: string) =>
+  GENERIC_ERROR_NAMES.has(value.trim().toLowerCase());
+
 const hasNestedErrorCandidate = (value: unknown) => {
   if (!value || typeof value !== "object") {
     return false;
@@ -110,7 +113,12 @@ const hasNestedErrorCandidate = (value: unknown) => {
 
 const isSemanticErrorEntry = (value: unknown) => {
   if (typeof value === "string") {
-    return value.trim().length > 0;
+    const trimmedValue = value.trim();
+    if (!trimmedValue) {
+      return false;
+    }
+    const extractedName = getErrorNameFromString(trimmedValue);
+    return !isGenericErrorName(extractedName);
   }
   if (!value || typeof value !== "object") {
     return false;
@@ -123,8 +131,8 @@ const isSemanticErrorEntry = (value: unknown) => {
     return value.reason.trim().length > 0;
   }
   if ("name" in value && typeof value.name === "string") {
-    const normalizedName = value.name.trim().toLowerCase();
-    if (normalizedName && !GENERIC_ERROR_NAMES.has(normalizedName)) {
+    const normalizedName = value.name.trim();
+    if (normalizedName && !isGenericErrorName(normalizedName)) {
       return true;
     }
   }
@@ -269,11 +277,8 @@ const getErrorName = (error: unknown) => {
     visited.add(currentError);
 
     if ("name" in currentError && typeof currentError.name === "string") {
-      const normalizedErrorName = currentError.name.trim().toLowerCase();
-      if (
-        normalizedErrorName &&
-        !GENERIC_ERROR_NAMES.has(normalizedErrorName)
-      ) {
+      const normalizedErrorName = currentError.name.trim();
+      if (normalizedErrorName && !isGenericErrorName(normalizedErrorName)) {
         return currentError.name;
       }
     }
