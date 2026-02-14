@@ -107,6 +107,8 @@ const hasNestedErrorCandidate = (value: unknown) => {
       Array.isArray((value as { causes?: unknown }).causes)) ||
     ("reasons" in value &&
       Array.isArray((value as { reasons?: unknown }).reasons)) ||
+    ("reason" in value &&
+      (value as { reason?: unknown }).reason !== undefined) ||
     ("detail" in value && (value as { detail?: unknown }).detail !== undefined)
   );
 };
@@ -208,6 +210,13 @@ const getNextNestedError = (error: unknown) => {
     (error as { underlyingError?: unknown }).underlyingError !== undefined
   ) {
     return (error as { underlyingError?: unknown }).underlyingError;
+  }
+
+  if (
+    "reason" in error &&
+    (error as { reason?: unknown }).reason !== undefined
+  ) {
+    return (error as { reason?: unknown }).reason;
   }
 
   if ("errors" in error) {
