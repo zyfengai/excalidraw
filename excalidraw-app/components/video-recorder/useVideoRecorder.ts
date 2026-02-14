@@ -1001,43 +1001,92 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       return undefined;
     }
 
+    const getObjectErrorPayload = (candidate: unknown) => {
+      if (
+        !candidate ||
+        typeof candidate !== "object" ||
+        !("error" in candidate)
+      ) {
+        return undefined;
+      }
+      return (candidate as { error?: unknown }).error;
+    };
+
     const nestedEventPayload = value as {
       error?: unknown;
       reason?: unknown;
       detail?: unknown;
       data?: unknown;
       payload?: unknown;
+      target?: {
+        error?: unknown;
+        reason?: unknown;
+        detail?: unknown;
+        data?: unknown;
+        payload?: unknown;
+      } | null;
+      currentTarget?: {
+        error?: unknown;
+        reason?: unknown;
+        detail?: unknown;
+        data?: unknown;
+        payload?: unknown;
+      } | null;
+      srcElement?: {
+        error?: unknown;
+        reason?: unknown;
+        detail?: unknown;
+        data?: unknown;
+        payload?: unknown;
+      } | null;
     };
-    const nestedReasonError = getReasonErrorPayload(nestedEventPayload.reason);
+    const nestedReasonError = getObjectErrorPayload(nestedEventPayload.reason);
+    const nestedTargetReasonError =
+      getObjectErrorPayload(nestedEventPayload.target?.reason) ??
+      getObjectErrorPayload(nestedEventPayload.currentTarget?.reason) ??
+      getObjectErrorPayload(nestedEventPayload.srcElement?.reason);
     const nestedPayloadError =
-      nestedEventPayload.payload &&
-      typeof nestedEventPayload.payload === "object" &&
-      "error" in nestedEventPayload.payload
-        ? (nestedEventPayload.payload as { error?: unknown }).error
-        : undefined;
+      getObjectErrorPayload(nestedEventPayload.payload) ??
+      getObjectErrorPayload(nestedEventPayload.target?.payload) ??
+      getObjectErrorPayload(nestedEventPayload.currentTarget?.payload) ??
+      getObjectErrorPayload(nestedEventPayload.srcElement?.payload);
     const nestedDetailError =
-      nestedEventPayload.detail &&
-      typeof nestedEventPayload.detail === "object" &&
-      "error" in nestedEventPayload.detail
-        ? (nestedEventPayload.detail as { error?: unknown }).error
-        : undefined;
+      getObjectErrorPayload(nestedEventPayload.detail) ??
+      getObjectErrorPayload(nestedEventPayload.target?.detail) ??
+      getObjectErrorPayload(nestedEventPayload.currentTarget?.detail) ??
+      getObjectErrorPayload(nestedEventPayload.srcElement?.detail);
     const nestedDataError =
-      nestedEventPayload.data &&
-      typeof nestedEventPayload.data === "object" &&
-      "error" in nestedEventPayload.data
-        ? (nestedEventPayload.data as { error?: unknown }).error
-        : undefined;
+      getObjectErrorPayload(nestedEventPayload.data) ??
+      getObjectErrorPayload(nestedEventPayload.target?.data) ??
+      getObjectErrorPayload(nestedEventPayload.currentTarget?.data) ??
+      getObjectErrorPayload(nestedEventPayload.srcElement?.data);
 
     return (
       nestedEventPayload.error ??
+      nestedEventPayload.target?.error ??
+      nestedEventPayload.currentTarget?.error ??
+      nestedEventPayload.srcElement?.error ??
       nestedReasonError ??
+      nestedTargetReasonError ??
       nestedPayloadError ??
       nestedDetailError ??
       nestedDataError ??
       nestedEventPayload.reason ??
+      nestedEventPayload.target?.reason ??
+      nestedEventPayload.currentTarget?.reason ??
+      nestedEventPayload.srcElement?.reason ??
       nestedEventPayload.payload ??
+      nestedEventPayload.target?.payload ??
+      nestedEventPayload.currentTarget?.payload ??
+      nestedEventPayload.srcElement?.payload ??
       nestedEventPayload.detail ??
-      nestedEventPayload.data
+      nestedEventPayload.target?.detail ??
+      nestedEventPayload.currentTarget?.detail ??
+      nestedEventPayload.srcElement?.detail ??
+      nestedEventPayload.data ??
+      nestedEventPayload.target?.data ??
+      nestedEventPayload.currentTarget?.data ??
+      nestedEventPayload.srcElement?.data
     );
   };
 
