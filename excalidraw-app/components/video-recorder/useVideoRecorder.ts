@@ -211,7 +211,7 @@ const getErrorPathPayload = (value: unknown) => {
   const directPathEntry = getFirstArrayEntry(
     (value as { path?: unknown }).path,
   );
-  if (directPathEntry !== undefined) {
+  if (directPathEntry !== undefined && isSemanticErrorEntry(directPathEntry)) {
     return directPathEntry;
   }
 
@@ -232,7 +232,15 @@ const getErrorPathPayload = (value: unknown) => {
     return undefined;
   }
 
-  return getFirstArrayEntry(composedPathEntries);
+  const composedPathEntry = getFirstArrayEntry(composedPathEntries);
+  if (
+    composedPathEntry !== undefined &&
+    isSemanticErrorEntry(composedPathEntry)
+  ) {
+    return composedPathEntry;
+  }
+
+  return undefined;
 };
 
 const getNextNestedError = (error: unknown) => {
@@ -1186,11 +1194,22 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     }
 
     const semanticExtractedEntry = getFirstArrayEntry(extractedEntries);
-    if (semanticExtractedEntry !== undefined) {
+    if (
+      semanticExtractedEntry !== undefined &&
+      isSemanticErrorEntry(semanticExtractedEntry)
+    ) {
       return semanticExtractedEntry;
     }
 
-    return getFirstArrayEntry(pathEntries);
+    const semanticPathEntry = getFirstArrayEntry(pathEntries);
+    if (
+      semanticPathEntry !== undefined &&
+      isSemanticErrorEntry(semanticPathEntry)
+    ) {
+      return semanticPathEntry;
+    }
+
+    return undefined;
   };
 
   const getComposedPathPayload = (value: unknown): unknown => {
@@ -1336,7 +1355,6 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       nestedEventPayload.target?.data ??
       nestedEventPayload.currentTarget?.data ??
       nestedEventPayload.srcElement?.data ??
-      nestedEventPayload.path ??
       nestedEventPayload.nativeEvent ??
       nestedEventPayload.originalEvent
     );
