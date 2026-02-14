@@ -1135,22 +1135,20 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       return undefined;
     }
 
-    let firstNonNullEntry: unknown = undefined;
+    const extractedEntries: unknown[] = [];
     for (const entry of pathEntries) {
       const extractedEntry = getEventLikeErrorPayload(entry);
       if (extractedEntry !== undefined) {
-        return extractedEntry;
-      }
-      if (
-        firstNonNullEntry === undefined &&
-        entry !== undefined &&
-        entry !== null
-      ) {
-        firstNonNullEntry = entry;
+        extractedEntries.push(extractedEntry);
       }
     }
 
-    return firstNonNullEntry;
+    const semanticExtractedEntry = getFirstArrayEntry(extractedEntries);
+    if (semanticExtractedEntry !== undefined) {
+      return semanticExtractedEntry;
+    }
+
+    return getFirstArrayEntry(pathEntries);
   };
 
   const getComposedPathPayload = (value: unknown): unknown => {
