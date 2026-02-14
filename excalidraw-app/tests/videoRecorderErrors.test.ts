@@ -263,6 +263,16 @@ describe("video recorder error mapping", () => {
     ).toBe("This browser does not support video recording.");
     expect(
       mapVideoRecorderErrorMessage({
+        target: { cause: { name: "NotSupportedError" } },
+      }),
+    ).toBe("This browser does not support video recording.");
+    expect(
+      mapVideoRecorderErrorMessage({
+        currentTarget: { cause: "No such device" },
+      }),
+    ).toBe("Selected camera or microphone is not available.");
+    expect(
+      mapVideoRecorderErrorMessage({
         currentTarget: { reasons: ["Error", "No such device"] },
       }),
     ).toBe("Selected camera or microphone is not available.");
