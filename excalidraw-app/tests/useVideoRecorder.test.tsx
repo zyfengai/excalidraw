@@ -4630,6 +4630,43 @@ describe("useVideoRecorder", () => {
     setup.cleanupCanvases();
   });
 
+  it("maps MediaRecorder AggregateError wrappers by skipping generic first errors entry", async () => {
+    const setup = setupRecordingFlowMocks();
+    const recorder = renderUseVideoRecorder();
+
+    act(() => {
+      recorder.latest.setSettings({
+        cameraEnabled: false,
+        microphoneEnabled: false,
+      });
+    });
+
+    await act(async () => {
+      await recorder.latest.startRecording();
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("recording");
+    });
+
+    act(() => {
+      setup.emitRecorderErrorEvent({
+        error: {
+          name: "AggregateError",
+          errors: [{ name: "Error" }, { name: "NotSupportedError" }],
+        },
+      });
+    });
+    await waitFor(() => {
+      expect(recorder.latest.status).toBe("error");
+      expect(recorder.latest.error).toBe(
+        "This browser does not support video recording.",
+      );
+      expect(recorder.latest.isRecordingActive).toBe(false);
+    });
+
+    setup.cleanupCanvases();
+  });
+
   it("maps deeply nested generic wrappers by traversing multiple nested levels", async () => {
     const setup = setupRecordingFlowMocks();
     const recorder = renderUseVideoRecorder();

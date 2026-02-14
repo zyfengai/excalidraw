@@ -83,16 +83,71 @@ const getErrorNameFromString = (value: string) => {
 
 const MAX_ERROR_CAUSE_TRAVERSAL_DEPTH = 5;
 
+const hasNestedErrorCandidate = (value: unknown) => {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  return (
+    ("cause" in value && (value as { cause?: unknown }).cause !== undefined) ||
+    ("error" in value && (value as { error?: unknown }).error !== undefined) ||
+    ("err" in value && (value as { err?: unknown }).err !== undefined) ||
+    ("exception" in value &&
+      (value as { exception?: unknown }).exception !== undefined) ||
+    ("innerError" in value &&
+      (value as { innerError?: unknown }).innerError !== undefined) ||
+    ("originalError" in value &&
+      (value as { originalError?: unknown }).originalError !== undefined) ||
+    ("errors" in value &&
+      Array.isArray((value as { errors?: unknown }).errors)) ||
+    ("causes" in value &&
+      Array.isArray((value as { causes?: unknown }).causes)) ||
+    ("reasons" in value &&
+      Array.isArray((value as { reasons?: unknown }).reasons)) ||
+    ("detail" in value && (value as { detail?: unknown }).detail !== undefined)
+  );
+};
+
+const isSemanticErrorEntry = (value: unknown) => {
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  if ("message" in value && typeof value.message === "string") {
+    return value.message.trim().length > 0;
+  }
+  if ("reason" in value && typeof value.reason === "string") {
+    return value.reason.trim().length > 0;
+  }
+  if ("name" in value && typeof value.name === "string") {
+    const normalizedName = value.name.trim().toLowerCase();
+    if (normalizedName && !GENERIC_ERROR_NAMES.has(normalizedName)) {
+      return true;
+    }
+  }
+
+  return hasNestedErrorCandidate(value);
+};
+
 const getFirstArrayEntry = (value: unknown) => {
   if (!Array.isArray(value)) {
     return undefined;
   }
+  let firstNonNullishEntry: unknown = undefined;
   for (const entry of value) {
     if (entry !== undefined && entry !== null) {
-      return entry;
+      if (firstNonNullishEntry === undefined) {
+        firstNonNullishEntry = entry;
+      }
+      if (isSemanticErrorEntry(entry)) {
+        return entry;
+      }
     }
   }
-  return undefined;
+  return firstNonNullishEntry;
 };
 
 const getNextNestedError = (error: unknown) => {
