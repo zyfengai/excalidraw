@@ -1,0 +1,263 @@
+@import "../../../packages/excalidraw/css/variables.module.scss";
+
+.excalidraw {
+  .video-recorder-dialog {
+    .Dialog__content {
+      overflow: visible;
+    }
+  }
+
+  .video-recorder-dialog__content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .video-recorder-dialog__unsupported,
+  .video-recorder-dialog__error {
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--border-radius-md);
+    font-size: 0.875rem;
+  }
+
+  .video-recorder-dialog__unsupported {
+    background-color: var(--color-warning);
+    color: var(--color-text-warning);
+  }
+
+  .video-recorder-dialog__error {
+    background: var(--color-danger-dark);
+    color: var(--color-danger-text);
+  }
+
+  .video-recorder-dialog__columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+    gap: 1rem;
+
+    @include isMobile {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .video-recorder-dialog__settings {
+    border: 1px solid var(--dialog-border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-height: 32rem;
+    overflow: auto;
+
+    h3 {
+      margin: 0.25rem 0 0;
+      font-size: 0.9rem;
+      color: var(--color-primary);
+    }
+  }
+
+  .video-recorder-dialog__setting {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+
+    label {
+      font-size: 0.875rem;
+      line-height: 1.4;
+    }
+
+    input[type="range"] {
+      width: 12rem;
+    }
+  }
+
+  .video-recorder-dialog__setting--column {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .video-recorder-dialog__textarea {
+    min-height: 8rem;
+    resize: vertical;
+  }
+
+  .video-recorder-dialog__preview-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    h3 {
+      margin: 0.25rem 0;
+      font-size: 0.9rem;
+      color: var(--color-primary);
+    }
+  }
+
+  .video-recorder-dialog__preview {
+    position: relative;
+    width: 100%;
+    max-width: 28rem;
+    aspect-ratio: var(--video-recorder-ratio);
+    border-radius: var(--border-radius-lg);
+    border: 1px dashed var(--dialog-border-color);
+    overflow: hidden;
+    background: var(--default-bg-color);
+  }
+
+  .video-recorder-dialog__preview-canvas {
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        circle at 20% 20%,
+        var(--button-bg),
+        transparent 55%
+      ),
+      linear-gradient(135deg, var(--island-bg-color), var(--default-bg-color));
+  }
+
+  .video-recorder-dialog__camera-overlay {
+    position: absolute;
+    background: rgba(35, 35, 35, 0.45);
+    border: 2px solid var(--color-primary);
+    user-select: none;
+    touch-action: none;
+    cursor: move;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+  }
+
+  .video-recorder-dialog__camera-overlay--rounded {
+    border-radius: 14px;
+  }
+
+  .video-recorder-dialog__camera-overlay--circle {
+    border-radius: 50%;
+  }
+
+  .video-recorder-dialog__camera-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .video-recorder-dialog__camera-resize-handle {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    border: none;
+    background: var(--color-primary);
+    border-radius: 999px;
+    right: -7px;
+    bottom: -7px;
+    cursor: nwse-resize;
+  }
+
+  .video-recorder-dialog__helper-text {
+    margin: 0;
+    font-size: 0.75rem;
+    color: var(--text-primary-color);
+    opacity: 0.75;
+  }
+
+  .video-recorder-dialog__teleprompter-preview {
+    border: 1px solid var(--dialog-border-color);
+    border-radius: var(--border-radius-lg);
+    min-height: 9rem;
+    padding: 0.5rem;
+    overflow: hidden;
+    background: var(--default-bg-color);
+  }
+
+  .video-recorder-dialog__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .video-recorder-control-bar {
+    position: fixed;
+    left: 50%;
+    bottom: 1.25rem;
+    transform: translateX(-50%);
+    z-index: 25;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--dialog-border-color);
+    background: var(--island-bg-color);
+    box-shadow: var(--shadow-island);
+  }
+
+  .video-recorder-control-bar__status {
+    min-width: 7rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .video-recorder-control-bar__dot {
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--color-danger);
+    animation: pulse 1.2s infinite ease-in-out;
+  }
+
+  .video-recorder-control-bar__dot--paused {
+    background: var(--color-warning);
+    animation: none;
+  }
+
+  .video-recorder-teleprompter {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--border-radius-lg);
+    overflow: hidden;
+    background: rgba(0, 0, 0, var(--teleprompter-opacity));
+    color: #fff;
+  }
+
+  .video-recorder-teleprompter--floating {
+    position: fixed;
+    left: 50%;
+    top: 1.25rem;
+    width: min(80vw, 52rem);
+    height: 10rem;
+    transform: translateX(-50%);
+    pointer-events: none;
+    z-index: 24;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+  }
+
+  .video-recorder-teleprompter__content {
+    padding: 1rem;
+
+    p {
+      margin: 0 0 0.75rem 0;
+      line-height: 1.45;
+      font-size: 1.05rem;
+    }
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}

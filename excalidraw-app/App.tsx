@@ -46,6 +46,7 @@ import {
   exportToPlus,
   share,
   youtubeIcon,
+  playerPlayIcon,
 } from "@excalidraw/excalidraw/components/icons";
 import { isElementLink } from "@excalidraw/element";
 import {
@@ -139,8 +140,12 @@ import DebugCanvas, {
 } from "./components/DebugCanvas";
 import { AIComponents } from "./components/AI";
 import { ExcalidrawPlusIframeExport } from "./ExcalidrawPlusIframeExport";
+import { VideoRecorderDialog } from "./components/video-recorder/VideoRecorderDialog";
+import { VideoRecorderControlBar } from "./components/video-recorder/VideoRecorderControlBar";
+import { useVideoRecorder } from "./components/video-recorder/useVideoRecorder";
 
 import "./index.scss";
+import "./components/video-recorder/VideoRecorder.scss";
 
 import { ExcalidrawPlusPromoBanner } from "./components/ExcalidrawPlusPromoBanner";
 import { AppSidebar } from "./components/AppSidebar";
@@ -767,6 +772,7 @@ const ExcalidrawWrapper = () => {
   const isOffline = useAtomValue(isOfflineAtom);
 
   const localStorageQuotaExceeded = useAtomValue(localStorageQuotaExceededAtom);
+  const videoRecorder = useVideoRecorder();
 
   const onCollabDialogOpen = useCallback(
     () => setShareDialogState({ isOpen: true, type: "collaborationOnly" }),
@@ -915,6 +921,7 @@ const ExcalidrawWrapper = () => {
       >
         <AppMainMenu
           onCollabDialogOpen={onCollabDialogOpen}
+          onVideoRecorderOpen={() => videoRecorder.setDialogOpen(true)}
           isCollaborating={isCollaborating}
           isCollabEnabled={!isCollabDisabled}
           theme={appTheme}
@@ -987,6 +994,40 @@ const ExcalidrawWrapper = () => {
           }}
         />
 
+        <VideoRecorderDialog
+          isOpen={videoRecorder.isDialogOpen}
+          capabilities={videoRecorder.capabilities}
+          status={videoRecorder.status}
+          error={videoRecorder.error}
+          settings={videoRecorder.settings}
+          devices={videoRecorder.devices}
+          onClose={() => videoRecorder.setDialogOpen(false)}
+          onRefreshDevices={videoRecorder.refreshDevices}
+          onStart={videoRecorder.startRecording}
+          onRequestPermissions={videoRecorder.requestMediaPermissions}
+          isRequestingPermissions={videoRecorder.isRequestingPermissions}
+          onSettingsChange={videoRecorder.setSettings}
+          onCameraLayoutChange={videoRecorder.updateCameraLayout}
+        />
+        <VideoRecorderControlBar
+          status={videoRecorder.status}
+          elapsedMs={videoRecorder.elapsedMs}
+          settings={videoRecorder.settings}
+          result={videoRecorder.result}
+          onOpenDialog={() => videoRecorder.setDialogOpen(true)}
+          onPause={videoRecorder.pauseRecording}
+          onResume={videoRecorder.resumeRecording}
+          onStop={() => {
+            void videoRecorder.stopRecording();
+          }}
+          onDownload={() =>
+            videoRecorder.downloadRecording(
+              excalidrawAPI?.getName() || "excalidraw-recording",
+            )
+          }
+          onReset={videoRecorder.resetResult}
+        />
+
         <AppSidebar />
 
         {errorMessage && (
@@ -1014,6 +1055,74 @@ const ExcalidrawWrapper = () => {
                   isOpen: true,
                   type: "collaborationOnly",
                 });
+              },
+            },
+            {
+              label: t("videoRecorder.actions.openSettings"),
+              category: DEFAULT_CATEGORIES.app,
+              predicate: () => editorInterface.formFactor !== "phone",
+              icon: playerPlayIcon,
+              keywords: [
+                "video",
+                "record",
+                "recording",
+                "camera",
+                "microphone",
+                "teleprompter",
+              ],
+              perform: () => {
+                videoRecorder.setDialogOpen(true);
+              },
+            },
+            {
+              label: t("videoRecorder.actions.startRecording"),
+              category: DEFAULT_CATEGORIES.app,
+              predicate: () =>
+                editorInterface.formFactor !== "phone" &&
+                videoRecorder.capabilities.isSupported &&
+                !videoRecorder.isRecordingActive &&
+                videoRecorder.status !== "preparing" &&
+                videoRecorder.status !== "stopping",
+              icon: playerPlayIcon,
+              keywords: ["video", "record", "camera", "start", "capture"],
+              perform: () => {
+                void videoRecorder.startRecording();
+              },
+            },
+            {
+              label: t("videoRecorder.actions.pauseRecording"),
+              category: DEFAULT_CATEGORIES.app,
+              predicate: () =>
+                editorInterface.formFactor !== "phone" &&
+                videoRecorder.status === "recording",
+              icon: playerPlayIcon,
+              keywords: ["video", "record", "pause"],
+              perform: () => {
+                videoRecorder.pauseRecording();
+              },
+            },
+            {
+              label: t("videoRecorder.actions.resumeRecording"),
+              category: DEFAULT_CATEGORIES.app,
+              predicate: () =>
+                editorInterface.formFactor !== "phone" &&
+                videoRecorder.status === "paused",
+              icon: playerPlayIcon,
+              keywords: ["video", "record", "resume"],
+              perform: () => {
+                videoRecorder.resumeRecording();
+              },
+            },
+            {
+              label: t("videoRecorder.actions.stopRecording"),
+              category: DEFAULT_CATEGORIES.app,
+              predicate: () =>
+                editorInterface.formFactor !== "phone" &&
+                videoRecorder.isRecordingActive,
+              icon: playerPlayIcon,
+              keywords: ["video", "record", "stop", "finish"],
+              perform: () => {
+                void videoRecorder.stopRecording();
               },
             },
             {

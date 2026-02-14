@@ -2,9 +2,11 @@ import {
   loginIcon,
   ExcalLogo,
   eyeIcon,
+  playerPlayIcon,
 } from "@excalidraw/excalidraw/components/icons";
-import { MainMenu } from "@excalidraw/excalidraw/index";
+import { MainMenu, useEditorInterface } from "@excalidraw/excalidraw/index";
 import React from "react";
+import { useI18n } from "@excalidraw/excalidraw/i18n";
 
 import { isDevEnv } from "@excalidraw/common";
 
@@ -17,18 +19,32 @@ import { saveDebugState } from "./DebugCanvas";
 
 export const AppMainMenu: React.FC<{
   onCollabDialogOpen: () => any;
+  onVideoRecorderOpen: () => void;
   isCollaborating: boolean;
   isCollabEnabled: boolean;
   theme: Theme | "system";
   setTheme: (theme: Theme | "system") => void;
   refresh: () => void;
 }> = React.memo((props) => {
+  const { t } = useI18n();
+  const editorInterface = useEditorInterface();
+
+  const shouldShowVideoRecorder = editorInterface.formFactor !== "phone";
+
   return (
     <MainMenu>
       <MainMenu.DefaultItems.LoadScene />
       <MainMenu.DefaultItems.SaveToActiveFile />
       <MainMenu.DefaultItems.Export />
       <MainMenu.DefaultItems.SaveAsImage />
+      {shouldShowVideoRecorder && (
+        <MainMenu.Item
+          icon={playerPlayIcon}
+          onSelect={() => props.onVideoRecorderOpen()}
+        >
+          {t("videoRecorder.actions.openSettings")}
+        </MainMenu.Item>
+      )}
       {props.isCollabEnabled && (
         <MainMenu.DefaultItems.LiveCollaborationTrigger
           isCollaborating={props.isCollaborating}

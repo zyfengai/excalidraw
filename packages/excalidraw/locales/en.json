@@ -702,6 +702,78 @@
     "itemNotAvailable": "Command is not available...",
     "shortcutHint": "For Command palette, use {{shortcut}}"
   },
+  "videoRecorder": {
+    "title": "Video recorder",
+    "sections": {
+      "devices": "Devices",
+      "video": "Video output",
+      "teleprompter": "Teleprompter"
+    },
+    "defaults": {
+      "auto": "Auto"
+    },
+    "actions": {
+      "openSettings": "Video recorder",
+      "startRecording": "Start recording",
+      "pauseRecording": "Pause",
+      "resumeRecording": "Resume",
+      "stopRecording": "Finish",
+      "download": "Download",
+      "recordAgain": "Record again",
+      "requestPermissions": "Enable camera & microphone access"
+    },
+    "devicePermissions": {
+      "label": "Device permissions"
+    },
+    "camera": {
+      "enabled": "Enable camera",
+      "device": "Camera device",
+      "shape": "Camera shape",
+      "shapeRectangle": "Rectangle",
+      "shapeRounded": "Rounded",
+      "shapeCircle": "Circle",
+      "sizeWidth": "Camera width",
+      "sizeHeight": "Camera height",
+      "layout": "Camera layout",
+      "resetLayout": "Reset camera position & size"
+    },
+    "microphone": {
+      "enabled": "Enable microphone",
+      "device": "Microphone device"
+    },
+    "video": {
+      "aspectRatio": "Aspect ratio",
+      "resolution": "Resolution",
+      "fps": "Frame rate",
+      "format": "Export format"
+    },
+    "preview": {
+      "title": "Preview",
+      "camera": "Camera overlay",
+      "helper": "Drag to move camera overlay, drag the corner handle to resize.",
+      "resizeHandle": "Resize camera overlay"
+    },
+    "teleprompter": {
+      "enabled": "Enable teleprompter",
+      "text": "Prompt text",
+      "placeholder": "Paste your script here...",
+      "opacity": "Background opacity",
+      "speed": "Scroll speed",
+      "notInOutput": "Teleprompter is for live reading only and will not be included in exported video."
+    },
+    "messages": {
+      "completed": "Recording completed"
+    },
+    "errors": {
+      "notSupported": "This browser does not support video recording.",
+      "canvasNotFound": "Unable to capture drawing canvas.",
+      "contextUnavailable": "Unable to initialize recorder context.",
+      "recordingFailed": "Recording failed. Please try again.",
+      "permissionDenied": "Camera or microphone permission was denied.",
+      "deviceNotFound": "Selected camera or microphone is not available.",
+      "deviceBusy": "Camera or microphone is currently busy."
+    }
+  },
   "keys": {
     "ctrl": "Ctrl",
     "option": "Option",
