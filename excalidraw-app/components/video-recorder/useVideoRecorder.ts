@@ -969,21 +969,27 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     return event;
   }
 
+  const getReasonErrorPayload = (value: unknown) => {
+    if (!value || typeof value !== "object" || !("error" in value)) {
+      return undefined;
+    }
+    return (value as { error?: unknown }).error;
+  };
+
   const eventPayload = event as {
     error?: unknown;
-    target?: { error?: unknown } | null;
-    currentTarget?: { error?: unknown } | null;
-    srcElement?: { error?: unknown } | null;
+    target?: { error?: unknown; reason?: unknown } | null;
+    currentTarget?: { error?: unknown; reason?: unknown } | null;
+    srcElement?: { error?: unknown; reason?: unknown } | null;
     reason?: unknown;
     detail?: unknown;
     data?: unknown;
   };
   const reasonError =
-    eventPayload.reason &&
-    typeof eventPayload.reason === "object" &&
-    "error" in eventPayload.reason
-      ? (eventPayload.reason as { error?: unknown }).error
-      : undefined;
+    getReasonErrorPayload(eventPayload.reason) ??
+    getReasonErrorPayload(eventPayload.target?.reason) ??
+    getReasonErrorPayload(eventPayload.currentTarget?.reason) ??
+    getReasonErrorPayload(eventPayload.srcElement?.reason);
   const detailError =
     eventPayload.detail &&
     typeof eventPayload.detail === "object" &&
@@ -1003,6 +1009,9 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     eventPayload.currentTarget?.error ??
     eventPayload.srcElement?.error ??
     reasonError ??
+    eventPayload.target?.reason ??
+    eventPayload.currentTarget?.reason ??
+    eventPayload.srcElement?.reason ??
     detailError ??
     dataError ??
     eventPayload.reason ??
