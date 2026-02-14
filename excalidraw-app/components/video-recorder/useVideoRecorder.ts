@@ -217,6 +217,14 @@ const getFirstArrayEntry = (value: unknown) => {
   return firstNonNullishEntry;
 };
 
+const getSemanticArrayEntry = (value: unknown) => {
+  const candidate = getFirstArrayEntry(value);
+  if (candidate === undefined || !isSemanticErrorEntry(candidate)) {
+    return undefined;
+  }
+  return candidate;
+};
+
 const getErrorPathPayload = (value: unknown) => {
   if (!value || typeof value !== "object") {
     return undefined;
@@ -258,6 +266,9 @@ const getErrorPathPayload = (value: unknown) => {
 };
 
 const getNextNestedError = (error: unknown) => {
+  if (Array.isArray(error)) {
+    return getSemanticArrayEntry(error);
+  }
   if (!error || typeof error !== "object") {
     return undefined;
   }
@@ -412,6 +423,14 @@ const getErrorName = (error: unknown) => {
     if (typeof currentError === "string") {
       return getErrorNameFromString(currentError);
     }
+    if (Array.isArray(currentError)) {
+      const semanticArrayEntry = getSemanticArrayEntry(currentError);
+      if (semanticArrayEntry === undefined) {
+        return "";
+      }
+      currentError = semanticArrayEntry;
+      continue;
+    }
     if (!currentError || typeof currentError !== "object") {
       return "";
     }
@@ -451,6 +470,14 @@ const getErrorMessage = (error: unknown) => {
   for (let depth = 0; depth < MAX_ERROR_CAUSE_TRAVERSAL_DEPTH; depth++) {
     if (typeof currentError === "string") {
       return currentError;
+    }
+    if (Array.isArray(currentError)) {
+      const semanticArrayEntry = getSemanticArrayEntry(currentError);
+      if (semanticArrayEntry === undefined) {
+        return "";
+      }
+      currentError = semanticArrayEntry;
+      continue;
     }
     if (!currentError || typeof currentError !== "object") {
       return "";
@@ -1249,6 +1276,9 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     value: unknown,
     visited = new Set<unknown>(),
   ): unknown => {
+    if (Array.isArray(value)) {
+      return getSemanticArrayEntry(value);
+    }
     if (!value || typeof value !== "object") {
       return undefined;
     }
