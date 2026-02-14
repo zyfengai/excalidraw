@@ -974,6 +974,42 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     return event;
   }
 
+  const getEventLikeErrorPayload = (value: unknown) => {
+    if (!value || typeof value !== "object") {
+      return undefined;
+    }
+
+    const nestedEventPayload = value as {
+      error?: unknown;
+      reason?: unknown;
+      detail?: unknown;
+      data?: unknown;
+    };
+    const nestedReasonError = getReasonErrorPayload(nestedEventPayload.reason);
+    const nestedDetailError =
+      nestedEventPayload.detail &&
+      typeof nestedEventPayload.detail === "object" &&
+      "error" in nestedEventPayload.detail
+        ? (nestedEventPayload.detail as { error?: unknown }).error
+        : undefined;
+    const nestedDataError =
+      nestedEventPayload.data &&
+      typeof nestedEventPayload.data === "object" &&
+      "error" in nestedEventPayload.data
+        ? (nestedEventPayload.data as { error?: unknown }).error
+        : undefined;
+
+    return (
+      nestedEventPayload.error ??
+      nestedReasonError ??
+      nestedDetailError ??
+      nestedDataError ??
+      nestedEventPayload.reason ??
+      nestedEventPayload.detail ??
+      nestedEventPayload.data
+    );
+  };
+
   const getReasonErrorPayload = (value: unknown) => {
     if (!value || typeof value !== "object" || !("error" in value)) {
       return undefined;
@@ -989,6 +1025,8 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     reason?: unknown;
     detail?: unknown;
     data?: unknown;
+    nativeEvent?: unknown;
+    originalEvent?: unknown;
   };
   const reasonError =
     getReasonErrorPayload(eventPayload.reason) ??
@@ -1007,6 +1045,10 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     "error" in eventPayload.data
       ? (eventPayload.data as { error?: unknown }).error
       : undefined;
+  const nativeEventError = getEventLikeErrorPayload(eventPayload.nativeEvent);
+  const originalEventError = getEventLikeErrorPayload(
+    eventPayload.originalEvent,
+  );
 
   return (
     eventPayload.error ??
@@ -1019,9 +1061,13 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     eventPayload.srcElement?.reason ??
     detailError ??
     dataError ??
+    nativeEventError ??
+    originalEventError ??
     eventPayload.reason ??
     eventPayload.detail ??
     eventPayload.data ??
+    eventPayload.nativeEvent ??
+    eventPayload.originalEvent ??
     event
   );
 };
