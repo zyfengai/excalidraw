@@ -188,6 +188,20 @@ const getNextNestedError = (error: unknown) => {
     return (error as { originalError?: unknown }).originalError;
   }
 
+  if (
+    "rootCause" in error &&
+    (error as { rootCause?: unknown }).rootCause !== undefined
+  ) {
+    return (error as { rootCause?: unknown }).rootCause;
+  }
+
+  if (
+    "underlyingError" in error &&
+    (error as { underlyingError?: unknown }).underlyingError !== undefined
+  ) {
+    return (error as { underlyingError?: unknown }).underlyingError;
+  }
+
   if ("errors" in error) {
     const firstNestedError = getFirstArrayEntry(
       (error as { errors?: unknown }).errors,
@@ -960,9 +974,16 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     target?: { error?: unknown } | null;
     currentTarget?: { error?: unknown } | null;
     srcElement?: { error?: unknown } | null;
+    reason?: unknown;
     detail?: unknown;
     data?: unknown;
   };
+  const reasonError =
+    eventPayload.reason &&
+    typeof eventPayload.reason === "object" &&
+    "error" in eventPayload.reason
+      ? (eventPayload.reason as { error?: unknown }).error
+      : undefined;
   const detailError =
     eventPayload.detail &&
     typeof eventPayload.detail === "object" &&
@@ -981,8 +1002,10 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     eventPayload.target?.error ??
     eventPayload.currentTarget?.error ??
     eventPayload.srcElement?.error ??
+    reasonError ??
     detailError ??
     dataError ??
+    eventPayload.reason ??
     eventPayload.detail ??
     eventPayload.data ??
     event
