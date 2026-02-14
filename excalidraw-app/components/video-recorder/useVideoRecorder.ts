@@ -148,6 +148,10 @@ const hasNestedErrorCandidate = (value: unknown) => {
       (value as { innerError?: unknown }).innerError !== undefined) ||
     ("originalError" in value &&
       (value as { originalError?: unknown }).originalError !== undefined) ||
+    ("rootCause" in value &&
+      (value as { rootCause?: unknown }).rootCause !== undefined) ||
+    ("underlyingError" in value &&
+      (value as { underlyingError?: unknown }).underlyingError !== undefined) ||
     ("errors" in value &&
       Array.isArray((value as { errors?: unknown }).errors)) ||
     ("causes" in value &&
@@ -161,7 +165,8 @@ const hasNestedErrorCandidate = (value: unknown) => {
     ("detail" in value &&
       (value as { detail?: unknown }).detail !== undefined) ||
     ("details" in value &&
-      (value as { details?: unknown }).details !== undefined)
+      (value as { details?: unknown }).details !== undefined) ||
+    ("data" in value && (value as { data?: unknown }).data !== undefined)
   );
 };
 
@@ -433,6 +438,19 @@ const getNextNestedError = (error: unknown) => {
       return (details as { error?: unknown }).error;
     }
     return details;
+  }
+
+  if ("data" in error && (error as { data?: unknown }).data !== undefined) {
+    const data = (error as { data?: unknown }).data;
+    if (
+      data &&
+      typeof data === "object" &&
+      "error" in data &&
+      (data as { error?: unknown }).error !== undefined
+    ) {
+      return (data as { error?: unknown }).error;
+    }
+    return data;
   }
 
   return undefined;
