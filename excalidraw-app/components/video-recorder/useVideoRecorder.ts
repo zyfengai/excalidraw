@@ -636,12 +636,17 @@ const isMimeNotSupportedMessage = (error: unknown) => {
     (message.includes("is not defined") ||
       message.includes("undefined") ||
       message.includes("not implemented"));
+  const hasInvalidConstructorSignal =
+    (message.includes("mediarecorder") || message.includes("media recorder")) &&
+    (message.includes("not a constructor") ||
+      message.includes("illegal constructor"));
   const hasDisabledMediaRecorderSignal =
     (message.includes("mediarecorder") || message.includes("media recorder")) &&
     (message.includes("disabled") || message.includes("turned off"));
   if (
     hasUnavailableMediaRecorderSignal ||
     hasMissingMediaRecorderSignal ||
+    hasInvalidConstructorSignal ||
     hasDisabledMediaRecorderSignal
   ) {
     return true;

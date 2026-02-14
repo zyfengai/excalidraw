@@ -325,6 +325,16 @@ describe("video recorder error mapping", () => {
       ),
     ).toBe("This browser does not support video recording.");
     expect(
+      mapVideoRecorderErrorMessage(
+        "TypeError: MediaRecorder is not a constructor",
+      ),
+    ).toBe("This browser does not support video recording.");
+    expect(
+      mapVideoRecorderErrorMessage(
+        "TypeError: MediaRecorder illegal constructor",
+      ),
+    ).toBe("This browser does not support video recording.");
+    expect(
       mapVideoRecorderErrorMessage("DOMException: NotSupportedError"),
     ).toBe("This browser does not support video recording.");
     expect(
