@@ -1080,6 +1080,41 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     return event;
   }
 
+  const getComposedPathPayload = (value: unknown): unknown => {
+    if (!value || typeof value !== "object" || !("composedPath" in value)) {
+      return undefined;
+    }
+
+    const composedPathCandidate = (value as { composedPath?: unknown })
+      .composedPath;
+    if (typeof composedPathCandidate !== "function") {
+      return undefined;
+    }
+
+    let composedPathEntries: unknown;
+    try {
+      composedPathEntries = composedPathCandidate.call(value);
+    } catch {
+      return undefined;
+    }
+
+    if (!Array.isArray(composedPathEntries)) {
+      return undefined;
+    }
+
+    for (const entry of composedPathEntries) {
+      const extractedEntry = getEventLikeErrorPayload(entry);
+      if (extractedEntry !== undefined) {
+        return extractedEntry;
+      }
+      if (entry !== undefined && entry !== null) {
+        return entry;
+      }
+    }
+
+    return undefined;
+  };
+
   const getEventLikeErrorPayload = (
     value: unknown,
     visited = new Set<unknown>(),
@@ -1273,6 +1308,10 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     getDataErrorPayload(eventPayload.target?.data) ??
     getDataErrorPayload(eventPayload.currentTarget?.data) ??
     getDataErrorPayload(eventPayload.srcElement?.data);
+  const composedPathError =
+    getComposedPathPayload(event) ??
+    getComposedPathPayload(eventPayload.nativeEvent) ??
+    getComposedPathPayload(eventPayload.originalEvent);
   const nativeEventError = getEventLikeErrorPayload(eventPayload.nativeEvent);
   const originalEventError = getEventLikeErrorPayload(
     eventPayload.originalEvent,
@@ -1299,6 +1338,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     eventPayload.srcElement?.data ??
     detailError ??
     dataError ??
+    composedPathError ??
     nativeEventError ??
     originalEventError ??
     eventPayload.reason ??
