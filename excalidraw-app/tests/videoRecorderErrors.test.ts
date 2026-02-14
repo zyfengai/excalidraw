@@ -301,6 +301,11 @@ describe("video recorder error mapping", () => {
     ).toBe("This browser does not support video recording.");
     expect(
       mapVideoRecorderErrorMessage(
+        "MediaRecorder is disabled in this browser build.",
+      ),
+    ).toBe("This browser does not support video recording.");
+    expect(
+      mapVideoRecorderErrorMessage(
         "ReferenceError: MediaRecorder is not defined",
       ),
     ).toBe("This browser does not support video recording.");
@@ -336,6 +341,16 @@ describe("video recorder error mapping", () => {
       ),
     ).toBe("Camera or microphone permission was denied.");
     expect(
+      mapVideoRecorderErrorMessage(
+        'Access to the feature "camera" is disallowed by permissions policy.',
+      ),
+    ).toBe("Camera or microphone permission was denied.");
+    expect(
+      mapVideoRecorderErrorMessage(
+        "getUserMedia camera access requires a secure context.",
+      ),
+    ).toBe("Camera or microphone permission was denied.");
+    expect(
       mapVideoRecorderErrorMessage("Camera permission was dismissed by user."),
     ).toBe("Camera or microphone permission was denied.");
     expect(
@@ -346,6 +361,11 @@ describe("video recorder error mapping", () => {
     expect(mapVideoRecorderErrorMessage("No such device")).toBe(
       "Selected camera or microphone is not available.",
     );
+    expect(
+      mapVideoRecorderErrorMessage(
+        "Could not find selected media input device.",
+      ),
+    ).toBe("Selected camera or microphone is not available.");
     expect(
       mapVideoRecorderErrorMessage("Device ID invalid for selected input."),
     ).toBe("Selected camera or microphone is not available.");

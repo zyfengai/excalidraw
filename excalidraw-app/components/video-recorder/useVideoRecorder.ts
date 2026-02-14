@@ -468,11 +468,27 @@ const isPermissionDeniedError = (error: unknown) => {
       (message.includes("user agent") ||
         message.includes("platform") ||
         message.includes("current context")));
+  const hasPermissionsPolicySignal =
+    message.includes("permissions policy") &&
+    (message.includes("disallow") ||
+      message.includes("denied") ||
+      message.includes("blocked") ||
+      message.includes("not allowed"));
+  const hasSecureContextSignal =
+    (message.includes("only secure origins are allowed") ||
+      message.includes("secure context") ||
+      message.includes("secure origin")) &&
+    (message.includes("camera") ||
+      message.includes("microphone") ||
+      message.includes("mediadevices") ||
+      message.includes("getusermedia"));
   return (
     hasPermissionDeniedSignal ||
     hasPermissionBlockedSignal ||
     hasPermissionDismissedSignal ||
     hasRequestNotAllowedSignal ||
+    hasPermissionsPolicySignal ||
+    hasSecureContextSignal ||
     message.includes("access denied") ||
     message.includes("permissiondismissederror") ||
     message.includes("notallowederror")
@@ -500,6 +516,14 @@ const isDeviceSelectionError = (error: unknown) => {
       (message.includes("not found") ||
         message.includes("cannot find") ||
         message.includes("unavailable")));
+  const hasCouldNotFindSignal =
+    (message.includes("could not find") ||
+      message.includes("unable to find")) &&
+    (message.includes("device") ||
+      message.includes("source") ||
+      message.includes("input") ||
+      message.includes("camera") ||
+      message.includes("microphone"));
   const hasConstraintSignal =
     (message.includes("overconstrained") || message.includes("constraint")) &&
     (message.includes("not satisfied") ||
@@ -513,7 +537,7 @@ const isDeviceSelectionError = (error: unknown) => {
       message.includes("constraint failed") ||
       message.includes("failed to satisfy"));
 
-  return hasNotFoundSignal || hasConstraintSignal;
+  return hasNotFoundSignal || hasCouldNotFindSignal || hasConstraintSignal;
 };
 
 const isDeviceBusyError = (error: unknown) => {
@@ -575,7 +599,14 @@ const isMimeNotSupportedMessage = (error: unknown) => {
     (message.includes("is not defined") ||
       message.includes("undefined") ||
       message.includes("not implemented"));
-  if (hasUnavailableMediaRecorderSignal || hasMissingMediaRecorderSignal) {
+  const hasDisabledMediaRecorderSignal =
+    (message.includes("mediarecorder") || message.includes("media recorder")) &&
+    (message.includes("disabled") || message.includes("turned off"));
+  if (
+    hasUnavailableMediaRecorderSignal ||
+    hasMissingMediaRecorderSignal ||
+    hasDisabledMediaRecorderSignal
+  ) {
     return true;
   }
   const hasUnsupportedToken =
