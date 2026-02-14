@@ -1099,6 +1099,29 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     return event;
   }
 
+  const getPathEntriesPayload = (pathEntries: unknown): unknown => {
+    if (!Array.isArray(pathEntries)) {
+      return undefined;
+    }
+
+    let firstNonNullEntry: unknown = undefined;
+    for (const entry of pathEntries) {
+      const extractedEntry = getEventLikeErrorPayload(entry);
+      if (extractedEntry !== undefined) {
+        return extractedEntry;
+      }
+      if (
+        firstNonNullEntry === undefined &&
+        entry !== undefined &&
+        entry !== null
+      ) {
+        firstNonNullEntry = entry;
+      }
+    }
+
+    return firstNonNullEntry;
+  };
+
   const getComposedPathPayload = (value: unknown): unknown => {
     if (!value || typeof value !== "object" || !("composedPath" in value)) {
       return undefined;
@@ -1117,21 +1140,16 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       return undefined;
     }
 
-    if (!Array.isArray(composedPathEntries)) {
+    return getPathEntriesPayload(composedPathEntries);
+  };
+
+  const getLegacyPathPayload = (value: unknown): unknown => {
+    if (!value || typeof value !== "object" || !("path" in value)) {
       return undefined;
     }
 
-    for (const entry of composedPathEntries) {
-      const extractedEntry = getEventLikeErrorPayload(entry);
-      if (extractedEntry !== undefined) {
-        return extractedEntry;
-      }
-      if (entry !== undefined && entry !== null) {
-        return entry;
-      }
-    }
-
-    return undefined;
+    const pathEntries = (value as { path?: unknown }).path;
+    return getPathEntriesPayload(pathEntries);
   };
 
   const getEventLikeErrorPayload = (
@@ -1165,6 +1183,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       payload?: unknown;
       nativeEvent?: unknown;
       originalEvent?: unknown;
+      path?: unknown;
       target?: {
         error?: unknown;
         reason?: unknown;
@@ -1207,6 +1226,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       getObjectErrorPayload(nestedEventPayload.target?.data) ??
       getObjectErrorPayload(nestedEventPayload.currentTarget?.data) ??
       getObjectErrorPayload(nestedEventPayload.srcElement?.data);
+    const nestedPathError = getPathEntriesPayload(nestedEventPayload.path);
     const nestedNativeEventError: unknown = getEventLikeErrorPayload(
       nestedEventPayload.nativeEvent,
       visited,
@@ -1226,6 +1246,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       nestedPayloadError ??
       nestedDetailError ??
       nestedDataError ??
+      nestedPathError ??
       nestedNativeEventError ??
       nestedOriginalEventError ??
       nestedEventPayload.reason ??
@@ -1244,6 +1265,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       nestedEventPayload.target?.data ??
       nestedEventPayload.currentTarget?.data ??
       nestedEventPayload.srcElement?.data ??
+      nestedEventPayload.path ??
       nestedEventPayload.nativeEvent ??
       nestedEventPayload.originalEvent
     );
@@ -1306,6 +1328,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     payload?: unknown;
     nativeEvent?: unknown;
     originalEvent?: unknown;
+    path?: unknown;
   };
   const reasonError =
     getReasonErrorPayload(eventPayload.reason) ??
@@ -1331,6 +1354,10 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     getComposedPathPayload(event) ??
     getComposedPathPayload(eventPayload.nativeEvent) ??
     getComposedPathPayload(eventPayload.originalEvent);
+  const legacyPathError =
+    getLegacyPathPayload(event) ??
+    getLegacyPathPayload(eventPayload.nativeEvent) ??
+    getLegacyPathPayload(eventPayload.originalEvent);
   const nativeEventError = getEventLikeErrorPayload(eventPayload.nativeEvent);
   const originalEventError = getEventLikeErrorPayload(
     eventPayload.originalEvent,
@@ -1358,12 +1385,14 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     detailError ??
     dataError ??
     composedPathError ??
+    legacyPathError ??
     nativeEventError ??
     originalEventError ??
     eventPayload.reason ??
     eventPayload.payload ??
     eventPayload.detail ??
     eventPayload.data ??
+    eventPayload.path ??
     eventPayload.nativeEvent ??
     eventPayload.originalEvent ??
     event
