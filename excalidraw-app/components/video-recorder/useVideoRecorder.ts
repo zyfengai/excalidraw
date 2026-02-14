@@ -102,6 +102,7 @@ const hasNestedErrorCandidate = (value: unknown) => {
       msg?: unknown;
       description?: unknown;
       errorDescription?: unknown;
+      errorDetails?: unknown;
       info?: unknown;
       errorInfo?: unknown;
       detail?: unknown;
@@ -122,6 +123,7 @@ const hasNestedErrorCandidate = (value: unknown) => {
       msg?: unknown;
       description?: unknown;
       errorDescription?: unknown;
+      errorDetails?: unknown;
       info?: unknown;
       errorInfo?: unknown;
       detail?: unknown;
@@ -142,6 +144,7 @@ const hasNestedErrorCandidate = (value: unknown) => {
       msg?: unknown;
       description?: unknown;
       errorDescription?: unknown;
+      errorDetails?: unknown;
       info?: unknown;
       errorInfo?: unknown;
       detail?: unknown;
@@ -163,6 +166,7 @@ const hasNestedErrorCandidate = (value: unknown) => {
     nestedTargetPayload.target?.msg !== undefined ||
     nestedTargetPayload.target?.description !== undefined ||
     nestedTargetPayload.target?.errorDescription !== undefined ||
+    nestedTargetPayload.target?.errorDetails !== undefined ||
     nestedTargetPayload.target?.info !== undefined ||
     nestedTargetPayload.target?.errorInfo !== undefined ||
     nestedTargetPayload.target?.detail !== undefined ||
@@ -181,6 +185,7 @@ const hasNestedErrorCandidate = (value: unknown) => {
     nestedTargetPayload.currentTarget?.msg !== undefined ||
     nestedTargetPayload.currentTarget?.description !== undefined ||
     nestedTargetPayload.currentTarget?.errorDescription !== undefined ||
+    nestedTargetPayload.currentTarget?.errorDetails !== undefined ||
     nestedTargetPayload.currentTarget?.info !== undefined ||
     nestedTargetPayload.currentTarget?.errorInfo !== undefined ||
     nestedTargetPayload.currentTarget?.detail !== undefined ||
@@ -199,6 +204,7 @@ const hasNestedErrorCandidate = (value: unknown) => {
     nestedTargetPayload.srcElement?.msg !== undefined ||
     nestedTargetPayload.srcElement?.description !== undefined ||
     nestedTargetPayload.srcElement?.errorDescription !== undefined ||
+    nestedTargetPayload.srcElement?.errorDetails !== undefined ||
     nestedTargetPayload.srcElement?.info !== undefined ||
     nestedTargetPayload.srcElement?.errorInfo !== undefined ||
     nestedTargetPayload.srcElement?.detail !== undefined ||
@@ -242,6 +248,8 @@ const hasNestedErrorCandidate = (value: unknown) => {
     ("errorDescription" in value &&
       (value as { errorDescription?: unknown }).errorDescription !==
         undefined) ||
+    ("errorDetails" in value &&
+      (value as { errorDetails?: unknown }).errorDetails !== undefined) ||
     ("info" in value && (value as { info?: unknown }).info !== undefined) ||
     ("errorInfo" in value &&
       (value as { errorInfo?: unknown }).errorInfo !== undefined) ||
@@ -369,6 +377,7 @@ const getNextNestedError = (error: unknown) => {
       msg?: unknown;
       description?: unknown;
       errorDescription?: unknown;
+      errorDetails?: unknown;
       info?: unknown;
       errorInfo?: unknown;
       detail?: unknown;
@@ -389,6 +398,7 @@ const getNextNestedError = (error: unknown) => {
       msg?: unknown;
       description?: unknown;
       errorDescription?: unknown;
+      errorDetails?: unknown;
       info?: unknown;
       errorInfo?: unknown;
       detail?: unknown;
@@ -409,6 +419,7 @@ const getNextNestedError = (error: unknown) => {
       msg?: unknown;
       description?: unknown;
       errorDescription?: unknown;
+      errorDetails?: unknown;
       info?: unknown;
       errorInfo?: unknown;
       detail?: unknown;
@@ -434,6 +445,7 @@ const getNextNestedError = (error: unknown) => {
     nestedEventPayload.target?.msg ??
     nestedEventPayload.target?.description ??
     nestedEventPayload.target?.errorDescription ??
+    nestedEventPayload.target?.errorDetails ??
     nestedEventPayload.target?.info ??
     nestedEventPayload.target?.errorInfo ??
     nestedEventPayload.currentTarget?.reason ??
@@ -443,6 +455,7 @@ const getNextNestedError = (error: unknown) => {
     nestedEventPayload.currentTarget?.msg ??
     nestedEventPayload.currentTarget?.description ??
     nestedEventPayload.currentTarget?.errorDescription ??
+    nestedEventPayload.currentTarget?.errorDetails ??
     nestedEventPayload.currentTarget?.info ??
     nestedEventPayload.currentTarget?.errorInfo ??
     nestedEventPayload.srcElement?.reason ??
@@ -452,6 +465,7 @@ const getNextNestedError = (error: unknown) => {
     nestedEventPayload.srcElement?.msg ??
     nestedEventPayload.srcElement?.description ??
     nestedEventPayload.srcElement?.errorDescription ??
+    nestedEventPayload.srcElement?.errorDetails ??
     nestedEventPayload.srcElement?.info ??
     nestedEventPayload.srcElement?.errorInfo ??
     nestedEventPayload.target?.payload ??
@@ -540,6 +554,12 @@ const getNextNestedError = (error: unknown) => {
           (error as { errorDescription?: unknown }).errorDescription,
         )
       : undefined;
+  const errorDetailsValue =
+    "errorDetails" in error
+      ? getErrorPayloadOrSelf(
+          (error as { errorDetails?: unknown }).errorDetails,
+        )
+      : undefined;
   const infoValue =
     "info" in error ? (error as { info?: unknown }).info : undefined;
   const errorInfoValue =
@@ -593,6 +613,7 @@ const getNextNestedError = (error: unknown) => {
     msgValue,
     descriptionValue,
     errorDescriptionValue,
+    errorDetailsValue,
     infoValue,
     errorInfoValue,
     payloadValue,
@@ -745,6 +766,17 @@ const getErrorMessage = (error: unknown) => {
       );
       if (!isGenericErrorName(normalizedErrorDescriptionName)) {
         return currentError.errorDescription;
+      }
+    }
+    if (
+      "errorDetails" in currentError &&
+      typeof currentError.errorDetails === "string"
+    ) {
+      const normalizedErrorDetailsName = getErrorNameFromString(
+        currentError.errorDetails.trim(),
+      );
+      if (!isGenericErrorName(normalizedErrorDetailsName)) {
+        return currentError.errorDetails;
       }
     }
 
@@ -1552,6 +1584,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       msg?: unknown;
       description?: unknown;
       errorDescription?: unknown;
+      errorDetails?: unknown;
       info?: unknown;
       errorInfo?: unknown;
       detail?: unknown;
@@ -1574,6 +1607,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
         msg?: unknown;
         description?: unknown;
         errorDescription?: unknown;
+        errorDetails?: unknown;
         info?: unknown;
         errorInfo?: unknown;
         detail?: unknown;
@@ -1594,6 +1628,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
         msg?: unknown;
         description?: unknown;
         errorDescription?: unknown;
+        errorDetails?: unknown;
         info?: unknown;
         errorInfo?: unknown;
         detail?: unknown;
@@ -1614,6 +1649,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
         msg?: unknown;
         description?: unknown;
         errorDescription?: unknown;
+        errorDetails?: unknown;
         info?: unknown;
         errorInfo?: unknown;
         detail?: unknown;
@@ -1667,6 +1703,11 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
         nestedEventPayload.currentTarget?.errorDescription,
       ) ??
       getObjectErrorPayload(nestedEventPayload.srcElement?.errorDescription);
+    const nestedErrorDetailsError =
+      getObjectErrorPayload(nestedEventPayload.errorDetails) ??
+      getObjectErrorPayload(nestedEventPayload.target?.errorDetails) ??
+      getObjectErrorPayload(nestedEventPayload.currentTarget?.errorDetails) ??
+      getObjectErrorPayload(nestedEventPayload.srcElement?.errorDetails);
     const nestedInfoError =
       getObjectErrorPayload(nestedEventPayload.info) ??
       getObjectErrorPayload(nestedEventPayload.target?.info) ??
@@ -1738,6 +1779,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       nestedTargetReasonError,
       nestedDescriptionError,
       nestedErrorDescriptionError,
+      nestedErrorDetailsError,
       nestedInfoError,
       nestedErrorInfoError,
       nestedPayloadError,
@@ -1755,6 +1797,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       nestedEventPayload.msg,
       nestedEventPayload.description,
       nestedEventPayload.errorDescription,
+      nestedEventPayload.errorDetails,
       nestedEventPayload.info,
       nestedEventPayload.errorInfo,
       nestedEventPayload.target?.reason,
@@ -1774,10 +1817,13 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       nestedEventPayload.srcElement?.msg,
       nestedEventPayload.target?.description,
       nestedEventPayload.target?.errorDescription,
+      nestedEventPayload.target?.errorDetails,
       nestedEventPayload.currentTarget?.description,
       nestedEventPayload.currentTarget?.errorDescription,
+      nestedEventPayload.currentTarget?.errorDetails,
       nestedEventPayload.srcElement?.description,
       nestedEventPayload.srcElement?.errorDescription,
+      nestedEventPayload.srcElement?.errorDetails,
       nestedEventPayload.target?.info,
       nestedEventPayload.target?.errorInfo,
       nestedEventPayload.currentTarget?.info,
@@ -1883,6 +1929,13 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     return (value as { error?: unknown }).error;
   };
 
+  const getErrorDetailsPayload = (value: unknown) => {
+    if (!value || typeof value !== "object" || !("error" in value)) {
+      return undefined;
+    }
+    return (value as { error?: unknown }).error;
+  };
+
   const getErrorInfoPayload = (value: unknown) => {
     if (!value || typeof value !== "object" || !("error" in value)) {
       return undefined;
@@ -1931,6 +1984,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       msg?: unknown;
       description?: unknown;
       errorDescription?: unknown;
+      errorDetails?: unknown;
       info?: unknown;
       errorInfo?: unknown;
       payload?: unknown;
@@ -1951,6 +2005,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       msg?: unknown;
       description?: unknown;
       errorDescription?: unknown;
+      errorDetails?: unknown;
       info?: unknown;
       errorInfo?: unknown;
       payload?: unknown;
@@ -1971,6 +2026,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       msg?: unknown;
       description?: unknown;
       errorDescription?: unknown;
+      errorDetails?: unknown;
       info?: unknown;
       errorInfo?: unknown;
       payload?: unknown;
@@ -1988,6 +2044,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     errorMessage?: unknown;
     description?: unknown;
     errorDescription?: unknown;
+    errorDetails?: unknown;
     info?: unknown;
     errorInfo?: unknown;
     detail?: unknown;
@@ -2041,6 +2098,11 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
     getErrorDescriptionPayload(eventPayload.target?.errorDescription) ??
     getErrorDescriptionPayload(eventPayload.currentTarget?.errorDescription) ??
     getErrorDescriptionPayload(eventPayload.srcElement?.errorDescription);
+  const errorDetailsError =
+    getErrorDetailsPayload(eventPayload.errorDetails) ??
+    getErrorDetailsPayload(eventPayload.target?.errorDetails) ??
+    getErrorDetailsPayload(eventPayload.currentTarget?.errorDetails) ??
+    getErrorDetailsPayload(eventPayload.srcElement?.errorDetails);
   const infoError =
     getInfoErrorPayload(eventPayload.info) ??
     getInfoErrorPayload(eventPayload.target?.info) ??
@@ -2121,6 +2183,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       errorMessageAliasError,
       descriptionError,
       errorDescriptionError,
+      errorDetailsError,
       infoError,
       errorInfoError,
       payloadError,
@@ -2131,6 +2194,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       eventPayload.target?.message,
       eventPayload.target?.description,
       eventPayload.target?.errorDescription,
+      eventPayload.target?.errorDetails,
       eventPayload.target?.info,
       eventPayload.target?.errorInfo,
       eventPayload.currentTarget?.reason,
@@ -2140,6 +2204,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       eventPayload.currentTarget?.message,
       eventPayload.currentTarget?.description,
       eventPayload.currentTarget?.errorDescription,
+      eventPayload.currentTarget?.errorDetails,
       eventPayload.currentTarget?.info,
       eventPayload.currentTarget?.errorInfo,
       eventPayload.srcElement?.reason,
@@ -2149,6 +2214,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       eventPayload.srcElement?.message,
       eventPayload.srcElement?.description,
       eventPayload.srcElement?.errorDescription,
+      eventPayload.srcElement?.errorDetails,
       eventPayload.srcElement?.info,
       eventPayload.srcElement?.errorInfo,
       eventPayload.target?.payload,
@@ -2178,6 +2244,7 @@ const getMediaRecorderRuntimeError = (event: unknown) => {
       eventPayload.msg,
       eventPayload.description,
       eventPayload.errorDescription,
+      eventPayload.errorDetails,
       eventPayload.info,
       eventPayload.errorInfo,
       eventPayload.payload,
