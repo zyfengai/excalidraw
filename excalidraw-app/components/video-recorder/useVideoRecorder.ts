@@ -2603,6 +2603,7 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
   }, [settings]);
 
   useEffect(() => {
+    isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
       cleanupStreams();
@@ -3005,6 +3006,12 @@ export const useVideoRecorder = (): UseVideoRecorderReturn => {
         !isMountedRef.current ||
         requestId !== startRecordingRequestIdRef.current
       ) {
+        if (
+          isMountedRef.current &&
+          requestId === startRecordingRequestIdRef.current
+        ) {
+          setStatus("idle");
+        }
         cleanupStreams();
         return;
       }
